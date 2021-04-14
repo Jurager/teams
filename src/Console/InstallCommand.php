@@ -40,10 +40,15 @@ class InstallCommand extends Command
 	    copy(__DIR__.'/../../stubs/app/Providers/AuthServiceProvider.php', app_path('Providers/AuthServiceProvider.php'));
 
 	    // Models...
-	    copy(__DIR__.'/../../stubs/app/Models/User.php', app_path('Models/User.php'));
+	    //copy(__DIR__.'/../../stubs/app/Models/User.php', app_path('Models/User.php'));
+	    //copy(__DIR__.'/../../stubs/app/Models/Team.php', app_path('Models/Team.php'));
 	    copy(__DIR__.'/../../stubs/app/Models/Membership.php', app_path('Models/Membership.php'));
-	    copy(__DIR__.'/../../stubs/app/Models/Team.php', app_path('Models/Team.php'));
 	    copy(__DIR__.'/../../stubs/app/Models/TeamInvitation.php', app_path('Models/TeamInvitation.php'));
+
+	    // Directories...
+	    (new Filesystem)->ensureDirectoryExists(app_path('Actions/Teams'));
+	    (new Filesystem)->ensureDirectoryExists(app_path('Events'));
+	    (new Filesystem)->ensureDirectoryExists(app_path('Policies'));
 
 	    // Actions...
 	    copy(__DIR__.'/../../stubs/app/Actions/Teams/DeleteUser.php', app_path('Actions/Teams/DeleteUser.php'));
@@ -55,10 +60,6 @@ class InstallCommand extends Command
 	    copy(__DIR__.'/../../stubs/app/Actions/Teams/RemoveTeamMember.php', app_path('Actions/Teams/RemoveTeamMember.php'));
 	    copy(__DIR__.'/../../stubs/app/Actions/Teams/UpdateTeamName.php', app_path('Actions/Teams/UpdateTeamName.php'));
 
-	    // Directories...
-	    (new Filesystem)->ensureDirectoryExists(app_path('Actions/Teams'));
-	    (new Filesystem)->ensureDirectoryExists(app_path('Events'));
-	    (new Filesystem)->ensureDirectoryExists(app_path('Policies'));
 
 	    // Policies...
 	    (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/app/Policies', app_path('Policies'));

@@ -20,4 +20,11 @@ return [
         Features::teams(['invitations' => true]),
         Features::accountDeletion(),
     ],
+
+	'models' => [
+		'user' => '',
+		'team' => '',
+		'membership' => '',
+
+	]
 ];
