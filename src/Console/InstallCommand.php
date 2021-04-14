@@ -15,7 +15,7 @@ class InstallCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'teams:install';
+    protected $signature = 'teams:install {--models : Indicates if user and team models should be installed}';
 
     /**
      * The console command description.
@@ -40,8 +40,11 @@ class InstallCommand extends Command
 	    copy(__DIR__.'/../../stubs/app/Providers/AuthServiceProvider.php', app_path('Providers/AuthServiceProvider.php'));
 
 	    // Models...
-	    //copy(__DIR__.'/../../stubs/app/Models/User.php', app_path('Models/User.php'));
-	    //copy(__DIR__.'/../../stubs/app/Models/Team.php', app_path('Models/Team.php'));
+	    if ($this->option('models')) {
+		    copy(__DIR__.'/../../stubs/app/Models/User.php', app_path('Models/User.php'));
+		    copy(__DIR__.'/../../stubs/app/Models/Team.php', app_path('Models/Team.php'));
+	    }
+
 	    copy(__DIR__.'/../../stubs/app/Models/Membership.php', app_path('Models/Membership.php'));
 	    copy(__DIR__.'/../../stubs/app/Models/TeamInvitation.php', app_path('Models/TeamInvitation.php'));
 
