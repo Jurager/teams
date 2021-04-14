@@ -15,7 +15,7 @@ trait HasTeams
      */
     public function isCurrentTeam($team)
     {
-        return $team->id === $this->currentTeam->id;
+        return $team->id === $this->{config('teams.relations.currentTeam', 'currentTeam')}->id;
     }
 
     /**
@@ -25,11 +25,11 @@ trait HasTeams
      */
     public function currentTeam()
     {
-        if (is_null($this->current_team_id) && $this->id) {
+        if (is_null($this->{config('teams.keys.current_team_id', 'current_team_id')}) && $this->id) {
             $this->switchTeam($this->personalTeam());
         }
 
-        return $this->belongsTo(Teams::teamModel(), 'current_team_id');
+        return $this->belongsTo(Teams::teamModel(), config('teams.keys.current_team_id', 'current_team_id'));
     }
 
     /**
@@ -45,10 +45,10 @@ trait HasTeams
         }
 
         $this->forceFill([
-            'current_team_id' => $team->id,
+	        config('teams.keys.current_team_id', 'current_team_id') => $team->id,
         ])->save();
 
-        $this->setRelation('currentTeam', $team);
+        $this->setRelation(config('teams.relations.currentTeam', 'currentTeam'), $team);
 
         return true;
     }
@@ -93,7 +93,7 @@ trait HasTeams
      */
     public function personalTeam()
     {
-        return $this->ownedTeams->where('personal_team', true)->first();
+        return $this->ownedTeams->where(config('teams.keys.personal_team', 'personal_team'), true)->first();
     }
 
     /**

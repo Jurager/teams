@@ -21,9 +21,43 @@ return [
         Features::accountDeletion(),
     ],
 
+	/*
+    |--------------------------------------------------------------------------
+    | Models
+    |--------------------------------------------------------------------------
+    |
+    | List of models bound to package entities
+    |
+    */
 	'models' => [
 		'user'       => '/App/Models/User',
 		'team'       => '/App/Models/Team',
 		'membership' => '/App/Models/Membership',
+	],
+
+	/*
+    |--------------------------------------------------------------------------
+    | Keys
+    |--------------------------------------------------------------------------
+    |
+    | List of model's keys by package entities
+    |
+    */
+	'keys' => [
+		'team_id'         => 'team_id',
+		'current_team_id' => 'current_team_id',
+		'personal_team'   => 'personal_team',
+	],
+
+	/*
+    |--------------------------------------------------------------------------
+    | Relations
+    |--------------------------------------------------------------------------
+    |
+    | List of model's relation names
+    |
+    */
+	'relations' => [
+		'currentTeam'   => 'currentTeam',
 	]
 ];
