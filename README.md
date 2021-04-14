@@ -57,12 +57,6 @@ You may access the user's current team using the `$user->currentTeam` Eloquent r
         'team_id', $request->user()->currentTeam->id
     )->get();
 
-
-Switching Teams
-
-A user may switch their current team via the "team switcher" menu available within the Jetstream navigation bar.
-
-
 ### [#](#the-team-object) The Team Object
 
 The team object that is accessed via `$user->currentTeam` or other team-related Eloquent queries provides a variety of useful methods for inspecting the team's attributes and relationships:
