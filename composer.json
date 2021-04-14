@@ -1,0 +1,46 @@
+{
+    "name": "jurager/teams",
+    "description": "Laravel Teams and Roles using Jetstream",
+    "keywords": ["laravel", "teams", "auth"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Taylor Otwell",
+            "email": "taylor@laravel.com"
+        },
+        {
+            "name": "Yuri Gerassimov",
+            "email": "jurager01@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.3|^8.0",
+        "ext-json": "*",
+        "illuminate/support": "^8.0"
+    },
+    "require-dev": {
+        "laravel/sanctum": "^2.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jurager\\Teams\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "App\\": "stubs/app/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Jurager\\Teams\\TeamsServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
