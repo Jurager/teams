@@ -22,9 +22,8 @@ return [
     ],
 
 	'models' => [
-		'user' => '',
-		'team' => '',
-		'membership' => '',
-
+		'user'       => '/App/Models/User',
+		'team'       => '/App/Models/Team',
+		'membership' => '/App/Models/Membership',
 	]
 ];

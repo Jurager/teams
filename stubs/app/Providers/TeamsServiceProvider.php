@@ -55,10 +55,13 @@ class TeamsServiceProvider extends ServiceProvider
     {
 	    Teams::defaultApiTokenPermissions(['read']);
 
-	    Teams::role('admin', __('Administrator'), ['create', 'read', 'update', 'delete' ])
+	    Teams::role('admin', __('Administrator'), ['read', 'create', 'update', 'delete' ])
 		    ->description(__('Administrator users can perform any action.'));
 
-	    Teams::role('editor', __('Editor'), [ 'read', 'create', 'update'])
-		    ->description(__('Editor users have the ability to read, create, and update.'));
+	    Teams::role('manager', __('Manager'), [ 'read', 'create', 'update'])
+		    ->description(__('Manager users have the ability to read, create, and update.'));
+
+	    Teams::role('user', __('Manager'), [ 'read'])
+		    ->description(__('Regular users have the ability only  to read.'));
     }
 }
