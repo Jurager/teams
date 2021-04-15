@@ -11,7 +11,7 @@ After successfully installing the package from composer, run `php artisan teams:
 
 If you also want to publish package's `App\Models` directory with Team and User model, pass the `--models` option to command above.
 
-
+After publishing all package's data, put the `App\Providers\TeamsServiceProvider::class` to app.php config in providers section.
 
 ### [#](#actions) Actions
 
