@@ -30,9 +30,9 @@ return [
     |
     */
 	'models' => [
-		'user'       => '/App/Models/User',
-		'team'       => '/App/Models/Team',
-		'membership' => '/App/Models/Membership',
+		'user'       => 'App\\Models\\User',
+		'team'       => 'App\\Models\\Team',
+		'membership' => 'App\\Models\\Membership',
 	],
 
 	/*
@@ -45,8 +45,7 @@ return [
     */
 	'keys' => [
 		'team_id'         => 'team_id',
-		'current_team_id' => 'current_team_id',
-		'personal_team'   => 'personal_team',
+		'current_team_id' => 'current_team_id'
 	],
 
 	/*

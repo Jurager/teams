@@ -25,11 +25,7 @@ trait HasTeams
      */
     public function currentTeam()
     {
-        if (is_null($this->{config('teams.keys.current_team_id', 'current_team_id')}) && $this->id) {
-            $this->switchTeam($this->personalTeam());
-        }
-
-        return $this->belongsTo(Teams::teamModel(), config('teams.keys.current_team_id', 'current_team_id'));
+         return $this->belongsTo(Teams::teamModel(), config('teams.keys.current_team_id', 'current_team_id'));
     }
 
     /**
@@ -84,16 +80,6 @@ trait HasTeams
                         ->withPivot('role')
                         ->withTimestamps()
                         ->as('membership');
-    }
-
-    /**
-     * Get the user's "personal" team.
-     *
-     * @return \App\Models\Team
-     */
-    public function personalTeam()
-    {
-        return $this->ownedTeams->where(config('teams.keys.personal_team', 'personal_team'), true)->first();
     }
 
     /**

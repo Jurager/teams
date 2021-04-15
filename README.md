@@ -22,10 +22,7 @@ Information about a user's teams may be accessed via the methods provided by the
     
     // Access all of the teams that a user belongs to but does not own...
     $user->teams : Illuminate\Database\Eloquent\Collection
-    
-    // Access a user's "personal" team...
-    $user->personalTeam() : \Jurager\Teams\Team
-    
+
     // Determine if a user owns a given team...
     $user->ownsTeam($team) : bool
     

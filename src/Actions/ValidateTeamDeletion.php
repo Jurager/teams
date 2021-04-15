@@ -17,11 +17,5 @@ class ValidateTeamDeletion
     public function validate($user, $team)
     {
         Gate::forUser($user)->authorize('delete', $team);
-
-        if ($team->{config('teams.keys.personal_team', 'personal_team')}) {
-            throw ValidationException::withMessages([
-                'team' => __('You may not delete your personal team.'),
-            ])->errorBag('deleteTeam');
-        }
     }
 }
