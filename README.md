@@ -1,6 +1,17 @@
 ## Introduction
 
-Teams is Laravel package using Jetstream based teams to operate and manage team functionality.
+Teams is Laravel package using Jetstream's based teams to manage team functionality and operate with user permissions and abilities.
+
+## Installation
+    composer require jurager/teams
+
+Note, running command below can overwrite your directories and files, please make backup before.
+
+After successfully installing the package from composer, run `php artisan teams:install` to publish configuration and package files.
+
+If you also want to publish package's `App\Models` directory with Team and User model, pass the `--models` option to command above.
+
+
 
 ### [#](#actions) Actions
 
