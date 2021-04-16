@@ -152,16 +152,6 @@ class Teams
     }
 
     /**
-     * Determine if Teams is supporting API features.
-     *
-     * @return bool
-     */
-    public static function hasApiFeatures()
-    {
-        return Features::hasApiFeatures();
-    }
-
-    /**
      * Determine if Teams is supporting team features.
      *
      * @return bool

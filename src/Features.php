@@ -30,16 +30,6 @@ class Features
     }
 
     /**
-     * Determine if the application is using any API features.
-     *
-     * @return bool
-     */
-    public static function hasApiFeatures()
-    {
-        return static::enabled(static::api());
-    }
-
-    /**
      * Determine if the application is using any team features.
      *
      * @return bool
@@ -68,16 +58,6 @@ class Features
     public static function hasAccountDeletionFeatures()
     {
         return static::enabled(static::accountDeletion());
-    }
-
-    /**
-     * Enable the API feature.
-     *
-     * @return string
-     */
-    public static function api()
-    {
-        return 'api';
     }
 
     /**

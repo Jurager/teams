@@ -16,7 +16,6 @@ return [
     */
 
     'features' => [
-        Features::api(),
         Features::teams(['invitations' => true]),
         Features::accountDeletion(),
     ],
@@ -37,6 +36,21 @@ return [
 
 	/*
     |--------------------------------------------------------------------------
+    | Models
+    |--------------------------------------------------------------------------
+    |
+    | List of models bound to package models
+    |
+    */
+	'tables' => [
+		'users'            => 'users',
+		'teams'            => 'teams',
+		'team_user'        => 'team_user',
+		'team_invitations' => 'team_invitations',
+	],
+
+	/*
+    |--------------------------------------------------------------------------
     | Keys
     |--------------------------------------------------------------------------
     |
@@ -47,16 +61,4 @@ return [
 		'team_id'         => 'team_id',
 		'current_team_id' => 'current_team_id'
 	],
-
-	/*
-    |--------------------------------------------------------------------------
-    | Relations
-    |--------------------------------------------------------------------------
-    |
-    | List of model's relation names
-    |
-    */
-	'relations' => [
-		'currentTeam'   => 'currentTeam',
-	]
 ];
