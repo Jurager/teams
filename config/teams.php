@@ -29,9 +29,10 @@ return [
     |
     */
 	'models' => [
-		'user'       => 'App\\Models\\User',
-		'team'       => 'App\\Models\\Team',
-		'membership' => 'App\\Models\\Membership',
+		'user'            => 'App\\Models\\User',
+		'team'            => 'App\\Models\\Team',
+		'membership'      => 'App\\Models\\Membership',
+		'team_invitation' => 'App\\Models\\TeamInvitation',
 	],
 
 	/*
