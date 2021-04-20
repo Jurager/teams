@@ -38,6 +38,10 @@ class TeamsServiceProvider extends ServiceProvider
             return;
         }
 
+	    $this->publishes([
+		    __DIR__.'/../resources/views' => resource_path('views/vendor/teams'),
+	    ], 'teams-views');
+
         $this->publishes([
         	__DIR__.'/../config/teams.php' => config_path('teams.php')
         ], 'teams-config');
