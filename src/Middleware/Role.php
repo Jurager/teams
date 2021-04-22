@@ -3,6 +3,7 @@
 namespace Jurager\Teams\Middleware;
 
 use Closure;
+use Illuminate\Http\Request;
 
 class Role extends Teams
 {
@@ -16,9 +17,9 @@ class Role extends Teams
 	 * @param  string|null  $options
 	 * @return mixed
 	 */
-	public function handle($request, Closure $next, $roles, $team = null, $options = '')
+	public function handle(Request $request, Closure $next, $roles, $team = null, $options = '')
 	{
-		if (!$this->authorization('roles', $roles, $team, $options)) {
+		if (!$this->authorization($request,'roles', $roles, $team, $options)) {
 			return $this->unauthorized();
 		}
 
