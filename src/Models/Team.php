@@ -93,9 +93,9 @@ abstract class Team extends Model
      */
     public function removeUser($user)
     {
-        if ($user->{config('teams.keys.current_team_id', 'current_team_id')} === $this->id) {
+        if ($user->{config('teams.foreign_keys.current_team_id', 'current_team_id')} === $this->id) {
             $user->forceFill([
-	            config('teams.keys.current_team_id', 'current_team_id') => null,
+	            config('teams.foreign_keys.current_team_id', 'current_team_id') => null,
             ])->save();
         }
 
@@ -109,11 +109,11 @@ abstract class Team extends Model
      */
     public function purge()
     {
-        $this->owner()->where(config('teams.keys.current_team_id', 'current_team_id'), $this->id)
-                ->update([config('teams.keys.current_team_id', 'current_team_id') => null]);
+        $this->owner()->where(config('teams.foreign_keys.current_team_id', 'current_team_id'), $this->id)
+                ->update([config('teams.foreign_keys.current_team_id', 'current_team_id') => null]);
 
-        $this->users()->where(config('teams.keys.current_team_id', 'current_team_id'), $this->id)
-                ->update([config('teams.keys.current_team_id', 'current_team_id') => null]);
+        $this->users()->where(config('teams.foreign_keys.current_team_id', 'current_team_id'), $this->id)
+                ->update([config('teams.foreign_keys.current_team_id', 'current_team_id') => null]);
 
         $this->users()->detach();
 

@@ -27,6 +27,7 @@ class TeamsServiceProvider extends ServiceProvider
 
         $this->configurePublishing();
         $this->configureCommands();
+	    $this->registerMiddlewares();
     }
 
     /**
@@ -69,4 +70,35 @@ class TeamsServiceProvider extends ServiceProvider
 
         $this->commands([ Console\InstallCommand::class ]);
     }
+
+	/**
+	 * Register the middlewares automatically.
+	 *
+	 * @return void
+	 */
+	protected function registerMiddlewares()
+	{
+		if (!$this->app['config']->get('teams.middleware.register')) {
+			return;
+		}
+
+		$router = $this->app['router'];
+
+		if (method_exists($router, 'middleware')) {
+			$registerMethod = 'middleware';
+		} elseif (method_exists($router, 'aliasMiddleware')) {
+			$registerMethod = 'aliasMiddleware';
+		} else {
+			return;
+		}
+
+		$middlewares = [
+			'role'       => \Jurager\Teams\Middleware\Role::class,
+			'permission' => \Jurager\Teams\Middleware\Permission::class,
+		];
+
+		foreach ($middlewares as $key => $class) {
+			$router->$registerMethod($key, $class);
+		}
+	}
 }
