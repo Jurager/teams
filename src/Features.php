@@ -29,59 +29,43 @@ class Features
         return static::enabled($feature) && config("teams-options.{$feature}.{$option}") === true;
     }
 
-    /**
-     * Determine if the application is using any team features.
-     *
-     * @return bool
-     */
-    public static function hasTeamFeatures()
-    {
-        return static::enabled(static::teams());
-    }
+	/**
+	 * Determine if the application is using any account deletion features.
+	 *
+	 * @return bool
+	 */
+	public static function hasAccountInvitationFeatures()
+	{
+		return static::enabled(static::accountInvitation());
+	}
 
-    /**
-     * Determine if invitations are sent to team members.
-     *
-     * @return bool
-     */
-    public static function sendsTeamInvitations()
-    {
-        return static::optionEnabled(static::teams(), 'invitations');
-    }
+	/**
+	 * Determine if the application is using any account deletion features.
+	 *
+	 * @return bool
+	 */
+	public static function hasAccountDeletionFeatures()
+	{
+		return static::enabled(static::accountDeletion());
+	}
 
+	/**
+	 * Enable the account invitation feature.
+	 *
+	 * @return string
+	 */
+	public static function accountInvitation()
+	{
+		return 'account-invitation';
+	}
 
-    /**
-     * Determine if the application is using any account deletion features.
-     *
-     * @return bool
-     */
-    public static function hasAccountDeletionFeatures()
-    {
-        return static::enabled(static::accountDeletion());
-    }
-
-    /**
-     * Enable the teams feature.
-     *
-     * @param  array  $options
-     * @return string
-     */
-    public static function teams(array $options = [])
-    {
-        if (! empty($options)) {
-        	config(['teams-options.teams' => $options]);
-        }
-
-        return 'teams';
-    }
-
-    /**
-     * Enable the account deletion feature.
-     *
-     * @return string
-     */
-    public static function accountDeletion()
-    {
-        return 'account-deletion';
-    }
+	/**
+	 * Enable the account deletion feature.
+	 *
+	 * @return string
+	 */
+	public static function accountDeletion()
+	{
+		return 'account-deletion';
+	}
 }

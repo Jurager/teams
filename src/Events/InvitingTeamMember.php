@@ -39,8 +39,8 @@ class InvitingTeamMember
      */
     public function __construct($team, $email, $role)
     {
-        $this->team = $team;
+        $this->team  = $team;
         $this->email = $email;
-        $this->role = $role;
+        $this->role  = $role;
     }
 }

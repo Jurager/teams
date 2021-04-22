@@ -44,8 +44,8 @@ class Role implements JsonSerializable
      */
     public function __construct(string $key, string $name, array $permissions)
     {
-        $this->key = $key;
-        $this->name = $name;
+        $this->key         = $key;
+        $this->name        = $name;
         $this->permissions = $permissions;
     }
 
@@ -70,8 +70,8 @@ class Role implements JsonSerializable
     public function jsonSerialize()
     {
         return [
-            'key' => $this->key,
-            'name' => $this->name,
+            'key'         => $this->key,
+            'name'        => $this->name,
             'description' => $this->description,
             'permissions' => $this->permissions,
         ];

@@ -1,6 +1,6 @@
 <?php
 
-namespace Jurager\Teams;
+namespace Jurager\Teams\Traits;
 
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
@@ -115,7 +115,7 @@ trait HasTeams
     public function teamRole($team)
     {
         if ($this->ownsTeam($team)) {
-            return new OwnerRole;
+            return new Owner;
         }
 
         if (! $this->belongsToTeam($team)) {

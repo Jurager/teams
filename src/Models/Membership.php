@@ -1,6 +1,6 @@
 <?php
 
-namespace Jurager\Teams;
+namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
 

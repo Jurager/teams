@@ -46,7 +46,7 @@ class InstallCommand extends Command
 	    }
 
 	    copy(__DIR__.'/../../stubs/app/Models/Membership.php', app_path('Models/Membership.php'));
-	    copy(__DIR__.'/../../stubs/app/Models/TeamInvitation.php', app_path('Models/TeamInvitation.php'));
+	    copy(__DIR__.'/../../stubs/app/Models/Invitation.php', app_path('Models/Invitation.php'));
 
 	    // Directories...
 	    (new Filesystem)->ensureDirectoryExists(app_path('Actions/Teams'));

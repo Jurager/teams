@@ -2,7 +2,7 @@
 
 namespace Jurager\Teams;
 
-class OwnerRole extends Role
+class Owner extends Role
 {
     /**
      * Create a new role instance.

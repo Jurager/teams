@@ -6,26 +6,26 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\URL;
-use Jurager\Teams\TeamInvitation as TeamInvitationModel;
+use Jurager\Teams\Models\Invitation as InvitationModel;
 
-class TeamInvitation extends Mailable
+class Invitation extends Mailable
 {
     use Queueable, SerializesModels;
 
     /**
      * The team invitation instance.
      *
-     * @var \Jurager\Teams\TeamInvitation
+     * @var \Jurager\Teams\Models\Invitation
      */
     public $invitation;
 
     /**
      * Create a new message instance.
      *
-     * @param  \Jurager\Teams\TeamInvitation  $invitation
+     * @param  \Jurager\Teams\Models\Invitation  $invitation
      * @return void
      */
-    public function __construct(TeamInvitationModel $invitation)
+    public function __construct(InvitationModel $invitation)
     {
         $this->invitation = $invitation;
     }

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Jurager\Teams\Events\TeamCreated;
 use Jurager\Teams\Events\TeamDeleted;
 use Jurager\Teams\Events\TeamUpdated;
-use Jurager\Teams\Team as TeamModel;
+use Jurager\Teams\Models\Team as TeamModel;
 
 class Team extends TeamModel
 {

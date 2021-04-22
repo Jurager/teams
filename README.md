@@ -20,7 +20,7 @@ Team creation and deletion logic may be customized by modifying the relevant act
 [#](#inspecting-user-teams) Inspecting User Teams
 -------------------------------------------------
 
-Information about a user's teams may be accessed via the methods provided by the `Jurager\Teams\HasTeams` trait. This trait is automatically applied to your application's `App\Models\User` model during installation. This trait provides a variety of helpful methods that allow you to inspect a user's teams:
+Information about a user's teams may be accessed via the methods provided by the `Jurager\Teams\Traits\HasTeams` trait. This trait is automatically applied to your application's `App\Models\User` model during installation. This trait provides a variety of helpful methods that allow you to inspect a user's teams:
 
     // Access a user's currently selected team...
     $user->currentTeam : \Jurager\Teams\Team
@@ -112,7 +112,7 @@ Thankfully, package allows you to enable team member invitations for your applic
     
     'features' => [
         Features::api(),
-        Features::teams(['invitations' => true]),
+        Features::accountInvitation(),
         Features::accountDeletion(),
     ],
 
@@ -154,7 +154,7 @@ Available API permissions are automatically derived by combining all unique perm
 
 ### [#](#authorization) Authorization
 
-Of course, you will need a way to authorize that incoming requests initiated by a team member may actually be performed by that user. A user's team permissions may be inspected using the `hasTeamPermission` method available via the `Jurager\Teams\HasTeams` trait.
+Of course, you will need a way to authorize that incoming requests initiated by a team member may actually be performed by that user. A user's team permissions may be inspected using the `hasTeamPermission` method available via the `Jurager\Teams\Traits\HasTeams` trait.
 
 **There is typically not a need to inspect a user's role. You only need to inspect that the user has a given granular permission.** Roles are simply a presentational concept used to group granular permissions. Typically, you will execute calls to this method within your application's [authorization policies](https://laravel.com/docs/authorization) :
 

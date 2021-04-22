@@ -16,7 +16,7 @@ return [
     */
 
     'features' => [
-        Features::teams(['invitations' => true]),
+        Features::accountInvitation(),
         Features::accountDeletion(),
     ],
 
@@ -32,7 +32,7 @@ return [
 		'user'            => 'App\\Models\\User',
 		'team'            => 'App\\Models\\Team',
 		'membership'      => 'App\\Models\\Membership',
-		'team_invitation' => 'App\\Models\\TeamInvitation',
+		'invitation'      => 'App\\Models\\Invitation',
 	],
 
 	/*
@@ -47,7 +47,7 @@ return [
 		'users'            => 'users',
 		'teams'            => 'teams',
 		'team_user'        => 'team_user',
-		'team_invitations' => 'team_invitations',
+		'invitations'      => 'invitations',
 	],
 
 	/*

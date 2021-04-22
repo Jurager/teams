@@ -1,6 +1,6 @@
 <?php
 
-namespace Jurager\Teams;
+namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -34,9 +34,9 @@ abstract class Team extends Model
     public function users()
     {
         return $this->belongsToMany(Teams::userModel(), Teams::membershipModel())
-                        ->withPivot('role')
-                        ->withTimestamps()
-                        ->as('membership');
+			->withPivot('role')
+			->withTimestamps()
+			->as('membership');
     }
 
     /**
@@ -80,9 +80,9 @@ abstract class Team extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function teamInvitations()
+    public function invitations()
     {
-        return $this->hasMany(Teams::teamInvitationModel());
+        return $this->hasMany(Teams::invitationModel());
     }
 
     /**

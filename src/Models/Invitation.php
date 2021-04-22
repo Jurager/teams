@@ -1,21 +1,17 @@
 <?php
 
-namespace App\Models;
+namespace Jurager\Teams\Models;
 
-use Jurager\Teams\Teams;
-use Jurager\Teams\TeamInvitation as ModelTeamInvitation;
+use Illuminate\Database\Eloquent\Model;
 
-class TeamInvitation extends ModelTeamInvitation
+abstract class Invitation extends Model
 {
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
-    protected $fillable = [
-        'email',
-        'role',
-    ];
+    protected $fillable = [ 'email', 'role' ];
 
     /**
      * Get the team that the invitation belongs to.

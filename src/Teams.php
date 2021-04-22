@@ -60,7 +60,7 @@ class Teams
      *
      * @var string
      */
-    public static $teamInvitationModel = 'App\\Models\\TeamInvitation';
+    public static $invitationModel = 'App\\Models\\Invitation';
 
     /**
      * Determine if Teams has registered roles.
@@ -151,15 +151,15 @@ class Teams
         return array_values(array_intersect($permissions, static::$permissions));
     }
 
-    /**
-     * Determine if Teams is supporting team features.
-     *
-     * @return bool
-     */
-    public static function hasTeamFeatures()
-    {
-        return Features::hasTeamFeatures();
-    }
+	/**
+	 * Determine if the application is using any account invitation features.
+	 *
+	 * @return bool
+	 */
+	public static function hasAccountInvitationFeatures()
+	{
+		return Features::hasAccountInvitationFeatures();
+	}
 
     /**
      * Determine if the application is using any account deletion features.
@@ -291,9 +291,9 @@ class Teams
      *
      * @return string
      */
-    public static function teamInvitationModel()
+    public static function invitationModel()
     {
-        return static::$teamInvitationModel;
+        return static::$invitationModel;
     }
 
     /**
@@ -302,9 +302,9 @@ class Teams
      * @param  string  $model
      * @return static
      */
-    public static function useTeamInvitationModel(string $model)
+    public static function useInvitationModel(string $model)
     {
-        static::$teamInvitationModel = $model;
+        static::$invitationModel = $model;
 
         return new static;
     }
