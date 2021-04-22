@@ -2,6 +2,7 @@
 
 namespace Jurager\Teams\Models;
 
+use Jurager\Teams\Teams;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class Invitation extends Model
