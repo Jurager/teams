@@ -2,6 +2,7 @@
 
 namespace Jurager\Teams\Traits;
 
+use Jurager\Teams\Owner;
 use Jurager\Teams\Teams;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;

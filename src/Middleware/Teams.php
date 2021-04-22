@@ -22,11 +22,16 @@ class Teams
 	 * @param  string|null $options
 	 * @return boolean
 	 */
-	protected function authorization($type, $rolesPermissions, $team, $options)
+	protected function authorization($type, $params, $team, $options)
 	{
 		$method = $type == 'roles' ? 'hasTeamRole' : 'hasTeamPermission';
 
-		return !Auth::guest() && Auth::user()->$method($team, $rolesPermissions);
+		$team   = (\Jurager\Teams\Teams::teamModel())::where('id', $team)->first();
+
+		dd(Auth::user()->teamRole($team));
+
+		return !Auth::guest()
+			&& Auth::user()->$method($team, $params);
 	}
 
 	/**
