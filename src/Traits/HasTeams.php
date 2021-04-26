@@ -54,9 +54,9 @@ trait HasTeams
      *
      * @return \Illuminate\Support\Collection
      */
-    public function allTeams()
+    public function teams()
     {
-        return $this->ownedTeams->merge($this->teams)->sortBy('name');
+        return $this->ownedTeams->merge($this->belongedTeams)->sortBy('name');
     }
 
     /**
@@ -74,7 +74,7 @@ trait HasTeams
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function teams()
+    public function belongedTeams()
     {
         return $this->belongsToMany(Teams::teamModel(), Teams::membershipModel())
                         ->withPivot('role')

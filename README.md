@@ -26,13 +26,13 @@ Information about a user's teams may be accessed via the methods provided by the
     $user->currentTeam : \Jurager\Teams\Team
     
     // Access all of the team's (including owned teams) that a user belongs to...
-    $user->allTeams() : Illuminate\Support\Collection
+    $user->teams : Illuminate\Support\Collection
     
     // Access all of a user's owned teams...
     $user->ownedTeams : Illuminate\Database\Eloquent\Collection
     
     // Access all of the teams that a user belongs to but does not own...
-    $user->teams : Illuminate\Database\Eloquent\Collection
+    $user->belongedTeams : Illuminate\Database\Eloquent\Collection
 
     // Determine if a user owns a given team...
     $user->ownsTeam($team) : bool

@@ -33,9 +33,6 @@ class Teams
 		//
 		$team    = (\Jurager\Teams\Teams::teamModel())::where('id', $request->get($foreign))->first();
 
-		if(!$team) {
-			return false;
-		}
 
 		return !Auth::guest() && Auth::user()->$method($team, $params);
 	}
