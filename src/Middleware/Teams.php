@@ -24,7 +24,7 @@ class Teams
 	 * @param boolean $require
 	 * @return boolean
 	 */
-	protected function authorization(Request $request, $method, $params, $team_id, $require)
+	protected function authorization(Request $request, $method, $params, $team_id, $require = false)
 	{
 		// Determinate the method for checking the role or permissions
 		//
@@ -48,7 +48,7 @@ class Teams
 
 		// Check the permissions
 		//
-		return !Auth::guest() && Auth::user()->$method($team, $params);
+		return !Auth::guest() && Auth::user()->$method($team, $params, $require);
 	}
 
 	/**
