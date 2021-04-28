@@ -12,10 +12,10 @@ trait HasTeams
     /**
      * Determine if the given team is the current team.
      *
-     * @param  mixed  $team
+     * @param  $team
      * @return bool
      */
-    public function isCurrentTeam($team)
+    public function isCurrentTeam($team): bool
     {
         return $team->id === $this->currentTeam->id;
     }
@@ -25,7 +25,7 @@ trait HasTeams
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function currentTeam()
+    public function currentTeam(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
          return $this->belongsTo(Teams::teamModel(), config('teams.foreign_keys.current_team_id', 'current_team_id'));
     }
@@ -33,10 +33,10 @@ trait HasTeams
     /**
      * Switch the user's context to the given team.
      *
-     * @param  mixed  $team
+     * @param  $team
      * @return bool
      */
-    public function switchTeam($team)
+    public function switchTeam($team): bool
     {
         if (! $this->belongsToTeam($team)) {
             return false;
@@ -54,7 +54,7 @@ trait HasTeams
      *
      * @return \Illuminate\Support\Collection
      */
-    public function allTeams()
+    public function allTeams(): \Illuminate\Support\Collection
     {
         return $this->ownedTeams->merge($this->teams)->sortBy('name');
     }
@@ -64,7 +64,7 @@ trait HasTeams
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function ownedTeams()
+    public function ownedTeams(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Teams::teamModel());
     }
@@ -85,10 +85,10 @@ trait HasTeams
     /**
      * Determine if the user owns the given team.
      *
-     * @param  mixed  $team
+     * @param $team
      * @return bool
      */
-    public function ownsTeam($team)
+    public function ownsTeam($team): bool
     {
         return $this->id == $team->{$this->getForeignKey()};
     }
@@ -96,22 +96,22 @@ trait HasTeams
     /**
      * Determine if the user belongs to the given team.
      *
-     * @param  mixed  $team
+     * @param  $team
      * @return bool
      */
-    public function belongsToTeam($team)
+    public function belongsToTeam($team): bool
     {
         return $this->teams->contains(function ($t) use ($team) {
             return $t->id === $team->id;
         }) || $this->ownsTeam($team);
     }
 
-    /**
-     * Get the role that the user has on the team.
-     *
-     * @param  mixed  $team
-     * @return \Jurager\Teams\Role
-     */
+	/**
+	 * Get the role that the user has on the team.
+	 *
+	 * @param  $team
+	 * @return Owner|\Jurager\Teams\Role|void|null
+	 */
     public function teamRole($team)
     {
         if ($this->ownsTeam($team)) {
@@ -130,11 +130,11 @@ trait HasTeams
     /**
      * Determine if the user has the given role on the given team.
      *
-     * @param  mixed  $team
+     * @param  $team
      * @param  string  $role
      * @return bool
      */
-    public function hasTeamRole($team, string $role)
+    public function hasTeamRole($team, string $role): bool
     {
         if ($this->ownsTeam($team)) {
             return true;
@@ -148,10 +148,10 @@ trait HasTeams
     /**
      * Get the user's permissions for the given team.
      *
-     * @param  mixed  $team
+     * @param  $team
      * @return array
      */
-    public function teamPermissions($team)
+    public function teamPermissions($team): array
     {
         if ($this->ownsTeam($team)) {
             return ['*'];
@@ -167,11 +167,11 @@ trait HasTeams
     /**
      * Determine if the user has the given permission on the given team.
      *
-     * @param  mixed  $team
+     * @param  $team
      * @param  string  $permission
      * @return bool
      */
-    public function hasTeamPermission($team, string $permission)
+    public function hasTeamPermission($team, string $permission): bool
     {
         if ($this->ownsTeam($team)) {
             return true;

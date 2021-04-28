@@ -178,6 +178,56 @@ When building an application that provides both API support and team support, yo
                $user->tokenCan('flight:view');
     }
 
+[#](#middlewares) Middlewares
+-----------------------------------------
+
+### [#](#middlewares-configuration) Configuration
+
+The middleware is registered automatically as `role` and `permission`. If you want to change or customize them, go to your `config/teams.php` and set the `middleware.register` value to `false` and add the following to the `routeMiddleware` array in `app/Http/Kernel.php`:
+
+    'role' => \Jurager\Teams\Middleware\Role::class, 
+    'permission' => \Jurager\Teams\Middleware\Permission::class,
+
+### [#](#middlewares-routes) Routes
+
+You can use a middleware to filter routes and route groups by permission or role:
+
+    Route::group(['prefix' => 'admin', 'middleware' => ['role:admin,#team_id#']], function() {
+        Route::get('/', 'CommonController@commonIndex');
+        Route::get('/users', ['middleware' => ['permission:views-users,#team_id#'], 'uses' => 'CommonController@commonUsers']);
+    });
+
+Where `#team_id#` is your actual ID of the team in database. If you want to change or customize the name of this variable, go to your `config/teams.php` and set the `foreign_keys.team_id` value to follow your database structure.
+
+Note, that middleware logic may be varied on how you pass the `team_id` variable:
+
+You can pass the `team_id` variable as route param:
+ 
+    Route::get('/{team_id}/users', ['middleware' => ['permission:views-users'], 'uses' => 'CommonController@commonUsers']);
+
+You can pass the `team_id` variable directly as middleware option
+    
+     'middleware' => ['role:admin|root,#team_id#']
+
+You can pass the `team_id` variable with each GET/POST/PUT or other type requests.
+
+### [#](#middlewares-usage) Usage
+
+If you want to use OR operation use the pipe symbol:
+
+    'middleware' => ['role:admin|root,{team_id}']
+    // $user->hasTeamRole({team_id}, ['admin', 'root']);
+
+    'middleware' => ['permission:edit-post|edit-user']
+    // $user->hasTeamPermission({team_id}, ['edit-post', 'edit-user']);
+
+If you want to use AND functionality you can do:
+
+    'middleware' => ['role:admin|root,{team_id},require']
+    // $user->hasTeamRole({team_id}, ['admin', 'root'], '{team_id}', true);
+    
+    'middleware' => ['permission:edit-post|edit-user,{team_id},require']
+    // $user->hasTeamPermission({team_id}, ['edit-post', 'edit-user'], '{team_id}', true);
 
 
 ## License

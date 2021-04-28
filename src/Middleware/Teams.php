@@ -12,28 +12,42 @@ use Illuminate\Support\Facades\Redirect;
 
 class Teams
 {
+	const DELIMITER = '|';
+
 	/**
 	 * Check if the request has authorization to continue.
 	 *
-	 * @param  string $type
-	 * @param  string $rolesPermissions
-	 * @param  string|null $team
-	 * @param  string|null $options
+	 * @param \Illuminate\Http\Request $request
+	 * @param $method
+	 * @param $params
+	 * @param string|null $team_id
+	 * @param string|null $options
 	 * @return boolean
 	 */
-	protected function authorization(Request $request, $method, $params, $options)
+	protected function authorization(Request $request, $method, $params, $team_id, $options)
 	{
+		// Determinate the method for checking the role or permissions
+		//
 		$method  = $method == 'roles' ? 'hasTeamRole' : 'hasTeamPermission';
+
+		if (!is_array($params)) {
+			$params = explode(self::DELIMITER, $params);
+		}
 
 		// Foreign key for team_id field
 		//
 		$foreign = Config::get('teams.foreign_keys.team_id');
 
-		// Get the team model by requested foreign key
+		// If team id not directly passed get the id by request or route param
 		//
-		$team    = (\Jurager\Teams\Teams::teamModel())::where('id', $request->get($foreign))->first();
+		$foreign_id = $team_id ?? ($request->get($foreign) ?? $request->route($foreign));
 
+		// Get the team model
+		//
+		$team = (\Jurager\Teams\Teams::teamModel())::where('id', $request->get($foreign_id))->firstOrFail();
 
+		// Check the permissions
+		//
 		return !Auth::guest() && Auth::user()->$method($team, $params);
 	}
 
@@ -48,9 +62,9 @@ class Teams
 		$handler  = Config::get('teams.middleware.handlers.'.$handling);
 
 		if ($handling == 'abort') {
-			$defaultMessage = 'User does not have any of the necessary access rights.';
+			$message = 'User does not have any of the necessary access rights.';
 
-			return App::abort($handler['code'], $handler['message'] ?? $defaultMessage);
+			return App::abort($handler['code'], $handler['message'] ?? $message);
 		}
 
 		$redirect = Redirect::to($handler['url']);

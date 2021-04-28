@@ -13,13 +13,13 @@ class Permission extends Teams
 	 * @param  \Illuminate\Http\Request  $request
 	 * @param  Closure $next
 	 * @param  string  $permissions
-	 * @param  string|null  $team
+	 * @param  string|null  $team_id
 	 * @param  string|null  $options
 	 * @return mixed
 	 */
-	public function handle(Request $request, Closure $next, $permissions, $team = null, $options = '')
+	public function handle(Request $request, Closure $next, $permissions, $team_id = null, $options = '')
 	{
-		if (!$this->authorization($request, 'permissions', $permissions, $team, $options)) {
+		if (!$this->authorization($request, 'permissions', $permissions, $team_id, $options)) {
 			return $this->unauthorized();
 		}
 
