@@ -21,10 +21,10 @@ class Teams
 	 * @param $method
 	 * @param $params
 	 * @param string|null $team_id
-	 * @param string|null $options
+	 * @param boolean $require
 	 * @return boolean
 	 */
-	protected function authorization(Request $request, $method, $params, $team_id, $options)
+	protected function authorization(Request $request, $method, $params, $team_id, $require)
 	{
 		// Determinate the method for checking the role or permissions
 		//

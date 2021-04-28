@@ -127,18 +127,40 @@ trait HasTeams
         )->first()->membership->role);
     }
 
-    /**
-     * Determine if the user has the given role on the given team.
-     *
-     * @param  $team
-     * @param  string  $role
-     * @return bool
-     */
-    public function hasTeamRole($team, string $role): bool
+	/**
+	 * Determine if the user has the given role on the given team.
+	 *
+	 * @param  $team
+	 * @param string|array $role
+	 * @param bool $require
+	 * @return bool
+	 */
+    public function hasTeamRole($team, string|array $role, bool $require = false): bool
     {
         if ($this->ownsTeam($team)) {
             return true;
         }
+
+	    if (is_array($role)) {
+		    if (empty($role)) {
+			    return true;
+		    }
+
+		    foreach ($role as $roleName) {
+			    $hasRole = $this->hasTeamRole($team, $roleName);
+
+			    if ($hasRole && !$require) {
+				    return true;
+			    } elseif (!$hasRole && $require) {
+				    return false;
+			    }
+		    }
+
+		    // If we've made it this far and $requireAll is FALSE, then NONE of the roles were found.
+		    // If we've made it this far and $requireAll is TRUE, then ALL of the roles were found.
+		    // Return the value of $requireAll.
+		    return $require;
+	    }
 
         return $this->belongsToTeam($team) && optional(Teams::findRole($team->users->where(
             'id', $this->id
@@ -164,14 +186,15 @@ trait HasTeams
         return $this->teamRole($team)->permissions;
     }
 
-    /**
-     * Determine if the user has the given permission on the given team.
-     *
-     * @param  $team
-     * @param  string  $permission
-     * @return bool
-     */
-    public function hasTeamPermission($team, string $permission): bool
+	/**
+	 * Determine if the user has the given permission on the given team.
+	 *
+	 * @param  $team
+	 * @param string|array $permission
+	 * @param bool $require
+	 * @return bool
+	 */
+    public function hasTeamPermission($team, string|array $permission, bool $require = false): bool
     {
         if ($this->ownsTeam($team)) {
             return true;
@@ -181,11 +204,32 @@ trait HasTeams
             return false;
         }
 
-        if (in_array(HasApiTokens::class, class_uses_recursive($this)) &&
-            ! $this->tokenCan($permission) &&
-            $this->currentAccessToken() !== null) {
-            return false;
-        }
+	    if (is_array($permission)) {
+		    if (empty($permission)) {
+			    return true;
+		    }
+
+		    foreach ($permission as $permissionName) {
+			    $hasPermission = $this->hasTeamPermission($team, $permissionName);
+
+			    if ($hasPermission && !$require) {
+				    return true;
+			    } elseif (!$hasPermission && $require) {
+				    return false;
+			    }
+		    }
+
+		    // If we've made it this far and $requireAll is FALSE, then NONE of the perms were found.
+		    // If we've made it this far and $requireAll is TRUE, then ALL of the perms were found.
+		    // Return the value of $requireAll.
+		    return $require;
+	    }
+
+        //if (in_array(HasApiTokens::class, class_uses_recursive($this)) &&
+        //    ! $this->tokenCan($permission) &&
+        //    $this->currentAccessToken() !== null) {
+        //    return false;
+        //}
 
         $permissions = $this->teamPermissions($team);
 

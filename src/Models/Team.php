@@ -64,16 +64,17 @@ abstract class Team extends Model
         });
     }
 
-    /**
-     * Determine if the given user has the given permission on the team.
-     *
-     * @param  \App\Models\User  $user
-     * @param  string  $permission
-     * @return bool
-     */
-    public function userHasPermission($user, $permission)
+	/**
+	 * Determine if the given user has the given permission on the team.
+	 *
+	 * @param \App\Models\User $user
+	 * @param string|array $permission
+	 * @param bool $require
+	 * @return bool
+	 */
+    public function userHasPermission($user, string|array $permission, bool $require = false)
     {
-        return $user->hasTeamPermission($this, $permission);
+        return $user->hasTeamPermission($this, $permission, $require);
     }
 
     /**
