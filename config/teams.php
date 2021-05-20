@@ -82,6 +82,8 @@ return [
 		'team'            => \App\Models\Team::class,
 		'membership'      => \App\Models\Membership::class,
 		'invitation'      => \App\Models\Invitation::class,
+		'ability'         => \App\Models\Ability::class,
+		'permission'      => \App\Models\Permission::class,
 	],
 
 	/*
@@ -97,6 +99,8 @@ return [
 		'teams'            => 'teams',
 		'team_user'        => 'team_user',
 		'invitations'      => 'invitations',
+		'permissions'      => 'permissions',
+		'abilities'        => 'abilities',
 	],
 
 	/*
