@@ -34,12 +34,26 @@ class Teams
      */
     public static $defaultPermissions = [];
 
-    /**
-     * The user model that should be used by Teams.
-     *
-     * @var string
-     */
-    public static $userModel = 'App\\Models\\User';
+	/**
+	 * The user model that should be used by Teams.
+	 *
+	 * @var string
+	 */
+	public static $userModel = 'App\\Models\\User';
+
+	/**
+	 * The ability model that should be used by Teams.
+	 *
+	 * @var string
+	 */
+	public static $abilityModel = 'App\\Models\\Ability';
+
+	/**
+	 * The permission model that should be used by Teams.
+	 *
+	 * @var string
+	 */
+	public static $permissionModel = 'App\\Models\\Permission';
 
     /**
      * The team model that should be used by Teams.
@@ -227,6 +241,33 @@ class Teams
 
         return new static;
     }
+
+
+	/**
+	 * Specify the ability model that should be used by Teams.
+	 *
+	 * @param  string  $model
+	 * @return static
+	 */
+	public static function useAbilityModel(string $model)
+	{
+		static::$abilityModel = $model;
+
+		return new static;
+	}
+
+	/**
+	 * Specify the ability model that should be used by Teams.
+	 *
+	 * @param  string  $model
+	 * @return static
+	 */
+	public static function usePermissionModel(string $model)
+	{
+		static::$permissionModel = $model;
+
+		return new static;
+	}
 
     /**
      * Get the name of the team model used by the application.

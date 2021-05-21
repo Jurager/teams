@@ -2,6 +2,7 @@
 
 namespace Jurager\Teams\Traits;
 
+use Jurager\Teams\Models\Ability;
 use Jurager\Teams\Owner;
 use Jurager\Teams\Teams;
 use Illuminate\Support\Str;
@@ -201,13 +202,24 @@ trait HasTeams
 	}
 
 	/**
-	 * Allow user to perform an action
+	 * Allow user to perform an ability
 	 *
 	 * @param string|array $permission
 	 * @param $team
 	 */
-	public function allow(string|array $permission, $team) {
-		dd('allow '.$this->id.' to '. $permission.' at '.$team);
+	public function allow(string|array $ability, $entity, $team) {
+
+		// Get an ability to perform an action on specific entity object inside team
+		//
+		$ability = Teams::abilityModel()->where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
+
+		dd($ability);
+
+		if($ability) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**

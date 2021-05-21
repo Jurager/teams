@@ -35,7 +35,10 @@ class TeamsServiceProvider extends ServiceProvider
 
 	    Teams::useMembershipModel(config('teams.models.membership', '/App/Models/Membership'));
 	    Teams::useTeamModel(config('teams.models.team', '/App/Models/Team'));
-	    Teams::useUserModel(config('teams.models.user', '/App/Models/user'));
+	    Teams::useUserModel(config('teams.models.user', '/App/Models/User'));
+
+	    Teams::useAbilityModel(config('teams.models.ability', '/App/Models/Ability'));
+	    Teams::usePermissionModel(config('teams.models.permission', '/App/Models/Permission'));
 
         Teams::createTeamsUsing(CreateTeam::class);
         Teams::updateTeamNamesUsing(UpdateTeamName::class);
