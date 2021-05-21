@@ -191,6 +191,26 @@ trait HasTeams
     }
 
 	/**
+	 * Determinate if user can perform an action
+	 *
+	 * @param string|array $permission
+	 * @param $team
+	 */
+	public function can(string|array $permission, $team) {
+		dd($this->id.' can '. $permission.' at '.$team);
+	}
+
+	/**
+	 * Allow user to perform an action
+	 *
+	 * @param string|array $permission
+	 * @param $team
+	 */
+	public function allow(string|array $permission, $team) {
+		dd('allow '.$this->id.' to '. $permission.' at '.$team);
+	}
+
+	/**
 	 * Determine if the user has the given permission on the given team.
 	 *
 	 * @param  $team
