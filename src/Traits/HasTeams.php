@@ -197,8 +197,8 @@ trait HasTeams
 	 * @param string|array $permission
 	 * @param $team
 	 */
-	public function can(string|array $permission, $team) {
-		dd($this->id.' can '. $permission.' at '.$team);
+	public function allowed(string|array $permission, $team) {
+		dd($this->id.' is allowed to '. $permission.' at '.$team);
 	}
 
 	/**

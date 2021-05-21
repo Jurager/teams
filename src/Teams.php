@@ -269,15 +269,35 @@ class Teams
 		return new static;
 	}
 
-    /**
-     * Get the name of the team model used by the application.
-     *
-     * @return string
-     */
-    public static function teamModel()
-    {
-        return static::$teamModel;
-    }
+	/**
+	 * Get the name of the team model used by the application.
+	 *
+	 * @return string
+	 */
+	public static function teamModel()
+	{
+		return static::$teamModel;
+	}
+
+	/**
+	 * Get the name of the ability model used by the application.
+	 *
+	 * @return string
+	 */
+	public static function abilityModel()
+	{
+		return static::$abilityModel;
+	}
+
+	/**
+	 * Get the name of the permission model used by the application.
+	 *
+	 * @return string
+	 */
+	public static function permissionModel()
+	{
+		return static::$permissionModel;
+	}
 
     /**
      * Get a new instance of the team model.
