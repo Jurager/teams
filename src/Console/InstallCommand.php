@@ -45,6 +45,8 @@ class InstallCommand extends Command
 		    copy(__DIR__.'/../../stubs/app/Models/Team.php', app_path('Models/Team.php'));
 	    }
 
+	    copy(__DIR__.'/../../stubs/app/Models/Ability.php', app_path('Models/Ability.php'));
+	    copy(__DIR__.'/../../stubs/app/Models/Permission.php', app_path('Models/Permission.php'));
 	    copy(__DIR__.'/../../stubs/app/Models/Membership.php', app_path('Models/Membership.php'));
 	    copy(__DIR__.'/../../stubs/app/Models/Invitation.php', app_path('Models/Invitation.php'));
 
