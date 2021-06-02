@@ -19,7 +19,7 @@ class Role extends Teams
 	 */
 	public function handle(Request $request, Closure $next, string $roles, $team_id = null, $options = '')
 	{
-		if (!$this->authorization($request,'roles', $roles, $team_id, $options)) {
+		if (!$this->authorization($request,'roles', $roles, $team_id, $options, [])) {
 			return $this->unauthorized();
 		}
 

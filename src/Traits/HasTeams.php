@@ -321,6 +321,7 @@ trait HasTeams
 		}
 
 		if (is_array($permission)) {
+			
 			if (empty($permission)) {
 				return true;
 			}
@@ -344,9 +345,29 @@ trait HasTeams
 
 		$permissions = $this->teamPermissions($team);
 
-		return in_array($permission, $permissions) ||
-			in_array('*', $permissions) ||
-			(Str::endsWith($permission, ':create') && in_array('*:create', $permissions)) ||
-			(Str::endsWith($permission, ':update') && in_array('*:update', $permissions));
+		$calculated  = [];
+		$abilities 	 = explode('.', $permission);
+
+		for($i=1; $i < count($abilities); $i++) {
+			$calculated[] = implode('.', array_slice($abilities, 0, $i)).'.*';
+		}
+
+
+		$calculated[] = $permission;
+		
+
+		foreach($calculated as $item) {
+			if(in_array($item, $permissions)) {
+				return true;
+			}
+		}
+
+		return false;
+
+
+		//return in_array($permission, $permissions) ||
+		//	in_array('*', $permissions) ||
+		//	(Str::endsWith($permission, ':create') && in_array('*:create', $permissions)) ||
+		//	(Str::endsWith($permission, ':update') && in_array('*:update', $permissions));
 	}
 }

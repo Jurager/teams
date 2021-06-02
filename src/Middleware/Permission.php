@@ -19,7 +19,7 @@ class Permission extends Teams
 	 */
 	public function handle(Request $request, Closure $next, $permissions, $team_id = null, $options = '')
 	{
-		if (!$this->authorization($request, 'permissions', $permissions, $team_id, $options)) {
+		if (!$this->authorization($request, 'permissions', $permissions, $team_id, $options, [])) {
 			return $this->unauthorized();
 		}
 

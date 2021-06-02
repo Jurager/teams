@@ -17,7 +17,7 @@ class Ability extends Teams
 	 * @param mixed ...$models
 	 * @return mixed
 	 */
-	public function handle(Request $request, Closure $next, string $ability, string $team_id = null, ...$models)
+	public function handle(Request $request, Closure $next, string $ability, ...$models)
 	{
 		if (!$this->authorization($request,'ability', $ability, null, false, $models)) {
 			return $this->unauthorized();

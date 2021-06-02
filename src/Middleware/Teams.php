@@ -52,6 +52,8 @@ class Teams
 		//
 		$team = (\Jurager\Teams\Teams::teamModel())::where('id', $foreign_id)->firstOrFail();
 
+		
+
 		// Check the ability
 		//
 		if($method == 'hasTeamAbility') {
@@ -81,7 +83,7 @@ class Teams
 			}
 
 
-			return $request->user()->hasTeamPermission($team, $params);
+			return false;
 		}
 
 		// Check the permissions
