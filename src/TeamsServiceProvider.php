@@ -6,72 +6,72 @@ use Illuminate\Support\ServiceProvider;
 
 class TeamsServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->mergeConfigFrom(__DIR__.'/../config/teams.php', 'teams');
-    }
+	/**
+	 * Register any application services.
+	 *
+	 * @return void
+	 */
+	public function register()
+	{
+		$this->mergeConfigFrom(__DIR__.'/../config/teams.php', 'teams');
+	}
 
-    /**
-     * Bootstrap any application services.
-     *
-     * @return void
-     */
-    public function boot()
-    {
-	    $this->loadViewsFrom(__DIR__.'/../resources/views', 'teams');
+	/**
+	 * Bootstrap any application services.
+	 *
+	 * @return void
+	 */
+	public function boot()
+	{
+		$this->loadViewsFrom(__DIR__.'/../resources/views', 'teams');
 
-        $this->configurePublishing();
-        $this->configureCommands();
-	    $this->registerMiddlewares();
-    }
+		$this->configurePublishing();
+		$this->configureCommands();
+		$this->registerMiddlewares();
+	}
 
-    /**
-     * Configure publishing for the package.
-     *
-     * @return void
-     */
-    protected function configurePublishing()
-    {
-        if (! $this->app->runningInConsole()) {
-            return;
-        }
+	/**
+	 * Configure publishing for the package.
+	 *
+	 * @return void
+	 */
+	protected function configurePublishing()
+	{
+		if (! $this->app->runningInConsole()) {
+			return;
+		}
 
-	    $this->publishes([
-		    __DIR__.'/../resources/views' => resource_path('views/vendor/teams'),
-	    ], 'teams-views');
+		$this->publishes([
+			__DIR__.'/../resources/views' => resource_path('views/vendor/teams'),
+		], 'teams-views');
 
-        $this->publishes([
-        	__DIR__.'/../config/teams.php' => config_path('teams.php')
-        ], 'teams-config');
+		$this->publishes([
+			__DIR__.'/../config/teams.php' => config_path('teams.php')
+		], 'teams-config');
 
-        $this->publishes([
-            __DIR__.'/../database/migrations/2014_10_12_000000_create_users_table.php'       => database_path('migrations/2014_10_12_000000_create_users_table.php'),
-	        __DIR__.'/../database/migrations/2020_05_21_100000_create_teams_table.php'       => database_path('migrations/2020_05_21_100000_create_teams_table.php'),
-	        __DIR__.'/../database/migrations/2020_05_21_200000_create_team_user_table.php'   => database_path('migrations/2020_05_21_200000_create_team_user_table.php'),
-	        __DIR__.'/../database/migrations/2020_05_21_300000_create_invitations_table.php' => database_path('migrations/2020_05_21_300000_create_invitations_table.php'),
-	        __DIR__.'/../database/migrations/2020_05_21_300000_create_abilities_table.php'   => database_path('migrations/2020_05_21_300000_create_abilities_table.php'),
-	        __DIR__.'/../database/migrations/2020_05_21_300000_create_permissions_table.php' => database_path('migrations/2020_05_21_300000_create_permissions_table.php')
-        ], 'teams-migrations');
-    }
+		$this->publishes([
+			__DIR__.'/../database/migrations/2014_10_12_000000_create_users_table.php'       => database_path('migrations/2014_10_12_000000_create_users_table.php'),
+			__DIR__.'/../database/migrations/2020_05_21_100000_create_teams_table.php'       => database_path('migrations/2020_05_21_100000_create_teams_table.php'),
+			__DIR__.'/../database/migrations/2020_05_21_200000_create_team_user_table.php'   => database_path('migrations/2020_05_21_200000_create_team_user_table.php'),
+			__DIR__.'/../database/migrations/2020_05_21_300000_create_invitations_table.php' => database_path('migrations/2020_05_21_300000_create_invitations_table.php'),
+			__DIR__.'/../database/migrations/2020_05_21_300000_create_abilities_table.php'   => database_path('migrations/2020_05_21_300000_create_abilities_table.php'),
+			__DIR__.'/../database/migrations/2020_05_21_300000_create_permissions_table.php' => database_path('migrations/2020_05_21_300000_create_permissions_table.php')
+		], 'teams-migrations');
+	}
 
-    /**
-     * Configure the commands offered by the application.
-     *
-     * @return void
-     */
-    protected function configureCommands()
-    {
-        if (! $this->app->runningInConsole()) {
-            return;
-        }
+	/**
+	 * Configure the commands offered by the application.
+	 *
+	 * @return void
+	 */
+	protected function configureCommands()
+	{
+		if (! $this->app->runningInConsole()) {
+			return;
+		}
 
-        $this->commands([ Console\InstallCommand::class ]);
-    }
+		$this->commands([ Console\InstallCommand::class ]);
+	}
 
 	/**
 	 * Register the middlewares automatically.
@@ -95,6 +95,7 @@ class TeamsServiceProvider extends ServiceProvider
 		}
 
 		$middlewares = [
+			'ability'    => \Jurager\Teams\Middleware\Ability::class,
 			'role'       => \Jurager\Teams\Middleware\Role::class,
 			'permission' => \Jurager\Teams\Middleware\Permission::class,
 		];

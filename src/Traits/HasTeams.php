@@ -130,6 +130,7 @@ trait HasTeams
 		return Teams::findRole($team->users->where(
 			'id', $this->id
 		)->first()->membership->role);
+
 	}
 
 	/**
@@ -195,14 +196,13 @@ trait HasTeams
 	 * Determinate if user can perform an action
 	 *
 	 * @param $team
-	 * @param string $ability
+	 * @param $ability
 	 * @param $entity
 	 * @param bool $require
 	 * @return bool
 	 */
-	public function hasTeamAbility($team, string $ability, $entity, bool $require = false): bool
+	public function hasTeamAbility($team, $ability, $entity, bool $require = false): bool
 	{
-
 		// Get an ability
 		//
 		$ability = Teams::abilityModel()::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
@@ -326,6 +326,7 @@ trait HasTeams
 			}
 
 			foreach ($permission as $permissionName) {
+
 				$hasPermission = $this->hasTeamPermission($team, $permissionName);
 
 				if ($hasPermission && !$require) {
@@ -340,12 +341,6 @@ trait HasTeams
 			// Return the value of $requireAll.
 			return $require;
 		}
-
-		//if (in_array(HasApiTokens::class, class_uses_recursive($this)) &&
-		//    ! $this->tokenCan($permission) &&
-		//    $this->currentAccessToken() !== null) {
-		//    return false;
-		//}
 
 		$permissions = $this->teamPermissions($team);
 

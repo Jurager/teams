@@ -26,16 +26,14 @@ class Teams
 	 * @param mixed ...$models
 	 * @return boolean
 	 */
-	protected function authorization(Request $request, $method, $params, ?string $team_id, bool $require = false, ...$models)
+	protected function authorization(Request $request, $method, $params, ?string $team_id, bool $require = false, $models)
 	{
 		// Determinate the method for checking the role or permissions
 		//
-		$method  = $method == 'roles' ? 'hasTeamRole' : 'hasTeamPermission';
-
 		$method = match ($method) {
 			'roles'       => 'hasTeamRole',
 			'permissions' => 'hasTeamPermission',
-			'can'         => 'hasTeamAbility'
+			'ability'     => 'hasTeamAbility'
 		};
 
 		if (!is_array($params)) {
@@ -56,28 +54,34 @@ class Teams
 
 		// Check the ability
 		//
-		if($method == 'can') {
+		if($method == 'hasTeamAbility') {
 
 			// Get the models
 			//
 			$args =  $this->getGateArguments($request, $models);
 
-			// Get the data from models
+			// Checking abilities to specific model object
 			//
-			$entity   = (($args[0] == 'App\Models\Team') ? $args[0]::where('id', $args[1])->first() : $args[0]::where('id', $args[1]))->first();
+			if(isset($args[1])) {
 
-			// Check the entity
-			//
-			if($entity) {
-
-				// Check the ability to entity for current user
+				// Get the data from models
 				//
-				if ($request->user()->hasTeamAbility($params, $team, $entity)) {
-					return true;
+				$entity   = (($args[0] == 'App\Models\Team') ? $args[0]::where('id', $args[1])->first() : $args[0]::where('id', $args[1]))->first();
+
+				// Check the entity
+				//
+				if($entity) {
+
+					// Check the ability to entity for current user
+					//
+					if ($request->user()->hasTeamAbility($team, $params, $entity)) {
+						return true;
+					}
 				}
 			}
 
-			return false;
+
+			return $request->user()->hasTeamPermission($team, $params);
 		}
 
 		// Check the permissions
