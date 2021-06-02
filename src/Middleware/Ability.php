@@ -19,7 +19,7 @@ class Ability extends Teams
 	 */
 	public function handle(Request $request, Closure $next, string $ability, string $team_id = null, ...$models)
 	{
-		if (!$this->authorization($request,'can', $ability, $team_id, $models)) {
+		if (!$this->authorization($request,'ability', $ability, null, false, $models)) {
 			return $this->unauthorized();
 		}
 
