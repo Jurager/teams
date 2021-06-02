@@ -52,6 +52,15 @@ Information about a user's teams may be accessed via the methods provided by the
     // Determine if a user has a given team permission...
     $user->hasTeamPermission($team, 'server:create') : bool
 
+    // Determine if a user has a given ability on certain model...
+    $user->hasTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+
+    // Add an ability for user to action on certain model, if permission is not found, will create a new one
+    $user->allowTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+
+    // Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
+    $user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+
 
 ### [#](#the-current-team) The Current Team
 
@@ -253,6 +262,15 @@ If you want to use AND functionality you can do:
     'middleware' => ['permission:edit-post|edit-user,{team_id},require']
     // $user->hasTeamPermission({team_id}, ['edit-post', 'edit-user'], '{team_id}', true);
 
+To check the `ability` to action on certain model item you can use `ability` middleware:
+    
+    'middleware' => ['ability:edit,App\Models\Article,atricle_id']
+
+In this case you need to pass `atricle_id` as `request param` or `route param` to allow package identify model object
+
+If you want to check `ability` to action on all model's items simply don't pass the `request param` or `route param` name 
+
+    'middleware' => ['ability:edit,App\Models\Article']
 
 ## License
 
