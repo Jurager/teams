@@ -178,6 +178,29 @@ When building an application that provides both API support and team support, yo
                $user->tokenCan('flight:view');
     }
 
+
+[#](#abilities) Abilities
+-------------------------------------------
+
+Adding abilities to users is made easy. You do not have to create a role or an ability in advance. Simply pass the name of the ability, and package will create it if it doesn't exist.
+
+Let's give the ability to edit an article in team for certain user, we need to pass the entity, at this example - article object, an team object
+
+    User::allowTeamAbility('edit', $article, $team))
+
+For example, to check this ability in feature, use:
+    
+    User::hasTeamAbility('edit', $article, $team);
+
+To forbid user from some ability (in case if role abilities is allowing this ability)
+
+    User::forbidTeamAbility('edit', $article, $team);
+
+To create abilities without attaching it to user, use the Ability model which is published during install
+    
+    Ability::firstOrCreate([ 'name' => 'edit', 'title' => 'Edit' ]);
+ 
+
 [#](#middlewares) Middlewares
 -----------------------------------------
 
@@ -185,8 +208,9 @@ When building an application that provides both API support and team support, yo
 
 The middleware is registered automatically as `role` and `permission`. If you want to change or customize them, go to your `config/teams.php` and set the `middleware.register` value to `false` and add the following to the `routeMiddleware` array in `app/Http/Kernel.php`:
 
-    'role' => \Jurager\Teams\Middleware\Role::class, 
+    'role'       => \Jurager\Teams\Middleware\Role::class, 
     'permission' => \Jurager\Teams\Middleware\Permission::class,
+    'ability'    => \Jurager\Teams\Middleware\Ability::class,
 
 ### [#](#middlewares-routes) Routes
 

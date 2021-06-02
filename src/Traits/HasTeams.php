@@ -194,10 +194,14 @@ trait HasTeams
 	/**
 	 * Determinate if user can perform an action
 	 *
-	 * @param string|array $permission
 	 * @param $team
+	 * @param string $ability
+	 * @param $entity
+	 * @param bool $require
+	 * @return bool
 	 */
-	public function allowed(string|array $ability, $entity, $team) {
+	public function hasTeamAbility($team, string $ability, $entity, bool $require = false): bool
+	{
 
 		// Get an ability
 		//
@@ -226,7 +230,7 @@ trait HasTeams
 	 * @param string|array $permission
 	 * @param $team
 	 */
-	public function allow(string|array $ability, $entity, $team) {
+	public function allowTeamAbility(string|array $ability, $entity, $team) {
 
 		// Get an ability to perform an action on specific entity object inside team
 		//
@@ -260,12 +264,12 @@ trait HasTeams
 	}
 
 	/**
-	 * Disallow user to perform an ability
+	 * Forbid user to perform an ability
 	 *
 	 * @param string|array $permission
 	 * @param $team
 	 */
-	public function disallow(string|array $ability, $entity, $team) {
+	public function forbidTeamAbility(string|array $ability, $entity, $team) {
 
 		// Get an ability to perform an action on specific entity object inside team
 		//
