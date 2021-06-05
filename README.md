@@ -55,11 +55,13 @@ Information about a user's teams may be accessed via the methods provided by the
     // Determine if a user has a given ability on certain model...
     $user->hasTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
 
+    // @todo:Refactor
     // Add an ability for user to action on certain model, if permission is not found, will create a new one
-    $user->allowTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+    $user->allowTeamAbility( (string|array) 'server:edit', (\App\Models\Server) $server, (Model) $team ) : bool
 
-    // Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
-    $user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+    // @todo:Refactor
+    // Forbid an ability for user to action on certain model, used in case if  global permission or role allowing this action
+    $user->forbidTeamAbility( (string|array) 'server:edit', (\App\Models\Server) $server, (Model) $team ) : bool
 
 
 ### [#](#the-current-team) The Current Team
@@ -95,6 +97,12 @@ The team object that is accessed via `$user->currentTeam` or other team-related 
     
     // Determine if the given user is a team member with the given permission...
     $team->userHasPermission($user, $permission) : bool
+
+    // Remove the given user from the team.
+    $team->removeUser( (Model) $user) : void
+
+    // Get all of the pending user invitations for the team.
+    $team->invitations() : Eloquent\Relations\HasMany
 
 
 [#](#member-management) Member Management
