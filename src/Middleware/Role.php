@@ -13,13 +13,13 @@ class Role extends Teams
 	 * @param  \Illuminate\Http\Request  $request
 	 * @param  Closure $next
 	 * @param  string $roles
-	 * @param  string|null  $team_id
-	 * @param  string|null  $options
+	 * @param string|null $team_id
+	 * @param string|null $options
 	 * @return mixed
 	 */
-	public function handle(Request $request, Closure $next, string $roles, $team_id = null, $options = '')
+	public function handle(Request $request, Closure $next, string $roles, string $team_id = null, ?string $options = '')
 	{
-		if (!$this->authorization($request,'roles', $roles, $team_id, $options, [])) {
+		if (!$this->authorization($request,'roles', $roles, $team_id, [], $options)) {
 			return $this->unauthorized();
 		}
 

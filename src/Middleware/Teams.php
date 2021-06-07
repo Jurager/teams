@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Redirect;
-use Silber\Bouncer\BouncerFacade as Bouncer;
 
 class Teams
 {
@@ -22,11 +21,11 @@ class Teams
 	 * @param $method
 	 * @param $params
 	 * @param string|null $team_id
+	 * @param $models
 	 * @param boolean $require
-	 * @param mixed ...$models
 	 * @return boolean
 	 */
-	protected function authorization(Request $request, $method, $params, ?string $team_id, bool $require = false, $models)
+	protected function authorization(Request $request, $method, $params, ?string $team_id, $models, bool $require = false)
 	{
 		// Determinate the method for checking the role or permissions
 		//
