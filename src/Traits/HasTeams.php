@@ -228,10 +228,12 @@ trait HasTeams
 	/**
 	 * Allow user to perform an ability
 	 *
-	 * @param string|array $permission
 	 * @param $team
+	 * @param string|array $ability
+	 * @param $entity
+	 * @return bool
 	 */
-	public function allowTeamAbility(string|array $ability, $entity, $team) {
+	public function allowTeamAbility($team, string|array $ability, $entity) {
 
 		// Get an ability to perform an action on specific entity object inside team
 		//
