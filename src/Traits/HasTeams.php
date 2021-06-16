@@ -168,9 +168,7 @@ trait HasTeams
 			return $require;
 		}
 
-		return $this->belongsToTeam($team) && optional(Teams::findRole($team->users->where(
-				'id', $this->id
-			)->first()->membership->role))->key === $role;
+		return $this->belongsToTeam($team) && optional(Teams::findRole($team->users->where( 'id', $this->id )->first()->membership->role))->key === $role;
 	}
 
 	/**
@@ -233,7 +231,8 @@ trait HasTeams
 	 * @param $entity
 	 * @return bool
 	 */
-	public function allowTeamAbility($team, string|array $ability, $entity) {
+	public function allowTeamAbility($team, string|array $ability, $entity): bool
+	{
 
 		// Get an ability to perform an action on specific entity object inside team
 		//
@@ -267,12 +266,28 @@ trait HasTeams
 	}
 
 	/**
+	 * Get all users abilities to specific entity
+	 *
+	 * @param $team
+	 * @param $entity
+	 * @return mixed
+	 */
+	public function teamAbilities($team, $entity)
+	{
+		return Teams::permissionModel()::where('team_id', $team->id)->with([ 'ability' => function($query) use ($entity) {
+			$query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
+		}])->get();
+	}
+
+	/**
 	 * Forbid user to perform an ability
 	 *
-	 * @param string|array $permission
 	 * @param $team
+	 * @param string|array $ability
+	 * @param $entity
+	 * @return bool
 	 */
-	public function forbidTeamAbility(string|array $ability, $entity, $team) {
+	public function forbidTeamAbility($team, string|array $ability, $entity) {
 
 		// Get an ability to perform an action on specific entity object inside team
 		//

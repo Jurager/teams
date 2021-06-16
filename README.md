@@ -61,6 +61,9 @@ Information about a user's teams may be accessed via the methods provided by the
     // Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
     $user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
 
+    // Get list of all abilities for users on certain model
+    $user->teamAbilities($team, \App\Models\Server $server) : mixed
+
 
 ### [#](#the-current-team) The Current Team
 

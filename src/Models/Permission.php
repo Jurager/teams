@@ -23,4 +23,9 @@ abstract class Permission extends Model
 	{
 		return $this->belongsTo(Teams::teamModel());
 	}
+
+	public function ability()
+	{
+		return $this->belongsTo(Teams::abilityModel());
+	}
 }
