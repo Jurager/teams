@@ -212,8 +212,9 @@ trait HasTeams
 			$permission = Teams::permissionModel()::where([
 				'team_id'       => $team->id,
 				'ability_id'    => $ability->id,
-				'entity_id'   => $this->id,
-				'entity_type' => get_class($this),
+				'entity_id'     => $this->id,
+				'entity_type'   => get_class($this),
+				'forbidden'     => 0
 			])->first();
 
 			if($permission) {
