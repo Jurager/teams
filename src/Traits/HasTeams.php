@@ -223,16 +223,31 @@ trait HasTeams
 		return false;
 	}
 
-	/**
-	 * Allow user to perform an ability
-	 *
-	 * @param $team
-	 * @param string|array $ability
-	 * @param $entity
-	 * @return bool
-	 */
-	public function allowTeamAbility($team, string|array $ability, $entity): bool
-	{
+    /**
+     * Get all users forbidden abilities to specific entity
+     *
+     * @param $team
+     * @param $entity
+     * @return mixed
+     */
+    public function getForbiddenAbilities($team, $entity): mixed
+    {
+        return Teams::permissionModel()::where(['team_id' => $team->id, 'forbidden' => 1])->whereHas('ability',function ($query) use ($entity){
+            $query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
+        })->with('ability')->first();
+
+    }
+
+    /**
+     * Allow user to perform an ability
+     *
+     * @param $team
+     * @param string|array $ability
+     * @param $entity
+     * @return bool
+     */
+    public function allowTeamAbility($team, string|array $ability, $entity): bool
+    {
 
 		// Get an ability to perform an action on specific entity object inside team
 		//
@@ -265,19 +280,20 @@ trait HasTeams
 		return false;
 	}
 
-	/**
-	 * Get all users abilities to specific entity
-	 *
-	 * @param $team
-	 * @param $entity
-	 * @return mixed
-	 */
-	public function teamAbilities($team, $entity)
-	{
-		return Teams::permissionModel()::where('team_id', $team->id)->with([ 'ability' => function($query) use ($entity) {
-			$query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
-		}])->get();
-	}
+    /**
+     * Get all users abilities to specific entity
+     *
+     * @param $team
+     * @param $entity
+     * @return mixed
+     */
+    public function teamAbilities($team, $entity)
+    {
+        return Teams::permissionModel()::where('team_id', $team->id)->whereHas('ability',function ($query) use ($entity){
+            $query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
+        })->with('ability')->get();
+
+    }
 
 	/**
 	 * Forbid user to perform an ability
