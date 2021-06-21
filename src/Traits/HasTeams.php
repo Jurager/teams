@@ -4,52 +4,13 @@ namespace Jurager\Teams\Traits;
 
 use Jurager\Teams\Models\Ability;
 use Jurager\Teams\Owner;
+use Jurager\Teams\Role;
 use Jurager\Teams\Teams;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
 trait HasTeams
 {
-	/**
-	 * Determine if the given team is the current team.
-	 *
-	 * @param  $team
-	 * @return bool
-	 */
-	public function isCurrentTeam($team): bool
-	{
-		return $team->id === $this->currentTeam->id;
-	}
-
-	/**
-	 * Get the current team of the user's context.
-	 *
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function currentTeam(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-	{
-		return $this->belongsTo(Teams::teamModel(), config('teams.foreign_keys.current_team_id', 'current_team_id'));
-	}
-
-	/**
-	 * Switch the user's context to the given team.
-	 *
-	 * @param  $team
-	 * @return bool
-	 */
-	public function switchTeam($team): bool
-	{
-		if (! $this->belongsToTeam($team)) {
-			return false;
-		}
-
-		$this->forceFill([ config('teams.foreign_keys.current_team_id', 'current_team_id') => $team->id ])->save();
-
-		$this->setRelation('currentTeam', $team);
-
-		return true;
-	}
-
 	/**
 	 * Get all of the teams the user owns or belongs to.
 	 *
@@ -115,7 +76,7 @@ trait HasTeams
 	 * Get the role that the user has on the team.
 	 *
 	 * @param  $team
-	 * @return Owner|\Jurager\Teams\Role|void|null
+	 * @return Role
 	 */
 	public function teamRole($team)
 	{
@@ -127,10 +88,7 @@ trait HasTeams
 			return;
 		}
 
-		return Teams::findRole($team->users->where(
-			'id', $this->id
-		)->first()->membership->role);
-
+		return Teams::findRole($team->users->where( 'id', $this->id)->first()->membership->role);
 	}
 
 	/**
@@ -191,6 +149,98 @@ trait HasTeams
 	}
 
 	/**
+	 * Determine if the user has the given permission on the given team.
+	 *
+	 * @param  $team
+	 * @param string|array $permission
+	 * @param bool $require
+	 * @return bool
+	 */
+	public function hasTeamPermission($team, string|array $permission, bool $require = false): bool
+	{
+		if ($this->ownsTeam($team)) {
+			return true;
+		}
+
+
+		if (! $this->belongsToTeam($team)) {
+			return false;
+		}
+
+		if (is_array($permission)) {
+
+			if (empty($permission)) {
+				return true;
+			}
+
+			foreach ($permission as $permissionName) {
+
+				$hasPermission = $this->hasTeamPermission($team, $permissionName);
+
+				if ($hasPermission && !$require) {
+					return true;
+				} elseif (!$hasPermission && $require) {
+					return false;
+				}
+			}
+
+			// If we've made it this far and $requireAll is FALSE, then NONE of the perms were found.
+			// If we've made it this far and $requireAll is TRUE, then ALL of the perms were found.
+			// Return the value of $requireAll.
+			return $require;
+		}
+
+		$permissions = $this->teamPermissions($team);
+
+		$calculated  = [];
+		$abilities 	 = explode('.', $permission);
+
+		for($i=1; $i < count($abilities); $i++) {
+			$calculated[] = implode('.', array_slice($abilities, 0, $i)).'.*';
+		}
+
+
+		$calculated[] = $permission;
+
+
+		foreach($calculated as $item) {
+			if(in_array($item, $permissions)) {
+				return true;
+			}
+
+		}
+
+		return false;
+
+
+		//return in_array($permission, $permissions) ||
+		//	in_array('*', $permissions) ||
+		//	(Str::endsWith($permission, ':create') && in_array('*:create', $permissions)) ||
+		//	(Str::endsWith($permission, ':update') && in_array('*:update', $permissions));
+	}
+
+	/**
+	 * Get all users abilities to specific entity
+	 *
+	 * @param $team
+	 * @param $entity
+	 * @param bool $forbidden
+	 * @return mixed
+	 */
+	public function teamAbilities($team, $entity, bool $forbidden = false)
+	{
+		return Teams::permissionModel()::where([
+			'team_id'       => $team->id,
+			'entity_id'     => $this->id,
+			'entity_type'   => $this::class,
+			'forbidden'     => $forbidden,
+		])->with('ability',function ($query) use ($entity){
+			$query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
+		})->get();
+
+	}
+
+	/**
 	 * Determinate if user can perform an action
 	 *
 	 * @param $team
@@ -202,7 +252,6 @@ trait HasTeams
 	public function hasTeamAbility($team, $ability, $entity, bool $require = false): bool
 	{
 		// Get an ability
-		//
 		$ability = Teams::abilityModel()::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
 
 		if($ability) {
@@ -233,15 +282,12 @@ trait HasTeams
 	 */
 	public function allowTeamAbility($team, string|array $ability, $entity): bool
 	{
-
 		// Get an ability to perform an action on specific entity object inside team
-		//
 		$ability = Teams::abilityModel()::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
 
 		if($ability) {
 
 			// Create a new permission for user entity
-			//
 			$permission = Teams::permissionModel()::firstOrNew(
 				[
 					'team_id'     => $team->id,
@@ -263,20 +309,6 @@ trait HasTeams
 		}
 
 		return false;
-	}
-
-	/**
-	 * Get all users abilities to specific entity
-	 *
-	 * @param $team
-	 * @param $entity
-	 * @return mixed
-	 */
-	public function teamAbilities($team, $entity)
-	{
-		return Teams::permissionModel()::where('team_id', $team->id)->with([ 'ability' => function($query) use ($entity) {
-			$query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
-		}])->get();
 	}
 
 	/**
@@ -318,74 +350,5 @@ trait HasTeams
 		}
 
 		return false;
-	}
-
-	/**
-	 * Determine if the user has the given permission on the given team.
-	 *
-	 * @param  $team
-	 * @param string|array $permission
-	 * @param bool $require
-	 * @return bool
-	 */
-	public function hasTeamPermission($team, string|array $permission, bool $require = false): bool
-	{
-		if ($this->ownsTeam($team)) {
-			return true;
-		}
-
-		if (! $this->belongsToTeam($team)) {
-			return false;
-		}
-
-		if (is_array($permission)) {
-			
-			if (empty($permission)) {
-				return true;
-			}
-
-			foreach ($permission as $permissionName) {
-
-				$hasPermission = $this->hasTeamPermission($team, $permissionName);
-
-				if ($hasPermission && !$require) {
-					return true;
-				} elseif (!$hasPermission && $require) {
-					return false;
-				}
-			}
-
-			// If we've made it this far and $requireAll is FALSE, then NONE of the perms were found.
-			// If we've made it this far and $requireAll is TRUE, then ALL of the perms were found.
-			// Return the value of $requireAll.
-			return $require;
-		}
-
-		$permissions = $this->teamPermissions($team);
-
-		$calculated  = [];
-		$abilities 	 = explode('.', $permission);
-
-		for($i=1; $i < count($abilities); $i++) {
-			$calculated[] = implode('.', array_slice($abilities, 0, $i)).'.*';
-		}
-
-
-		$calculated[] = $permission;
-		
-
-		foreach($calculated as $item) {
-			if(in_array($item, $permissions)) {
-				return true;
-			}
-		}
-
-		return false;
-
-
-		//return in_array($permission, $permissions) ||
-		//	in_array('*', $permissions) ||
-		//	(Str::endsWith($permission, ':create') && in_array('*:create', $permissions)) ||
-		//	(Str::endsWith($permission, ':update') && in_array('*:update', $permissions));
 	}
 }

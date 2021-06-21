@@ -40,6 +40,17 @@ abstract class Team extends Model
 			->as('membership');
     }
 
+	/**
+	 * @return mixed
+	 */
+	public function abilities()
+	{
+		return $this->belongsToMany(Teams::permissionModel(), Teams::abilityModel())
+			->withPivot('permissions')
+			->withTimestamps()
+			->as('membership');
+	}
+
     /**
      * Determine if the given user belongs to the team.
      *

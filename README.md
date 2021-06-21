@@ -22,17 +22,11 @@ Team creation and deletion logic may be customized by modifying the relevant act
 
 Information about a user's teams may be accessed via the methods provided by the `Jurager\Teams\Traits\HasTeams` trait. This trait is automatically applied to your application's `App\Models\User` model during installation. This trait provides a variety of helpful methods that allow you to inspect a user's teams:
 
-    // Access a user's currently selected team...
-    $user->currentTeam : \Jurager\Teams\Team
-    
     // Access all of the team's (including owned teams) that a user belongs to...
     $user->teams : Illuminate\Support\Collection
     
     // Access all of a user's owned teams...
     $user->ownedTeams : Illuminate\Database\Eloquent\Collection
-    
-    // Access all of the teams that a user belongs to but does not own...
-    $user->belongedTeams : Illuminate\Database\Eloquent\Collection
 
     // Determine if a user owns a given team...
     $user->ownsTeam($team) : bool
@@ -52,6 +46,9 @@ Information about a user's teams may be accessed via the methods provided by the
     // Determine if a user has a given team permission...
     $user->hasTeamPermission($team, 'server:create') : bool
 
+    // Get list of abilities or forbidden abilities for users on certain model
+    $user->teamAbilities($team, \App\Models\Server $server) : mixed
+
     // Determine if a user has a given ability on certain model...
     $user->hasTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
 
@@ -61,25 +58,10 @@ Information about a user's teams may be accessed via the methods provided by the
     // Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
     $user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
 
-    // Get list of all abilities for users on certain model
-    $user->teamAbilities($team, \App\Models\Server $server) : mixed
-
-
-### [#](#the-current-team) The Current Team
-
-Every user within a application has a "current team". This is the team that the user is actively viewing resources for. For example, if you are building a calendar application, your application would display the upcoming calendar events for the user's current team.
-
-You may access the user's current team using the `$user->currentTeam` Eloquent relationship. This relationship may be used to scope your other Eloquent queries by the user's current team:
-
-    use App\Models\Calendar;
-    
-    return Calendar::where(
-        'team_id', $request->user()->currentTeam->id
-    )->get();
 
 ### [#](#the-team-object) The Team Object
 
-The team object that is accessed via `$user->currentTeam` or other team-related Eloquent queries provides a variety of useful methods for inspecting the team's attributes and relationships:
+The team object that is accessed via `$user->team` or other team-related Eloquent queries provides a variety of useful methods for inspecting the team's attributes and relationships:
 
     // Access the team's owner...
     $team->owner : App\Models\User
