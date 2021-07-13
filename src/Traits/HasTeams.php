@@ -229,15 +229,19 @@ trait HasTeams
 	 */
 	public function teamAbilities($team, $entity, bool $forbidden = false)
 	{
-		return Teams::permissionModel()::where([
+		$permissions = Teams::permissionModel()::where([
 			'team_id'       => $team->id,
 			'entity_id'     => $this->id,
-			'entity_type'   => $this::class,
-			'forbidden'     => $forbidden,
-		])->with('ability',function ($query) use ($entity){
-			$query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
-		})->get();
+			'entity_type'   => $this::class
+		]);
 
+		if($forbidden) {
+			$permissions = $permissions->where('forbidden', true);
+		}
+
+		return $permissions->whereHas('ability',function ($query) use ($entity){
+			$query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
+		})->with('ability')->get();
 	}
 
 	/**
