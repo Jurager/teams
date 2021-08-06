@@ -5,11 +5,8 @@ namespace Jurager\Teams\Traits;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Jurager\Teams\Models\Ability;
 use Jurager\Teams\Owner;
 use Jurager\Teams\Teams;
-use Illuminate\Support\Str;
-use Laravel\Sanctum\HasApiTokens;
 
 trait HasTeams
 {
@@ -86,16 +83,16 @@ trait HasTeams
 	 * Get the role that the user has on the team.
 	 *
 	 * @param  $team
-	 * @return Role|Owner
+	 * @return mixed
 	 */
-	public function teamRole($team): Role|Owner
+	public function teamRole($team): mixed
 	{
 		if ($this->ownsTeam($team)) {
 			return new Owner;
 		}
 
 		if (! $this->belongsToTeam($team)) {
-			return;
+			return null;
 		}
 
         return $team->findRole($team->users->where( 'id', $this->id)->first()->membership->role);
