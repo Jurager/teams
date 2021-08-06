@@ -52,7 +52,7 @@ class TeamsServiceProvider extends ServiceProvider
 		$this->publishes([
 			__DIR__.'/../database/migrations/2014_10_12_000000_create_users_table.php'           => database_path('migrations/2014_10_12_000000_create_users_table.php'),
 			__DIR__.'/../database/migrations/2020_05_21_100000_create_teams_table.php'           => database_path('migrations/2020_05_21_100000_create_teams_table.php'),
-			__DIR__.'/../database/migrations/2020_05_21_200000_create_team_user_table.php'       => database_path('migrations/2020_05_21_200000_create_team_user_table.php'),
+			__DIR__.'/../database/migrations/2020_05_21_100000_create_teams_table.php'           => database_path('migrations/2020_05_21_100000_create_teams_table.php.php'),
 			__DIR__.'/../database/migrations/2020_05_21_300000_create_invitations_table.php'     => database_path('migrations/2020_05_21_300000_create_invitations_table.php'),
 			__DIR__.'/../database/migrations/2020_05_21_300000_create_abilities_table.php'       => database_path('migrations/2020_05_21_300000_create_abilities_table.php'),
 			__DIR__.'/../database/migrations/2020_05_21_300000_create_permissions_table.php'     => database_path('migrations/2020_05_21_300000_create_permissions_table.php'),
