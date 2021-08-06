@@ -15,14 +15,13 @@ class CreateAbilitiesTable extends Migration
     {
         Schema::create(config('teams.tables.abilities', 'abilities'), function (Blueprint $table) {
             $table->id();
-	        $table->foreignId('team_id')->constrained()->cascadeOnDelete();
-	        $table->string('name');
-	        $table->string('title');
-	        $table->string('entity_id');
-	        $table->string('entity_type');
-	        $table->boolean('only_owned');
-	        $table->text('options');
-	        $table->timestamps();
+            $table->foreignId('team_id')->constrained()->cascadeOnDelete();
+            $table->string('name');
+            $table->string('title');
+            $table->morphs('entity');
+            $table->boolean('only_owned');
+            $table->text('options');
+            $table->timestamps();
         });
     }
 

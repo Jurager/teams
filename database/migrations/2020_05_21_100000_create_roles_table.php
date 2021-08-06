@@ -16,9 +16,9 @@ class CreateRolesTable extends Migration
         Schema::create(config('teams.tables.roles', 'roles'), function (Blueprint $table) {
             $table->id();
             $table->foreignId('team_id')->constrained()->cascadeOnDelete();
-	        $table->string('name');
-	        $table->string('description')->nullable();
-	        $table->integer('level')->nullable();
+            $table->string('name');
+            $table->string('description')->nullable();
+            $table->integer('level')->nullable();
         });
     }
 

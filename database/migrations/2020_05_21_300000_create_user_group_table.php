@@ -15,8 +15,8 @@ class CreateUserGroupTable extends Migration
     {
         Schema::create(config('teams.tables.user_group', 'user_group'), function (Blueprint $table) {
             $table->id();
-	        $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-	        $table->foreignId('group_id')->constrained('team_groups')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('group_id')->constrained('team_groups')->cascadeOnDelete();
         });
     }
 

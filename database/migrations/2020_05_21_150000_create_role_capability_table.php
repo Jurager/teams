@@ -15,7 +15,7 @@ class CreateRoleCapabilityTable extends Migration
     {
         Schema::create(config('teams.tables.role_capability', 'role_capability'), function (Blueprint $table) {
             $table->id();
-	        $table->foreignId('role_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('role_id')->constrained()->cascadeOnDelete();
             $table->foreignId('capability_id')->constrained()->cascadeOnDelete();
         });
     }
