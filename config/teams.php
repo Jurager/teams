@@ -115,4 +115,14 @@ return [
 		'team_id'         => 'team_id',
 		'current_team_id' => 'current_team_id'
 	],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Support
+    |--------------------------------------------------------------------------
+    |
+    | Support's field in users table
+    |
+    */
+    'support_field' => 'is_support'
 ];

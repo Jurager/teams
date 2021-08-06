@@ -2,9 +2,11 @@
 
 namespace Jurager\Teams\Traits;
 
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Jurager\Teams\Models\Ability;
 use Jurager\Teams\Owner;
-use Jurager\Teams\Role;
 use Jurager\Teams\Teams;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
@@ -14,9 +16,9 @@ trait HasTeams
 	/**
 	 * Get all of the teams the user owns or belongs to.
 	 *
-	 * @return \Illuminate\Support\Collection
+	 * @return Collection
 	 */
-	public function allTeams(): \Illuminate\Support\Collection
+	public function allTeams(): Collection
 	{
 		return $this->ownedTeams->merge($this->teams)->sortBy('name');
 	}
@@ -24,9 +26,9 @@ trait HasTeams
 	/**
 	 * Get all of the teams the user owns.
 	 *
-	 * @return \Illuminate\Database\Eloquent\Relations\HasMany
+	 * @return HasMany
 	 */
-	public function ownedTeams(): \Illuminate\Database\Eloquent\Relations\HasMany
+	public function ownedTeams(): HasMany
 	{
 		return $this->hasMany(Teams::teamModel());
 	}
@@ -34,9 +36,9 @@ trait HasTeams
 	/**
 	 * Get all of the teams the user belongs to.
 	 *
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+	 * @return BelongsToMany
 	 */
-	public function teams()
+	public function teams(): BelongsToMany
 	{
 		return $this->belongsToMany(Teams::teamModel(), Teams::membershipModel())
 			->withPivot('role')
@@ -59,6 +61,14 @@ trait HasTeams
 		return $this->id == $team->{$this->getForeignKey()};
 	}
 
+    /**
+     * @return BelongsToMany
+     */
+    public function groups(): BelongsToMany
+    {
+        return $this->belongsToMany(Teams::$groupModel, 'user_group', 'user_id', 'group_id');
+    }
+
 	/**
 	 * Determine if the user belongs to the given team.
 	 *
@@ -76,9 +86,9 @@ trait HasTeams
 	 * Get the role that the user has on the team.
 	 *
 	 * @param  $team
-	 * @return Role
+	 * @return Role|Owner
 	 */
-	public function teamRole($team)
+	public function teamRole($team): Role|Owner
 	{
 		if ($this->ownsTeam($team)) {
 			return new Owner;
@@ -88,7 +98,7 @@ trait HasTeams
 			return;
 		}
 
-		return Teams::findRole($team->users->where( 'id', $this->id)->first()->membership->role);
+        return $team->findRole($team->users->where( 'id', $this->id)->first()->membership->role);
 	}
 
 	/**
@@ -126,7 +136,7 @@ trait HasTeams
 			return $require;
 		}
 
-		return $this->belongsToTeam($team) && optional(Teams::findRole($team->users->where( 'id', $this->id )->first()->membership->role))->key === $role;
+		return $this->belongsToTeam($team) && optional($team->findRole($team->users->where( 'id', $this->id)->first()->membership->role))->name === $role;
 	}
 
 	/**
@@ -158,6 +168,11 @@ trait HasTeams
 	 */
 	public function hasTeamPermission($team, string|array $permission, bool $require = false): bool
 	{
+
+		if ($this->{config('teams.support_field', 'is_support')}) {
+			return true;
+		}
+
 		if ($this->ownsTeam($team)) {
 			return true;
 		}
@@ -220,7 +235,7 @@ trait HasTeams
 	}
 
 	/**
-	 * Get all users abilities to specific entity
+	 * Get all abilities to specific entity
 	 *
 	 * @param $team
 	 * @param $entity
@@ -231,8 +246,6 @@ trait HasTeams
 	{
 		$permissions = Teams::permissionModel()::where([
 			'team_id'       => $team->id,
-			'entity_id'     => $this->id,
-			'entity_type'   => $this::class
 		]);
 
 		if($forbidden) {
@@ -255,25 +268,64 @@ trait HasTeams
 	 */
 	public function hasTeamAbility($team, $ability, $entity, bool $require = false): bool
 	{
+	    if ($this->{config('teams.support_field', 'is_support')}) {
+	        return true;
+        }
+
+	    if (method_exists($entity, 'isOwner') && $entity->isOwner($this)) {
+	        return true;
+        }
+
+	    $allow_level = 0;
+	    $forbidden_level = 1;
+
+	    if ($this->hasTeamPermission($team, $ability)) {
+	        $allow_level = 1;
+        }
+
 		// Get an ability
 		$ability = Teams::abilityModel()::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
 
 		if($ability) {
 
-			$permission = Teams::permissionModel()::where([
+			$permissions = Teams::permissionModel()::where([
 				'team_id'       => $team->id,
 				'ability_id'    => $ability->id,
-				'entity_id'     => $this->id,
-				'entity_type'   => get_class($this),
-				'forbidden'     => 0
-			])->first();
+			])->get();
 
-			if($permission) {
-				return true;
-			}
+			$role   = $this->teamRole($team);
+			$group  = $this->groups()->where('team_id', $team->id)->first();
+
+			$permission = $permissions->where('entity_id', $role->id)->firstWhere('entity_type', $role::class);
+
+			if ($permission) {
+			    $forbidden_level = 2;
+            }
+
+			if ($group) {
+                $permission = $permissions->where('entity_id', $group->id)->firstWhere('entity_type', $group::class);
+
+                if ($permission) {
+                    if ($permission->forbidden) {
+                        $forbidden_level = 3;
+                    } else {
+                        $allow_level = 2;
+                    }
+                }
+            }
+
+            $permission = $permissions->where('entity_id', $this->id)->firstWhere('entity_type', $this::class);
+
+            if ($permission) {
+                if ($permission->forbidden) {
+                    $forbidden_level = 4;
+                } else {
+                    $allow_level = 3;
+                }
+            }
 		}
 
-		return false;
+		return $allow_level <= $forbidden_level;
 	}
 
 	/**
@@ -282,10 +334,18 @@ trait HasTeams
 	 * @param $team
 	 * @param string|array $ability
 	 * @param $entity
+	 * @param $target
 	 * @return bool
 	 */
-	public function allowTeamAbility($team, string|array $ability, $entity): bool
+	public function allowTeamAbility($team, string|array $ability, $entity, $target): bool
 	{
+        $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
+        $abilityEdit  =  $entity_type.'s.edit';
+        
+        if (!$this->hasTeamAbility($team, $abilityEdit, $entity)) {
+            return false;
+        }
+	    
 		// Get an ability to perform an action on specific entity object inside team
 		$ability = Teams::abilityModel()::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
 
@@ -296,14 +356,14 @@ trait HasTeams
 				[
 					'team_id'     => $team->id,
 					'ability_id'  => $ability->id,
-					'entity_id'   => $this->id,
-					'entity_type' => get_class($this),
+					'entity_id'   => $target->id,
+					'entity_type' => get_class($target),
 					'forbidden'   => 0
 				],
 				[
 					'team_id'     => $team->id,
-					'entity_id'   => $this->id,
-					'entity_type' => get_class($this)
+					'entity_id'   => $target->id,
+					'entity_type' => get_class($target)
 				]
 			);
 
@@ -321,9 +381,17 @@ trait HasTeams
 	 * @param $team
 	 * @param string|array $ability
 	 * @param $entity
+	 * @param $target
 	 * @return bool
 	 */
-	public function forbidTeamAbility($team, string|array $ability, $entity) {
+	public function forbidTeamAbility($team, string|array $ability, $entity, $target) 
+    {
+        $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
+        $abilityEdit  =  $entity_type.'s.edit';
+
+        if (!$this->hasTeamAbility($team, $abilityEdit, $entity)) {
+            return false;
+        }
 
 		// Get an ability to perform an action on specific entity object inside team
 		//
@@ -337,14 +405,14 @@ trait HasTeams
 				[
 					'team_id'     => $team->id,
 					'ability_id'  => $ability->id,
-					'entity_id'   => $this->id,
-					'entity_type' => get_class($this),
+                    'entity_id'   => $target->id,
+                    'entity_type' => get_class($target),
 					'forbidden'   => 1
 				],
 				[
 					'team_id'     => $team->id,
-					'entity_id'   => $this->id,
-					'entity_type' => get_class($this)
+                    'entity_id'   => $target->id,
+                    'entity_type' => get_class($target)
 				]
 			);
 

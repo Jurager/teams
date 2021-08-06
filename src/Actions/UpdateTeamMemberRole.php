@@ -24,10 +24,10 @@ class UpdateTeamMemberRole
         Gate::forUser($user)->authorize('updateTeamMember', $team);
 
         Validator::make([ 'role' => $role ], [
-            'role' => ['required', 'string', new Role],
+            'role' => ['required', 'string', new Role($team)],
         ])->validate();
 
-        $team->users()->updateExistingPivot($teamMemberId, [ 'role' => $role ]);
+        $team->users()->updateExistingPivot($teamMemberId, [ 'role' => $team->roles->firstWhere('name', $role)->id ]);
 
         TeamMemberUpdated::dispatch($team->fresh(), Teams::findUserByIdOrFail($teamMemberId));
     }

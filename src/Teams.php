@@ -3,6 +3,7 @@
 namespace Jurager\Teams;
 
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Jurager\Teams\Contracts\AddsTeamMembers;
 use Jurager\Teams\Contracts\CreatesTeams;
 use Jurager\Teams\Contracts\DeletesTeams;
@@ -13,19 +14,13 @@ use Jurager\Teams\Contracts\UpdatesTeamNames;
 
 class Teams
 {
-	/**
-	 * The roles that are available to assign to users.
-	 *
-	 * @var array
-	 */
-	public static $roles = [];
 
 	/**
 	 * The permissions that exist within the application.
 	 *
-	 * @var array
+	 * @var Collection
 	 */
-	public static $permissions = [];
+	public static Collection $permissions;
 
 	/**
 	 * The default permissions that should be available to new entities.
@@ -47,6 +42,27 @@ class Teams
 	 * @var string
 	 */
 	public static $abilityModel = 'App\\Models\\Ability';
+
+    /**
+     * The capability model that should be used by Teams.
+     *
+     * @var string
+     */
+    public static $capabilityModel = 'App\\Models\\Capability';
+
+    /**
+     * The role model that should be used by Teams.
+     *
+     * @var string
+     */
+    public static $roleModel = 'App\\Models\\Role';
+
+    /**
+     * The group model that should be used by Teams.
+     *
+     * @var string
+     */
+    public static $groupModel = 'App\\Models\\Group';
 
 	/**
 	 * The permission model that should be used by Teams.
@@ -76,94 +92,52 @@ class Teams
 	 */
 	public static $invitationModel = 'App\\Models\\Invitation';
 
-	/**
-	 * Determine if Teams has registered roles.
-	 *
-	 * @return bool
-	 */
-	public static function hasRoles()
-	{
-		return count(static::$roles) > 0;
-	}
+    /**
+     * Determine if any permissions have been registered with Teams.
+     *
+     * @return bool
+     */
+    public static function hasPermissions()
+    {
+        return static::$permissions->count() > 0;
+    }
 
-	/**
-	 * Find the role with the given key.
-	 *
-	 * @param  string  $key
-	 * @return \Jurager\Teams\Role
-	 */
-	public static function findRole(string $key)
-	{
-		return static::$roles[$key] ?? null;
-	}
+    /**
+     * Define the available API token permissions.
+     *
+     * @param  Collection  $permissions
+     * @return static
+     */
+    public static function permissions(Collection $permissions)
+    {
+        static::$permissions = $permissions;
 
-	/**
-	 * Define a role.
-	 *
-	 * @param  string  $key
-	 * @param  string  $name
-	 * @param  array  $permissions
-	 * @return \Jurager\Teams\Role
-	 */
-	public static function role(string $key, string $name, array $permissions)
-	{
-		static::$permissions = collect(array_merge(static::$permissions, $permissions))
-			->unique()
-			->sort()
-			->values()
-			->all();
-
-		return tap(new Role($key, $name, $permissions), function ($role) use ($key) {
-			static::$roles[$key] = $role;
-		});
-	}
-
-	/**
-	 * Determine if any permissions have been registered with Teams.
-	 *
-	 * @return bool
-	 */
-	public static function hasPermissions()
-	{
-		return count(static::$permissions) > 0;
-	}
-
-	/**
-	 * Define the available API token permissions.
-	 *
-	 * @param  array  $permissions
-	 * @return static
-	 */
-	public static function permissions(array $permissions)
-	{
-		static::$permissions = $permissions;
-
-		return new static;
-	}
+        return new static();
+    }
 
 	/**
 	 * Define the default permissions that should be available to new API tokens.
 	 *
-	 * @param  array  $permissions
+	 * @param  Collection  $permissions
 	 * @return static
 	 */
-	public static function defaultApiTokenPermissions(array $permissions)
+	public static function defaultApiTokenPermissions(Collection $permissions)
 	{
 		static::$defaultPermissions = $permissions;
 
 		return new static;
 	}
 
-	/**
-	 * Return the permissions in the given list that are actually defined permissions for the application.
-	 *
-	 * @param  array  $permissions
-	 * @return array
-	 */
-	public static function validPermissions(array $permissions)
-	{
-		return array_values(array_intersect($permissions, static::$permissions));
-	}
+    /**
+     * Return the permissions in the given list that are actually defined permissions for the application.
+     *
+     * @param  array  $permissions
+     * @return array
+     */
+    public static function validPermissions(array $permissions)
+    {
+        return array_values(array_intersect($permissions, static::$permissions));
+    }
 
 	/**
 	 * Determine if the application is using any account invitation features.
@@ -256,6 +230,19 @@ class Teams
 		return new static;
 	}
 
+    /**
+     * Specify the capability model that should be used by Teams.
+     *
+     * @param  string  $model
+     * @return static
+     */
+    public static function useCapabilityModel(string $model)
+    {
+        static::$capabilityModel = $model;
+
+        return new static;
+    }
+
 	/**
 	 * Specify the ability model that should be used by Teams.
 	 *
@@ -324,7 +311,34 @@ class Teams
 		return new static;
 	}
 
-	/**
+    /**
+     * Specify the role model that should be used by Teams.
+     *
+     * @param  string  $model
+     * @return static
+     */
+    public static function useRoleModel(string $model)
+    {
+        static::$roleModel = $model;
+
+        return new static;
+    }
+
+    /**
+     * Specify the group model that should be used by Teams.
+     *
+     * @param  string  $model
+     * @return static
+     */
+    public static function useGroupModel(string $model)
+    {
+        static::$groupModel = $model;
+
+        return new static;
+    }
+
+
+    /**
 	 * Get the name of the membership model used by the application.
 	 *
 	 * @return string

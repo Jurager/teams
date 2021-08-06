@@ -7,6 +7,12 @@ use Jurager\Teams\Teams;
 
 class Role implements Rule
 {
+    
+    public function __construct(private $team)
+    {
+        
+    }
+    
     /**
      * Determine if the validation rule passes.
      *
@@ -16,7 +22,7 @@ class Role implements Rule
      */
     public function passes($attribute, $value)
     {
-        return in_array($value, array_keys(Teams::$roles));
+        return in_array($value, $this->team->roles->pluck('name')->toArray());
     }
 
     /**
