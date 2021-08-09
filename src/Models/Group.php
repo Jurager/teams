@@ -35,19 +35,23 @@ abstract class Group extends Model
 
     /**
      * @param $user
+     * @return bool
      */
-    public function attachUser($user)
+    public function attachUser($user): bool
     {
         if ($this->team->hasUser($user)) {
-            $this->users()->attach($user->id);
+            return $this->users()->sync($user, false);
         }
+
+        return false;
     }
 
     /**
      * @param $user
+     * @return int
      */
     public function detachUser($user)
     {
-        $this->users()->detach($user->id);
+        return $this->users()->detach($user->id);
     }
 }

@@ -178,7 +178,7 @@ abstract class Team extends Model
      * Find the role with the given id.
      *
      * @param  string  $id
-     * @return Model
+     * @return ?Model
      */
     public function findRole(string $id): Model
     {
