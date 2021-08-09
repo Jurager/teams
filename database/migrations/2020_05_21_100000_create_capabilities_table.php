@@ -15,7 +15,7 @@ class CreateCapabilitiesTable extends Migration
     {
         Schema::create(config('teams.tables.capabilities', 'capabilities'), function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name')->nullable();
             $table->string('code');
         });
     }
