@@ -19,10 +19,6 @@ abstract class Team extends Model
         'groups'
     ];
 
-    protected $appends = [
-        'roles',
-    ];
-
 	/**
 	 * Get the owner of the team.
 	 *
@@ -98,32 +94,91 @@ abstract class Team extends Model
         return count($this->roles) > 0;
     }
 
-	/**
-	 * @param string $name
-	 * @param array $capabilities
-	 * @return Model
-	 */
-    public function addRole(string $name, array $capabilities): Model
+    /**
+     * @param string $name
+     * @param array $capabilities
+     * @return
+     */
+    public function addRole(string $name, array $capabilities)
     {
         $role = $this->roles()->create(['name' => $name]);
-        $role->capabilities()->attach($capabilities);
+
+        $capability_ids = [];
+        foreach ($capabilities as $capability) {
+            $item = (Teams::$capabilityModel)::firstOrCreate(['code' => $capability]);
+            $capability_ids[] = $item->id;
+        }
+
+        $role->capabilities()->attach($capability_ids);
         return $role;
+    }
+
+    /**
+     * @param string $name
+     * @param array $capabilities
+     * @return
+     */
+    public function updateRole(string $name, array $capabilities)
+    {
+        $role = $this->roles()->firstWhere('name', $name);
+
+        if ($role) {
+            $capability_ids = [];
+            foreach ($capabilities as $capability) {
+                $item = (Teams::$capabilityModel)::firstOrCreate(['code' => $capability]);
+                $capability_ids[] = $item->id;
+            }
+
+            $role->capabilities()->sync($capability_ids);
+        }
+
+        return $role;
+    }
+
+    /**
+     * @param string $name
+     * @return bool
+     */
+    public function deleteRole(string $name)
+    {
+        $role = $this->roles()->firstWhere('name', $name);
+
+        if ($role) {
+            $this->roles()->delete($role);
+        }
+
+        return true;
     }
 
     /**
      * @param string $name
      * @return Model
      */
-    public function addGroup(string $name): Model
+    public function addGroup(string $name)
     {
         return $this->groups()->create(['name' => $name]);
+    }
+
+    /**
+     * @param string $name
+     * @return Model
+     */
+    public function deleteGroup(string $name)
+    {
+        $group = $this->groups->firstWhere('name', $name);
+
+        if ($group) {
+            $this->groups()->delete($group);
+        }
+
+        return true;
     }
 
     /**
      * Find the role with the given id.
      *
      * @param  string  $id
-     * @return Model
+     * @return ?Model
      */
     public function findRole(string $id): Model
     {
