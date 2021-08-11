@@ -366,17 +366,19 @@ trait HasTeams
         if ($ability) {
 
             // Create a new permission for user entity
-            $permission = Teams::permissionModel()::firstOrNew(
+            $permission = Teams::permissionModel()::updateOrCreate(
                 [
                     'team_id'     => $team->id,
                     'ability_id'  => $ability->id,
                     'entity_id'   => $target->id,
-                    'entity_type' => get_class($target),
+                    'entity_type' => get_class($target)
+                ],
+                [
                     'forbidden'   => 0
                 ]
             );
 
-            if ($permission->save()) {
+            if ($permission) {
                 return true;
             }
         }
@@ -393,7 +395,7 @@ trait HasTeams
      * @param $target
      * @return bool
      */
-    public function forbidTeamAbility($team, string|array $ability, $entity, $target)
+    public function forbidTeamAbility($team, string|array $ability, $entity, $target): bool
     {
         $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
         $abilityEdit  =  $entity_type.'s.edit';
@@ -404,23 +406,25 @@ trait HasTeams
 
         // Get an ability to perform an action on specific entity object inside team
         //
-        $ability = Teams::abilityModel()::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
+        $ability = Teams::abilityModel()::firstOrCreate(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id]);
 
         if ($ability) {
 
             // Create a new permission for user entity
             //
-            $permission = Teams::permissionModel()::firstOrNew(
+            $permission = Teams::permissionModel()::updateOrCreate(
                 [
                     'team_id'     => $team->id,
                     'ability_id'  => $ability->id,
                     'entity_id'   => $target->id,
-                    'entity_type' => get_class($target),
+                    'entity_type' => get_class($target)
+                ],
+                [
                     'forbidden'   => 1
                 ]
             );
 
-            if ($permission->save()) {
+            if ($permission) {
                 return true;
             }
         }
@@ -428,7 +432,16 @@ trait HasTeams
         return false;
     }
 
-    public function deleteAbility($team, string|array $ability, $entity, $target)
+    /**
+     * Delete user ability
+     *
+     * @param $team
+     * @param string|array $ability
+     * @param $entity
+     * @param $target
+     * @return bool
+     */
+    public function deleteTeamAbility($team, string|array $ability, $entity, $target): bool
     {
         $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
         $abilityEdit  =  $entity_type.'s.edit';
@@ -446,8 +459,7 @@ trait HasTeams
                 'team_id'     => $team->id,
                 'ability_id'  => $ability->id,
                 'entity_id'   => $target->id,
-                'entity_type' => get_class($target),
-                'forbidden'   => 1])->first();
+                'entity_type' => get_class($target)])->first();
 
             if ($permission) {
                 return $permission->delete();
