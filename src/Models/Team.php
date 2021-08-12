@@ -180,7 +180,7 @@ abstract class Team extends Model
      * @param  string  $id
      * @return ?Model
      */
-    public function findRole(string $id): Model
+    public function findRole(string $id): ?Model
     {
         return $this->roles->firstWhere('id', $id);
     }
