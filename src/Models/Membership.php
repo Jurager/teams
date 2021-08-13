@@ -3,6 +3,7 @@
 namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
+use Jurager\Teams\Teams;
 
 abstract class Membership extends Pivot
 {
@@ -11,5 +12,20 @@ abstract class Membership extends Pivot
      *
      * @var string
      */
-    protected $table = 'team_user';
+    protected $table;
+
+    public function __construct(array $attributes = [])
+    {
+        $this->table = config('teams.tables.team_user', 'team_user');
+        parent::__construct($attributes);
+    }
+
+    protected $with = [
+        'role'
+    ];
+
+    public function role()
+    {
+        return $this->belongsTo(Teams::$roleModel, 'role_id', 'id');
+    }
 }
