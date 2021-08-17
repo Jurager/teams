@@ -98,6 +98,7 @@ return [
 		'users'            => 'users',
 		'teams'            => 'teams',
 		'team_user'        => 'team_user',
+		'team_groups'	   => 'team_groups',
 		'invitations'      => 'invitations',
 		'permissions'      => 'permissions',
 		'abilities'        => 'abilities',
