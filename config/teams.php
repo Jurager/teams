@@ -99,6 +99,7 @@ return [
 		'teams'            => 'teams',
 		'team_user'        => 'team_user',
 		'team_groups'	   => 'team_groups',
+		'user_group'       => 'user_group',
 		'invitations'      => 'invitations',
 		'permissions'      => 'permissions',
 		'abilities'        => 'abilities',
