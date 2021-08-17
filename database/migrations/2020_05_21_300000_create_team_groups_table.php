@@ -15,7 +15,7 @@ class CreateTeamGroupsTable extends Migration
     {
         Schema::create(config('teams.tables.team_groups', 'team_groups'), function (Blueprint $table) {
             $table->id();
-            $table->foreignId('team_id')->constrained()->cascadeOnDelete();
+            $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
             $table->string('name');
         });
     }
