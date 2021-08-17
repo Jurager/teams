@@ -15,7 +15,7 @@ class CreatePermissionsTable extends Migration
     {
         Schema::create(config('teams.tables.permissions', 'permissions'), function (Blueprint $table) {
             $table->id();
-            $table->foreignId('team_id')->constrained()->cascadeOnDelete();
+            $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
             $table->foreignId('ability_id')->constrained()->cascadeOnDelete();
             $table->morphs('entity');
             $table->boolean('forbidden');
