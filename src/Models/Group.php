@@ -3,6 +3,7 @@
 namespace Jurager\Teams\Models;
 
 use Jurager\Teams\Teams;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class Group extends Model
@@ -34,24 +35,40 @@ abstract class Group extends Model
     }
 
     /**
-     * @param $user
-     * @return bool
+     * @param  object  $users
+     * @return array|bool
      */
-    public function attachUser($user): bool
+    public function attachUser(object $users): array|bool
     {
-        if ($this->team->hasUser($user)) {
-            return $this->users()->sync($user, false);
+        if ($users instanceof Collection) {
+            // Исключаем из коллекции пользователей которые не в текущей команде
+            //
+            $users = $users->reject(fn ($user) => !$this->team->hasUser($user));
+
+            // После сортировки проверяем на пустоту
+            //
+            return $users->isNotEmpty() ? $this->users()->sync($users, false) : false;
+        }
+
+        if ($users::class == Teams::$userModel) {
+            if ($this->team->hasUser($users)) {
+                return $this->users()->sync($users, false);
+            }
         }
 
         return false;
     }
 
     /**
-     * @param $user
+     * @param  object|array  $users
      * @return int
      */
-    public function detachUser($user)
+    public function detachUser(object|array $users): int
     {
-        return $this->users()->detach($user->id);
+        if (is_array($users)) {
+            return $this->users()->detach($users);
+        }
+        return $this->users()->detach($users->id);
     }
+
 }
