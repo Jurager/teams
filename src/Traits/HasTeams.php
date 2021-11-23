@@ -95,7 +95,13 @@ trait HasTeams
             return null;
         }
 
-        return $team->findRole($team->users->where('id', $this->id)->first()->membership->role);
+	    $role = $team->users
+		    ->where('id', $this->id)
+		    ->first()
+		    ->membership
+		    ->role;
+
+	    return $role ? Teams::findRole($role) : null;
     }
 
     /**
