@@ -101,7 +101,7 @@ trait HasTeams
 		    ->membership
 		    ->role;
 
-	    return $role ? Teams::findRole($role) : null;
+	    return $role ? $team->findRole($role) : null;
     }
 
     /**
