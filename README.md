@@ -3,7 +3,9 @@
 Teams is Laravel package using Jetstream's based teams to manage team functionality and operate with user permissions and abilities.
 
 ## Installation
-    composer require jurager/teams
+```sh
+composer require jurager/teams
+```
 
 Note, running command below can overwrite your directories and files, please make backup before.
 
@@ -22,64 +24,67 @@ Team creation and deletion logic may be customized by modifying the relevant act
 
 Information about a user's teams may be accessed via the methods provided by the `Jurager\Teams\Traits\HasTeams` trait. This trait is automatically applied to your application's `App\Models\User` model during installation. This trait provides a variety of helpful methods that allow you to inspect a user's teams:
 
-    // Access all of the team's (including owned teams) that a user belongs to...
-    $user->teams : Illuminate\Support\Collection
-    
-    // Access all of a user's owned teams...
-    $user->ownedTeams : Illuminate\Database\Eloquent\Collection
+```php
+// Access all of the team's (including owned teams) that a user belongs to...
+$user->teams : Illuminate\Support\Collection
 
-    // Determine if a user owns a given team...
-    $user->ownsTeam($team) : bool
-    
-    // Determine if a user belongs to a given team...
-    $user->belongsToTeam($team) : bool
-    
-    // Get the role that the user is assigned on the team...
-    $user->teamRole($team) : \Jurager\Teams\Role
-    
-    // Determine if the user has the given role on the given team...
-    $user->hasTeamRole($team, 'admin') : bool
-    
-    // Access an array of all permissions a user has for a given team...
-    $user->teamPermissions($team) : array
-    
-    // Determine if a user has a given team permission...
-    $user->hasTeamPermission($team, 'server:create') : bool
+// Access all of a user's owned teams...
+$user->ownedTeams : Illuminate\Database\Eloquent\Collection
 
-    // Get list of abilities or forbidden abilities for users on certain model
-    $user->teamAbilities($team, \App\Models\Server $server) : mixed
+// Determine if a user owns a given team...
+$user->ownsTeam($team) : bool
 
-    // Determine if a user has a given ability on certain model...
-    $user->hasTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+// Determine if a user belongs to a given team...
+$user->belongsToTeam($team) : bool
 
-    // Add an ability for user to action on certain model, if permission is not found, will create a new one
-    $user->allowTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+// Get the role that the user is assigned on the team...
+$user->teamRole($team) : \Jurager\Teams\Role
 
-    // Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
-    $user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+// Determine if the user has the given role on the given team...
+$user->hasTeamRole($team, 'admin') : bool
 
+// Access an array of all permissions a user has for a given team...
+$user->teamPermissions($team) : array
+
+// Determine if a user has a given team permission...
+$user->hasTeamPermission($team, 'server:create') : bool
+
+// Get list of abilities or forbidden abilities for users on certain model
+$user->teamAbilities($team, \App\Models\Server $server) : mixed
+
+// Determine if a user has a given ability on certain model...
+$user->hasTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+
+// Add an ability for user to action on certain model, if permission is not found, will create a new one
+$user->allowTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+
+// Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
+$user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+```
 
 ### [#](#the-team-object) The Team Object
 
 The team object that is accessed via `$user->team` or other team-related Eloquent queries provides a variety of useful methods for inspecting the team's attributes and relationships:
 
-    // Access the team's owner...
-    $team->owner : App\Models\User
-    
-    // Get all of the team's users, including the owner...
-    $team->allUsers() : Illuminate\Database\Eloquent\Collection
-    
-    // Get all of the team's users, excluding the owner...
-    $team->users : Illuminate\Database\Eloquent\Collection
-    
-    // Determine if the given user is a team member...
-    $team->hasUser($user) : bool
-    
-    // Determine if the team has a member with the given email address...
-    $team->hasUserWithEmail($emailAddress) : bool
-    
-    // Determine if the given user is a team member with the given permission...
-    $team->userHasPermission($user, $permission) : bool
+```php
+// Access the team's owner...
+$team->owner : App\Models\User
+
+// Get all of the team's users, including the owner...
+$team->allUsers() : Illuminate\Database\Eloquent\Collection
+
+// Get all of the team's users, excluding the owner...
+$team->users : Illuminate\Database\Eloquent\Collection
+
+// Determine if the given user is a team member...
+$team->hasUser($user) : bool
+
+// Determine if the team has a member with the given email address...
+$team->hasUserWithEmail($emailAddress) : bool
+
+// Determine if the given user is a team member with the given permission...
+$team->userHasPermission($user, $permission) : bool
+```
 
 
 [#](#member-management) Member Management
@@ -102,14 +107,15 @@ By default, package will simply add any existing application user that you speci
 
 Thankfully, package allows you to enable team member invitations for your application with just a few lines of code. To get started, pass the `invitations` option to configuration. This may be done by modifying the `features` array of your application's `config/teams.php` configuration file:
 
-    use Jurager\Teams\Features;
+```php
+use Jurager\Teams\Features;
     
-    'features' => [
-        Features::api(),
-        Features::accountInvitation(),
-        Features::accountDeletion(),
-    ],
-
+'features' => [
+    Features::api(),
+    Features::accountInvitation(),
+    Features::accountDeletion(),
+],
+```
 
 Once you have enabled invitations feature, users that are invited to teams will receive an invitation email with a link to accept the team invitation. Users will not be full members of the team until the invitation is accepted.
 
@@ -128,19 +134,20 @@ Each team member added to a team may be assigned a given role, and each role is 
 
 For example, imagine we are building a server management application such as [Laravel Forge](https://forge.laravel.com) . We might define our application's team roles like so:
 
-    Teams::defaultApiTokenPermissions(['read']);
+```php
+Teams::defaultApiTokenPermissions(['read']);
     
-    Teams::role('admin', 'Administrator', [
-        'server:create',
-        'server:read',
-        'server:update',
-        'server:delete',
-    ])->description('Administrator users can perform any action.');
-    
-    Teams::role('support', 'Support Specialist', [
-        'server:read',
-    ])->description('Support specialists can read server information.');
+Teams::role('admin', 'Administrator', [
+    'server:create',
+    'server:read',
+    'server:update',
+    'server:delete',
+])->description('Administrator users can perform any action.');
 
+Teams::role('support', 'Support Specialist', [
+    'server:read',
+])->description('Support specialists can read server information.');
+```
 
 Team API Support
 
@@ -152,7 +159,9 @@ Of course, you will need a way to authorize that incoming requests initiated by 
 
 **There is typically not a need to inspect a user's role. You only need to inspect that the user has a given granular permission.** Roles are simply a presentational concept used to group granular permissions. Typically, you will execute calls to this method within your application's [authorization policies](https://laravel.com/docs/authorization) :
 
-    return $user->hasTeamPermission($server->team, 'server:update');
+```php
+return $user->hasTeamPermission($server->team, 'server:update');
+```
 
 [#](#abilities) Abilities
 -------------------------------------------
@@ -161,19 +170,27 @@ Adding abilities to users is made easy. You do not have to create a role or an a
 
 Let's give the ability to edit an article in team for certain user, we need to pass the entity, at this example - article object, an team object
 
-    User::allowTeamAbility('edit', $article, $team))
+```php
+User::allowTeamAbility('edit', $article, $team));
+```
 
 For example, to check this ability in feature, use:
     
-    User::hasTeamAbility('edit', $article, $team);
+```php
+User::hasTeamAbility('edit', $article, $team);
+```
 
 To forbid user from some ability (in case if role abilities is allowing this ability)
 
-    User::forbidTeamAbility('edit', $article, $team);
+```php
+User::forbidTeamAbility('edit', $article, $team);
+```
 
 To create abilities without attaching it to user, use the Ability model which is published during install
     
-    Ability::firstOrCreate([ 'name' => 'edit', 'title' => 'Edit' ]);
+```php
+Ability::firstOrCreate([ 'name' => 'edit', 'title' => 'Edit' ]);
+```
  
 
 [#](#middlewares) Middlewares
@@ -184,18 +201,22 @@ To create abilities without attaching it to user, use the Ability model which is
 The middleware is registered automatically as `role`, `permission`, `ability`.
 If you want to change or customize them, go to your `config/teams.php` and set the `middleware.register` value to `false` and add the following to the `routeMiddleware` array in `app/Http/Kernel.php`:
 
-    'role'       => \Jurager\Teams\Middleware\Role::class, 
-    'permission' => \Jurager\Teams\Middleware\Permission::class,
-    'ability'    => \Jurager\Teams\Middleware\Ability::class,
+```php
+'role'       => \Jurager\Teams\Middleware\Role::class, 
+'permission' => \Jurager\Teams\Middleware\Permission::class,
+'ability'    => \Jurager\Teams\Middleware\Ability::class,
+```
 
 ### [#](#middlewares-routes) Routes
 
 You can use a middleware to filter routes and route groups by permission or role:
 
-    Route::group(['prefix' => 'admin', 'middleware' => ['role:admin,#team_id#']], function() {
-        Route::get('/', 'CommonController@commonIndex');
-        Route::get('/users', ['middleware' => ['permission:views-users,#team_id#'], 'uses' => 'CommonController@commonUsers']);
-    });
+```php
+Route::group(['prefix' => 'admin', 'middleware' => ['role:admin,#team_id#']], function() {
+    Route::get('/', 'CommonController@commonIndex');
+    Route::get('/users', ['middleware' => ['permission:views-users,#team_id#'], 'uses' => 'CommonController@commonUsers']);
+});
+```
 
 Where `#team_id#` is your actual ID of the team in database. 
 
@@ -205,11 +226,15 @@ Note, that middleware logic may be varied on how you pass the `team_id` variable
 
 You can pass the `team_id` variable as route param:
  
-    Route::get('/{team_id}/users', ['middleware' => ['permission:views-users'], 'uses' => 'CommonController@commonUsers']);
+```php
+Route::get('/{team_id}/users', ['middleware' => ['permission:views-users'], 'uses' => 'CommonController@commonUsers']);
+```
 
 You can pass the `team_id` variable directly as middleware option
     
-     'middleware' => ['role:admin|root,#team_id#']
+```php
+'middleware' => ['role:admin|root,#team_id#']
+```
 
 You can pass the `team_id` variable with each GET/POST/PUT or other type requests.
 
@@ -217,24 +242,30 @@ You can pass the `team_id` variable with each GET/POST/PUT or other type request
 
 If you want to use OR operation use the pipe symbol:
 
-    'middleware' => ['role:admin|root,{team_id}']
-    // $user->hasTeamRole($team, ['admin', 'root']);
+```php
+'middleware' => ['role:admin|root,{team_id}']
+// $user->hasTeamRole($team, ['admin', 'root']);
 
-    'middleware' => ['permission:edit-post|edit-user']
-    // $user->hasTeamPermission($team, ['edit-post', 'edit-user']);
+'middleware' => ['permission:edit-post|edit-user']
+// $user->hasTeamPermission($team, ['edit-post', 'edit-user']);
+```
 
 If you want to use AND functionality you can do:
 
-    'middleware' => ['role:admin|root,{team_id},require']
-    // $user->hasTeamRole($team, ['admin', 'root'], '{team_id}', true);
-    
-    'middleware' => ['permission:edit-post|edit-user,{team_id},require']
-    // $user->hasTeamPermission($team, ['edit-post', 'edit-user'], '{team_id}', true);
+```php
+'middleware' => ['role:admin|root,{team_id},require']
+// $user->hasTeamRole($team, ['admin', 'root'], '{team_id}', true);
+
+'middleware' => ['permission:edit-post|edit-user,{team_id},require']
+// $user->hasTeamPermission($team, ['edit-post', 'edit-user'], '{team_id}', true);
+```
 
 To check the `ability` to action on certain model item you can use `ability` middleware:
     
-    'middleware' => ['ability:edit,App\Models\Article,atricle_id']
-    // $user->hasTeamAbility($team, 'edit', $article);
+```php
+'middleware' => ['ability:edit,App\Models\Article,atricle_id']
+// $user->hasTeamAbility($team, 'edit', $article);
+```
 
 In this case you need to pass `atricle_id` as `request param` or `route param` to allow package identify model object
 
