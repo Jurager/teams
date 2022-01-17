@@ -1,19 +1,32 @@
 ## Introduction
 
-Teams is Laravel package using Jetstream's based teams to manage team functionality and operate with user permissions and abilities.
+"Teams" is a Laravel package to manage team functionality and operate with user permissions and abilities, supporting multi tenancy, dynamic roles and permissions for each team.
+
+Users within a team can be combined into groups with their own rights and permissions, the access rights given to a user group overrides the rights granted to a user in a team
+
+
+> Documentation for the package is in the process of being written, for now use this readme 
+
+## Support
+
+Package was tested on Laravel 8.x 
 
 ## Installation
 ```sh
 composer require jurager/teams
 ```
 
-Note, running command below can overwrite your directories and files, please make backup before.
+To complete the installation you need to run `artisan:publish` command to add configs and additional files for package to work.
 
-After successfully installing the package from composer, run `php artisan teams:install` to publish configuration and package files.
+> Running the following commands **may overwrite your actual directories and files**, please consider doing a backup beforehand.
 
-If you also want to publish package's `App\Models` directory with Team and User model, pass the `--models` option to command above.
+```sh
+php artisan teams:install
+```
 
-After publishing all package's data, put the `App\Providers\TeamsServiceProvider::class` to app.php config in providers section.
+> If you also want to add pre-configured `User` and `Team` models, pass the `--models` option to command above, otherwise you need to extend your own models.
+
+This package is supporting package discovery but, after running `artisan:publish` command, you need to put the `App\Providers\TeamsServiceProvider::class` to app.php config in providers section, this file was publised from stub, and needed for extensibility
 
 ### [#](#actions) Actions
 
@@ -64,33 +77,69 @@ $user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : boo
 
 ### [#](#the-team-object) The Team Object
 
-The team object that is accessed via `$user->team` or other team-related Eloquent queries provides a variety of useful methods for inspecting the team's attributes and relationships:
+You can access team object via `$user->team` it provides a variety of useful methods for inspecting the team's attributes and relations:
 
 ```php
 // Access the team's owner...
-$team->owner : App\Models\User
+$team->owner
 
-// Get all of the team's users, including the owner...
-$team->allUsers() : Illuminate\Database\Eloquent\Collection
+// Get all the abilities belong to the team.
+$team->abilities()
 
-// Get all of the team's users, excluding the owner...
-$team->users : Illuminate\Database\Eloquent\Collection
+// Get all the team's users, excluding owner
+$team->users()
+
+// Get all the team's users, including the owner...
+$team->allUsers()
+
+// Get all the team's roles.
+$team->roles()
+
+// Add new role to the team
+$team->addRole(string $name, array $capabilities)
+
+// Update the role in the team
+$team->updateRole(string $name, array $capabilities)
+
+// Deletes the given role from team
+$team->deleteRole(string $name)
+
+// Get all groups of the team.
+$team->groups()
+
+// Add new group to the team
+$team->addGroup(string $name)
+
+// Delete group from the team
+$team->deleteGroup(string $name)
+
+// Get the role from the team by role id 
+$team->findRole(string $id)
+
+// Return the user role object from the team
+$team->userRole($user)
 
 // Determine if the given user is a team member...
-$team->hasUser($user) : bool
+$team->hasUser($user)
 
 // Determine if the team has a member with the given email address...
-$team->hasUserWithEmail($emailAddress) : bool
+$team->hasUserWithEmail($emailAddress)
 
 // Determine if the given user is a team member with the given permission...
-$team->userHasPermission($user, $permission) : bool
+$team->userHasPermission($user, $permission)
+
+// Determine if the team has a member with the given email address...
+$team->invitations()
+
+// Remove the given user from the team.
+$team->removeUser();
 ```
 
 
 [#](#member-management) Member Management
 -----------------------------------------
 
-By default, only team owners can manage team membership. This restriction is defined in the `App\Policies\TeamPolicy` class. Naturally, you are free to modify this policy as you see fit.
+Only owners can manage team membership, that restriction is defined in the `App\Policies\TeamPolicy`. Naturally, you are free to modify this policy as you see fit.
 
 ### [#](#member-management-actions) Member Management Actions
 
@@ -98,7 +147,7 @@ Like the customization process for other package features, team member addition 
 
 This action is responsible for validating that the user can actually be added to the team and then adding the user to the team. You are free to customize this action based on the needs of your particular application.
 
-Team member removal may be customized by modifying the `App\Actions\Teams\RemoveTeamMember` action class.
+Team **member removal** may be customized by modifying the action `App\Actions\Teams\RemoveTeamMember`.
 
 
 ### [#](#invitations) Invitations
