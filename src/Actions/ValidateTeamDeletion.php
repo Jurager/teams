@@ -14,7 +14,7 @@ class ValidateTeamDeletion
      * @param  mixed  $team
      * @return void
      */
-    public function validate($user, $team)
+    public function validate(mixed $user, mixed $team)
     {
         Gate::forUser($user)->authorize('delete', $team);
     }

@@ -5,13 +5,14 @@ namespace Jurager\Teams\Traits;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Owner;
 use Jurager\Teams\Teams;
 
 trait HasTeams
 {
     /**
-     * Get all of the teams the user owns or belongs to.
+     * Get all the teams the user owns or belongs to.
      *
      * @return Collection
      */
@@ -21,7 +22,7 @@ trait HasTeams
     }
 
     /**
-     * Get all of the teams the user owns.
+     * Get all the teams the user owns.
      *
      * @return HasMany
      */
@@ -31,7 +32,7 @@ trait HasTeams
     }
 
     /**
-     * Get all of the teams the user belongs to.
+     * Get all the teams the user belongs to.
      *
      * @return BelongsToMany
      */
@@ -133,9 +134,6 @@ trait HasTeams
                 }
             }
 
-            // If we've made it this far and $requireAll is FALSE, then NONE of the roles were found.
-            // If we've made it this far and $requireAll is TRUE, then ALL of the roles were found.
-            // Return the value of $requireAll.
             return $require;
         }
 
@@ -171,14 +169,13 @@ trait HasTeams
      */
     public function hasTeamPermission($team, string|array $permission, bool $require = false): bool
     {
-        if ($this->{config('teams.support_field', 'is_support')}) {
+        if ($this->{Config::get('teams.support_field', 'is_support')}) {
             return true;
         }
 
         if ($this->ownsTeam($team)) {
             return true;
         }
-
 
         if (! $this->belongsToTeam($team)) {
             return false;
@@ -199,9 +196,6 @@ trait HasTeams
                 }
             }
 
-            // If we've made it this far and $requireAll is FALSE, then NONE of the perms were found.
-            // If we've made it this far and $requireAll is TRUE, then ALL of the perms were found.
-            // Return the value of $requireAll.
             return $require;
         }
 
@@ -213,10 +207,8 @@ trait HasTeams
         for ($i=1; $i < count($abilities); $i++) {
             $calculated[] = implode('.', array_slice($abilities, 0, $i)).'.*';
         }
-
-
+		
         $calculated[] = $permission;
-
 
         foreach ($calculated as $item) {
             if (in_array($item, $permissions)) {
@@ -225,7 +217,6 @@ trait HasTeams
         }
 
         return false;
-
 
         //return in_array($permission, $permissions) ||
         //	in_array('*', $permissions) ||
@@ -243,9 +234,7 @@ trait HasTeams
      */
     public function teamAbilities($team, $entity, bool $forbidden = false)
     {
-        $permissions = Teams::permissionModel()::where([
-            'team_id'       => $team->id,
-        ]);
+        $permissions = Teams::permissionModel()::where([ 'team_id' => $team->id ]);
 
         if ($forbidden) {
             $permissions = $permissions->where('forbidden', true);
@@ -274,53 +263,62 @@ trait HasTeams
      */
     public function hasTeamAbility($team, $ability, $entity, bool $require = false): bool
     {
-        // Проверка, является ли пользователь техподдержкой
-        if ($this->{config('teams.support_field', 'is_support')}) {
+        // Checking if a user is tech support
+	    //
+        if ($this->{Config::get('teams.support_field', 'is_support')}) {
             return true;
         }
 
-        // Проверка, является ли пользователь владельцем сущности
+        // Checking if a user is the owner of an entity
+	    //
         if (method_exists($entity, 'isOwner') && $entity->isOwner($this)) {
             return true;
         }
 
-        // Значение уровней доступа по умолчанию
+        // The meaning of the default access levels
+	    //
         $allow_level = 0;
         $forbidden_level = 1;
 
-        // Проверка разрешения по свойствам роли
+        // Check permission by role properties
+	    //
         if ($this->hasTeamPermission($team, $ability)) {
             $allow_level = 1;
         }
 
         // Get an ability
+	    //
         $ability = Teams::abilityModel()::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
 
-        // Если существует правило для сущности
+        // If there is a rule for an entity
+	    //
         if ($ability) {
 
-            // Получение ограничений по сущности
+            // Getting permissions on an entity
+	        //
             $permissions = Teams::permissionModel()::where([
                 'team_id'       => $team->id,
                 'ability_id'    => $ability->id,
             ])->get();
 
-            // Роль пользователя
+
             $role   = $this->teamRole($team);
-            // Группа пользователя
             $group  = $this->groups()->where('team_id', $team->id)->first();
 
-            // Получение ограничений по роли
             $permission = $permissions->where('entity_id', $role->id)->firstWhere('entity_type', $role::class);
 
-            // Если возможность запрещена для роли
+            // If the permission is disabled for a role
+	        //
             if ($permission && $permission->forbidden) {
                 $forbidden_level = 2;
             }
 
-            // Если пользователь прикреплен к группе
+            // If the user is attached to a group
+	        //
             if ($group) {
-                // Получение ограничений по группе
+
+	            // Get group restrictions
+				//
                 $permission = $permissions->where('entity_id', $group->id)->firstWhere('entity_type', $group::class);
 
                 if ($permission) {
@@ -332,7 +330,8 @@ trait HasTeams
                 }
             }
 
-            // Получение ограничений по пользователю
+            // Getting user restrictions
+	        //
             $permission = $permissions->where('entity_id', $this->id)->firstWhere('entity_type', $this::class);
 
             if ($permission) {
@@ -344,7 +343,8 @@ trait HasTeams
             }
         }
 
-        // Сравнение уровней доступа
+        // Access level comparison
+	    //
         return $allow_level >= $forbidden_level;
     }
 
@@ -360,7 +360,7 @@ trait HasTeams
     public function allowTeamAbility($team, string|array $ability, $entity, $target): bool
     {
         $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
-        $abilityEdit  =  $entity_type.'s.edit';
+        $abilityEdit = $entity_type.'s.edit';
 
         if (!$this->hasTeamAbility($team, $abilityEdit, $entity)) {
             return false;

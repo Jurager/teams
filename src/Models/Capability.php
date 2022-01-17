@@ -3,6 +3,7 @@
 namespace Jurager\Teams\Models;
 
 use Jurager\Teams\Teams;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class Capability extends Model
@@ -15,8 +16,11 @@ abstract class Capability extends Model
 	protected $fillable = ['name', 'code' ];
 
     public $timestamps = false;
-    
-    public function teams()
+
+	/**
+	 * @return BelongsToMany
+	 */
+	public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Teams::teamModel(), 'role_capability');
     }

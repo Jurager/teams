@@ -3,6 +3,7 @@
 namespace Jurager\Teams\Models;
 
 use Jurager\Teams\Teams;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class Permission extends Model
@@ -15,16 +16,17 @@ abstract class Permission extends Model
 	protected $fillable = [ 'team_id', 'ability_id', 'entity_id', 'entity_type', 'forbidden'];
 
 	/**
-	 * Get the team that the invitation belongs to.
-	 *
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+	 * @return BelongsTo
 	 */
-	public function team()
+	public function team(): BelongsTo
 	{
 		return $this->belongsTo(Teams::teamModel());
 	}
 
-	public function ability()
+	/**
+	 * @return BelongsTo
+	 */
+	public function ability(): BelongsTo
 	{
 		return $this->belongsTo(Teams::abilityModel());
 	}

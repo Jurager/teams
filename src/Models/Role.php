@@ -3,6 +3,8 @@
 namespace Jurager\Teams\Models;
 
 use Jurager\Teams\Teams;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class Role extends Model
@@ -31,20 +33,26 @@ abstract class Role extends Model
 	/**
 	 * Get the team that the invitation belongs to.
 	 *
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+	 * @return BelongsTo
 	 */
-	public function team()
+	public function team(): BelongsTo
 	{
 		return $this->belongsTo(Teams::teamModel());
 	}
-	
-	public function capabilities()
-    {
+
+	/**
+	 * @return BelongsToMany
+	 */
+	public function capabilities(): BelongsToMany
+	{
         return $this->belongsToMany(Teams::$capabilityModel, 'role_capability');
     }
 
-    public function getPermissionsAttribute()
-    {
-        return $this->capabilities->pluck('code')->toArray();
+	/**
+	 * @return array
+	 */
+	public function getPermissionsAttribute(): array
+	{
+        return $this->capabilities->pluck('code')->all();
     }
 }

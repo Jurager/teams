@@ -15,14 +15,14 @@ class Invitation extends Mailable
     /**
      * The team invitation instance.
      *
-     * @var \Jurager\Teams\Models\Invitation
+     * @var InvitationModel
      */
-    public $invitation;
+    public InvitationModel $invitation;
 
     /**
      * Create a new message instance.
      *
-     * @param  \Jurager\Teams\Models\Invitation  $invitation
+     * @param InvitationModel $invitation
      * @return void
      */
     public function __construct(InvitationModel $invitation)
@@ -35,10 +35,10 @@ class Invitation extends Mailable
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
         return $this->markdown('teams::mail.team-invitation', ['acceptUrl' => URL::signedRoute('team-invitations.accept', [
             'invitation' => $this->invitation,
-        ])])->subject(__('Team Invitation'));
+        ])])->subject('Team Invitation');
     }
 }

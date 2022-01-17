@@ -2,13 +2,13 @@
 
 namespace Jurager\Teams\Middleware;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Database\Eloquent\Model;
 
 class Teams
 {
@@ -17,7 +17,7 @@ class Teams
 	/**
 	 * Check if the request has authorization to continue.
 	 *
-	 * @param \Illuminate\Http\Request $request
+	 * @param Request $request
 	 * @param $method
 	 * @param $params
 	 * @param string|null $team_id
@@ -25,7 +25,7 @@ class Teams
 	 * @param boolean $require
 	 * @return boolean
 	 */
-	protected function authorization(Request $request, $method, $params, ?string $team_id, $models, bool $require = false)
+	protected function authorization(Request $request, $method, $params, ?string $team_id, $models, bool $require = false): bool
 	{
 		// Determinate the method for checking the role or permissions
 		//
@@ -50,8 +50,6 @@ class Teams
 		// Get the team model
 		//
 		$team = (\Jurager\Teams\Teams::teamModel())::where('id', $foreign_id)->firstOrFail();
-
-		
 
 		// Check the ability
 		//
@@ -93,9 +91,9 @@ class Teams
 	/**
 	 * The request is unauthorized, so it handles the aborting/redirecting.
 	 *
-	 * @return \Illuminate\Http\Response
+	 * @return RedirectResponse
 	 */
-	protected function unauthorized()
+	protected function unauthorized(): RedirectResponse
 	{
 		$handling = Config::get('teams.middleware.handling');
 		$handler  = Config::get('teams.middleware.handlers.'.$handling);
@@ -116,12 +114,12 @@ class Teams
 	}
 
 	/**
-	 * Get the arguments parameter for the gate.
+	 * Get the arguments parameters for the gate.
 	 * @param $request
 	 * @param $models
 	 * @return array
 	 */
-	protected function getGateArguments($request, $models)
+	protected function getGateArguments($request, $models): array
 	{
 		if (is_null($models)) {
 			return [];
@@ -139,7 +137,7 @@ class Teams
 	 * @param $model
 	 * @return string
 	 */
-	protected function getModel($request, $model)
+	protected function getModel($request, $model): string
 	{
 		return $this->isClassName($model) ? trim($model) : $request->route($model, $model);
 	}
@@ -147,11 +145,11 @@ class Teams
 	/**
 	 * Checks if the given string looks like a fully qualified class name.
 	 *
-	 * @param  string  $value
+	 * @param string $value
 	 * @return bool
 	 */
-	protected function isClassName($value)
+	protected function isClassName(string $value): bool
 	{
-		return strpos($value, '\\') !== false;
+		return str_contains($value, '\\');
 	}
 }

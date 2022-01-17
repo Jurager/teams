@@ -2,13 +2,14 @@
 
 namespace Jurager\Teams\Models;
 
+use Jurager\Teams\Owner;
+use Jurager\Teams\Teams;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Jurager\Teams\Owner;
-use Jurager\Teams\Teams;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class Team extends Model
@@ -30,7 +31,7 @@ abstract class Team extends Model
 	}
 
 	/**
-	 * Get all of the team's users including its owner.
+	 * Get all the team's users including its owner.
 	 *
 	 * @return Collection
 	 */
@@ -40,7 +41,7 @@ abstract class Team extends Model
 	}
 
 	/**
-	 * Get all of the users that belong to the team.
+	 * Get all the users that belong to the team.
 	 *
 	 * @return BelongsToMany
 	 */
@@ -54,6 +55,8 @@ abstract class Team extends Model
 
 
 	/**
+	 * Get all the abilities belong to the team.
+	 *
 	 * @return BelongsToMany
 	 */
 	public function abilities(): BelongsToMany
@@ -94,109 +97,161 @@ abstract class Team extends Model
         return count($this->roles) > 0;
     }
 
-    /**
-     * @param string $name
-     * @param array $capabilities
-     * @return
-     */
-    public function addRole(string $name, array $capabilities)
+	/**
+	 * @param string $name
+	 * @param array $capabilities
+	 * @return Model
+	 */
+    public function addRole(string $name, array $capabilities): Model
     {
+		// Create the new role
+	    //
         $role = $this->roles()->create(['name' => $name]);
 
+		// Array of capability id's
+	    //
         $capability_ids = [];
+
         foreach ($capabilities as $capability) {
+
+			// Get or create the new capability
+	        //
             $item = (Teams::$capabilityModel)::firstOrCreate(['code' => $capability]);
-            $capability_ids[] = $item->id;
+
+			// Add the capability id for attaching
+	        //
+	        array_push($capability_ids, $item->id);
         }
 
+		// Attach the capabilities to the role
+	    //
         $role->capabilities()->attach($capability_ids);
+
+		// Return the resulting role
+	    //
         return $role;
     }
 
-    /**
-     * @param string $name
-     * @param array $capabilities
-     * @return
-     */
-    public function updateRole(string $name, array $capabilities)
+	/**
+	 * @param string $name
+	 * @param array $capabilities
+	 * @return bool|Model|HasMany
+	 */
+    public function updateRole(string $name, array $capabilities): Model|HasMany|bool
     {
+	    // Get the role
+	    //
         $role = $this->roles()->firstWhere('name', $name);
 
+	    // If found the role
+	    //
         if ($role) {
+
+	        // Array of capability id's
+	        //
             $capability_ids = [];
+
             foreach ($capabilities as $capability) {
+
+	            // Get or create the new capability
+	            //
                 $item = (Teams::$capabilityModel)::firstOrCreate(['code' => $capability]);
-                $capability_ids[] = $item->id;
+
+	            // Add the capability id for attaching
+	            //
+	            array_push($capability_ids, $item->id);
             }
 
+	        // Sync the capabilities to the role
+	        //
             $role->capabilities()->sync($capability_ids);
+
+	        // Return the resulting role
+	        //
+	        return $role;
         }
 
-        return $role;
+        return false;
     }
 
     /**
+     * Deletes the given role from team
+     *
      * @param string $name
      * @return bool
      */
-    public function deleteRole(string $name)
+    public function deleteRole(string $name): bool
     {
         $role = $this->roles()->firstWhere('name', $name);
 
         if ($role) {
-            $this->roles()->delete($role);
+            return $this->roles()->delete($role);
         }
 
-        return true;
+        return false;
     }
 
     /**
      * @param string $name
      * @return Model
      */
-    public function addGroup(string $name)
+    public function addGroup(string $name): Model
     {
         return $this->groups()->create(['name' => $name]);
     }
 
-    /**
-     * @param string $name
-     * @return Model
-     */
-    public function deleteGroup(string $name)
+	/**
+	 * Delete group from the team
+	 *
+	 * @param string $name
+	 * @return Model|bool
+	 */
+    public function deleteGroup(string $name): Model|bool
     {
         $group = $this->groups->firstWhere('name', $name);
 
         if ($group) {
-            $this->groups()->delete($group);
+            return $this->groups()->delete($group);
         }
 
-        return true;
+        return false;
     }
 
-    /**
-     * Find the role with the given id.
-     *
-     * @param  string  $id
-     * @return ?Model
-     */
-    public function findRole(string $id): ?Model
+	/**
+	 * Find the role with the given id.
+	 *
+	 * @param string $id
+	 * @return Model|bool
+	 */
+    public function findRole(string $id): Model|bool
     {
-        return $this->roles->firstWhere('id', $id);
+	    // Return the resulting role
+	    //
+        return $this->roles->firstWhere('id', $id) ?? false;
     }
 
 
-    public function userRole($user)
-    {
+	/**
+	 * @param $user
+	 * @return Model|Owner|bool
+	 */
+	public function userRole($user): Model|Owner|bool
+	{
+	    // If user is owner, return the owner model object
+	    //
         if ($this->owner == $user) {
             return new Owner;
         }
 
+	    // If team doesn't have such user
+	    //
         if (!$this->hasUser($user)) {
-            return;
+            return false;
         }
-        
-        return $this->findRole($this->users->where( 'id', $user->id)->first()->membership->role);
+
+		// Return the resulting role
+		//
+	    return $this->findRole($this->users->where( 'id', $user->id)->first()->membership->role) ?? false;
     }
 
 	/**
@@ -237,7 +292,7 @@ abstract class Team extends Model
 	}
 
 	/**
-	 * Get all of the pending user invitations for the team.
+	 * Get all the pending user invitations for the team.
 	 *
 	 * @return HasMany
 	 */
@@ -254,25 +309,25 @@ abstract class Team extends Model
 	 */
 	public function removeUser(User $user): void
 	{
-		if ($user->{config('teams.foreign_keys.current_team_id', 'current_team_id')} === $this->id) {
-			$user->forceFill([config('teams.foreign_keys.current_team_id', 'current_team_id') => null])->save();
+		if ($user->{Config::get('teams.foreign_keys.current_team_id', 'current_team_id')} === $this->id) {
+			$user->forceFill([Config::get('teams.foreign_keys.current_team_id', 'current_team_id') => null])->save();
 		}
 
 		$this->users()->detach($user);
 	}
 
 	/**
-	 * Purge all of the team's resources.
+	 * Purge all the team's resources.
 	 *
 	 * @return void
 	 */
 	public function purge()
 	{
-		$this->owner()->where(config('teams.foreign_keys.current_team_id', 'current_team_id'), $this->id)
-			->update([config('teams.foreign_keys.current_team_id', 'current_team_id') => null]);
+		$this->owner()->where(Config::get('teams.foreign_keys.current_team_id', 'current_team_id'), $this->id)
+			->update([Config::get('teams.foreign_keys.current_team_id', 'current_team_id') => null]);
 
-		$this->users()->where(config('teams.foreign_keys.current_team_id', 'current_team_id'), $this->id)
-			->update([config('teams.foreign_keys.current_team_id', 'current_team_id') => null]);
+		$this->users()->where(Config::get('teams.foreign_keys.current_team_id', 'current_team_id'), $this->id)
+			->update([Config::get('teams.foreign_keys.current_team_id', 'current_team_id') => null]);
 
 		$this->users()->detach();
 

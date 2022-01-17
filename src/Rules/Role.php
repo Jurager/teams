@@ -8,9 +8,8 @@ use Jurager\Teams\Teams;
 class Role implements Rule
 {
     
-    public function __construct(private $team)
-    {
-        
+    public function __construct(private $team) {
+
     }
     
     /**
@@ -20,7 +19,7 @@ class Role implements Rule
      * @param  mixed  $value
      * @return bool
      */
-    public function passes($attribute, $value)
+    public function passes($attribute, $value): bool
     {
         return in_array($value, $this->team->roles->pluck('name')->toArray());
     }
@@ -30,7 +29,7 @@ class Role implements Rule
      *
      * @return string
      */
-    public function message()
+    public function message(): string
     {
         return __('The :attribute must be a valid role.');
     }
