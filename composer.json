@@ -1,13 +1,9 @@
 {
     "name": "jurager/teams",
-    "description": "Laravel Teams and Roles using Jetstream",
-    "keywords": ["laravel", "teams", "auth"],
+    "description": "Teams is a Laravel package to manage team functionality and operate with user permissions and abilities, supporting multi tenancy, dynamic roles and permissions for each team.",
+    "keywords": ["laravel", "teams", "gropus", "permissions", "abilities", "auth"],
     "license": "MIT",
     "authors": [
-        {
-            "name": "Taylor Otwell",
-            "email": "taylor@laravel.com"
-        },
         {
             "name": "Yuri Gerassimov",
             "email": "jurager01@gmail.com"
