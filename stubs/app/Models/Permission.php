@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use Jurager\Teams\Teams;
-use Jurager\Teams\Models\Permission as PermissionInvitation;
+use Jurager\Teams\Models\Permission as PermissionModel;
 
-class Permission extends PermissionInvitation
+class Permission extends PermissionModel
 {
 	/**
 	 * The attributes that are mass assignable.
@@ -19,7 +19,7 @@ class Permission extends PermissionInvitation
 	 *
 	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
 	 */
-	public function team()
+	public function team(): \Illuminate\Database\Eloquent\Relations\BelongsTo
 	{
 		return $this->belongsTo(Teams::teamModel());
 	}

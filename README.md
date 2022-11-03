@@ -1,4 +1,5 @@
-## Introduction
+Introduction
+-------------------------------------------
 
 "Teams" is a Laravel package to manage team functionality and operate with user permissions and abilities, supporting multi tenancy, dynamic roles and permissions for each team.
 
@@ -7,11 +8,30 @@ Users within a team can be combined into groups with their own rights and permis
 
 > Documentation for the package is in the process of being written, for now use this readme 
 
-## Support
+* [Support](#support)
+* [Installation](#installation)
+* [Actions](#actions)
+* [Users](#users)
+* [Team](#team)
+* [Member Management](#member-management)
+* [Invitations](#invitations)
+  * [Actions](#invitation-actions) 
+  * [Mail](#invitation-mail)
+* [Roles/Permissions](#roles--permissions)
+    * [Authorization](#authorization)
+* [Abilities](#abilities)
+* [Middlewares](#middlewares)
+  * [Configuration](#middleware-configuration)
+  * [Routes](#middleware-routes)
+  * [Usage](#middleware-usage)
+* [License](#license)
+-------------------------------------------
 
-Package was tested on Laravel 8.x 
+Package was tested on Laravel 8.x and 9.x
 
-## Installation
+Installation
+-------------------------------------------
+
 ```sh
 composer require jurager/teams
 ```
@@ -28,14 +48,17 @@ php artisan teams:install
 
 This package is supporting package discovery but, after running `artisan:publish` command, you need to put the `App\Providers\TeamsServiceProvider::class` to app.php config in providers section, this file was publised from stub, and needed for extensibility
 
-### [#](#actions) Actions
+Actions
+-------------------------------------------
 
-Team creation and deletion logic may be customized by modifying the relevant action classes within your `app/Actions/Teams` directory. These actions include `CreateTeam`, `UpdateTeamName`, and `DeleteTeam`. Each of these actions is invoked when their corresponding task is performed by the user in the application's UI. You are free to modify these actions as required based on your application's needs.
+Team creation and deletion and other logic may be customized by modifying the relevant action classes within your `app/Actions/Teams` directory. 
 
-[#](#inspecting-user-teams) Inspecting User Teams
--------------------------------------------------
+These actions include `CreateTeam`, `UpdateTeamName`, and `DeleteTeam`. Each of these actions is invoked when their corresponding task is performed by the user. You are free to modify these actions as required based on your application's needs.
 
-Information about a user's teams may be accessed via the methods provided by the `Jurager\Teams\Traits\HasTeams` trait. This trait is automatically applied to your application's `App\Models\User` model during installation. This trait provides a variety of helpful methods that allow you to inspect a user's teams:
+Users
+-------------------------------------------
+Package provide `Jurager\Teams\Traits\HasTeams` trait, that  applied to your application's `App\Models\User` model during installation and provides methods to inspect a user's teams
+
 
 ```php
 // Access all of the team's (including owned teams) that a user belongs to...
@@ -75,9 +98,9 @@ $user->allowTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
 $user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
 ```
 
-### [#](#the-team-object) The Team Object
-
-You can access team object via `$user->team` it provides a variety of useful methods for inspecting the team's attributes and relations:
+Team
+-------------------------------------------
+Team can be accessed via `$user->team` it provides methods for inspecting the team's attributes and relations:
 
 ```php
 // Access the team's owner...
@@ -135,13 +158,11 @@ $team->invitations()
 $team->removeUser();
 ```
 
-
-[#](#member-management) Member Management
------------------------------------------
+Member Management
+-------------------------------------------
 
 Only owners can manage team membership, that restriction is defined in the `App\Policies\TeamPolicy`. Naturally, you are free to modify this policy as you see fit.
 
-### [#](#member-management-actions) Member Management Actions
 
 Like the customization process for other package features, team member addition logic may be customized by modifying the `App\Actions\Teams\AddTeamMember` action class. The class' `add` method is invoked with the currently authenticated user, the `Jurager\Teams\Team` instance, the email address of the user being added to the team, and the role (if applicable) of the user being added to the team.
 
@@ -150,59 +171,75 @@ This action is responsible for validating that the user can actually be added to
 Team **member removal** may be customized by modifying the action `App\Actions\Teams\RemoveTeamMember`.
 
 
-### [#](#invitations) Invitations
+Invitations
+-------------------------------------------
 
 By default, package will simply add any existing application user that you specify to your team. However, many applications choose to send invitation emails to users that are invited to teams. If the user does not have an account, the invitation email can instruct them to create an account and accept the invitation. Or, if the user already has an account, they can accept or ignore the invitation.
 
-Thankfully, package allows you to enable team member invitations for your application with just a few lines of code. To get started, pass the `invitations` option to configuration. This may be done by modifying the `features` array of your application's `config/teams.php` configuration file:
-
-```php
-use Jurager\Teams\Features;
-    
-'features' => [
-    Features::api(),
-    Features::accountInvitation(),
-    Features::accountDeletion(),
-],
-```
+Thankfully, package allows you to enable team member invitations for your application with just a few lines of code. To get started, pass the `invitations` option to configuration.
 
 Once you have enabled invitations feature, users that are invited to teams will receive an invitation email with a link to accept the team invitation. Users will not be full members of the team until the invitation is accepted.
 
-#### [#](#invitation-actions) Invitation Actions
+#### Invitation Actions
 
 When a user is invited to the team, your application's `App\Actions\Teams\InviteTeamMember` action will be invoked with the currently authenticated user, the team that the new user is invited to, the email address of the invited user, and, optionally, the role that should be assigned to the user once they join the team. You are free to review this action or modify it based on the needs of your own application.
 
-Laravel Mail
+#### Invitation Mail
 
 Before using the team invitation feature, you should ensure that your Laravel application is configured to [send emails](https://laravel.com/docs/mail) . Otherwise, Laravel will be unable to send team invitation emails to your application's users.
 
-[#](#roles-permissions) Roles / Permissions
+
+ Roles / Permissions
 -------------------------------------------
 
-Each team member added to a team may be assigned a given role, and each role is assigned a set of permissions. Role permissions are defined in your application's `App\Providers\TeamsServiceProvider` class using the `Teams::role` method. This method accepts a "slug" for the role, a user-friendly role name, the role permissions, and a description of the role. This information will be used to display the role within the team member management view.
+Each team member added to a team may be assigned a given role, and each role is assigned a set of permissions.
 
-For example, imagine we are building a server management application such as [Laravel Forge](https://forge.laravel.com) . We might define our application's team roles like so:
+Roles and permissions are stored in your application's database. This allows extensive use of roles and permissions, e.g. you can impliment management of roles and permissions in your application administration pages.
+
+You can use `App/Models/Role` and `App/Model/Permission`, published with install command, to create new roles and permissions, get them from database, and work with them as usual models. 
+
+However, you can work with roles and permissions directly from `App\Models\Team`
+
+For example to create new `Team` and attach to it some `Role` and `Permission`
+
 
 ```php
-Teams::defaultApiTokenPermissions(['read']);
-    
-Teams::role('admin', 'Administrator', [
-    'server:create',
-    'server:read',
-    'server:update',
-    'server:delete',
-])->description('Administrator users can perform any action.');
+$team = new Team();
 
-Teams::role('support', 'Support Specialist', [
-    'server:read',
-])->description('Support specialists can read server information.');
+$team->name = 'Example Team';
+$team->code = 'example_team';
+
+if ($team->save()) {
+
+    $team->addRole('admin', [
+        'employees.*',
+        'sections.*',
+        'articles.*',
+        'tags.*',
+        'comments.*',
+        'team.edit',
+        'stores.*',
+        'plan.edit',
+    ]);
+    
+    $team->addRole('user', [
+        'employees.view',
+        'articles.view',
+        'articles.add',
+        'sections.view',
+        'sections.add',
+        'comments.add',
+        'tags.view',
+        'stores.add',
+        'stores.delete',
+        'tags.add',
+    ]);
+}
 ```
 
-Team API Support
+The second argument for `$team->addRole` function is array of `capabilities`, they are stored in the database and determine the capabilities of your entire application that will be available for attaching to roles
 
-Available API permissions are automatically derived by combining all unique permissions available to roles. Therefore, a separate call to the `Teams::permissions` method is unnecessary.
-
-### [#](#authorization) Authorization
+### Authorization
 
 Of course, you will need a way to authorize that incoming requests initiated by a team member may actually be performed by that user. A user's team permissions may be inspected using the `hasTeamPermission` method available via the `Jurager\Teams\Traits\HasTeams` trait.
 
@@ -212,7 +249,7 @@ Of course, you will need a way to authorize that incoming requests initiated by 
 return $user->hasTeamPermission($server->team, 'server:update');
 ```
 
-[#](#abilities) Abilities
+Abilities
 -------------------------------------------
 
 Adding abilities to users is made easy. You do not have to create a role or an ability in advance. Simply pass the name of the ability, and package will create it if it doesn't exist.
@@ -242,10 +279,10 @@ Ability::firstOrCreate([ 'name' => 'edit', 'title' => 'Edit' ]);
 ```
  
 
-[#](#middlewares) Middlewares
+Middlewares
 -----------------------------------------
 
-### [#](#middlewares-configuration) Configuration
+### Middleware Configuration
 
 The middleware is registered automatically as `role`, `permission`, `ability`.
 If you want to change or customize them, go to your `config/teams.php` and set the `middleware.register` value to `false` and add the following to the `routeMiddleware` array in `app/Http/Kernel.php`:
@@ -256,7 +293,7 @@ If you want to change or customize them, go to your `config/teams.php` and set t
 'ability'    => \Jurager\Teams\Middleware\Ability::class,
 ```
 
-### [#](#middlewares-routes) Routes
+### Middleware Routes
 
 You can use a middleware to filter routes and route groups by permission or role:
 
@@ -287,7 +324,7 @@ You can pass the `team_id` variable directly as middleware option
 
 You can pass the `team_id` variable with each GET/POST/PUT or other type requests.
 
-### [#](#middlewares-usage) Usage
+### Middleware Usage
 
 If you want to use OR operation use the pipe symbol:
 

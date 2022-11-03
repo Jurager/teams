@@ -3,7 +3,6 @@
 namespace Jurager\Teams\Models;
 
 use Jurager\Teams\Teams;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class Ability extends Model
@@ -18,10 +17,10 @@ abstract class Ability extends Model
 	/**
 	 * Get the team that the ability belongs to.
 	 *
-	 * @return BelongsTo
-	 */
-	public function team(): BelongsTo
-	{
+	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+	public function team(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
 		return $this->belongsTo(Teams::teamModel());
 	}
 }

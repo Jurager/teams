@@ -12,8 +12,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Teams
 {
-	const DELIMITER = '|';
-
 	/**
 	 * Check if the request has authorization to continue.
 	 *
@@ -36,7 +34,7 @@ class Teams
 		};
 
 		if (!is_array($params)) {
-			$params = explode(self::DELIMITER, $params);
+			$params = explode('|', $params);
 		}
 
 		// Foreign key for team_id field
@@ -53,7 +51,7 @@ class Teams
 
 		// Check the ability
 		//
-		if($method == 'hasTeamAbility') {
+		if($method === 'hasTeamAbility') {
 
 			// Get the models
 			//
@@ -65,18 +63,14 @@ class Teams
 
 				// Get the data from models
 				//
-				$entity   = (($args[0] == 'App\Models\Team') ? $args[0]::where('id', $args[1])->first() : $args[0]::where('id', $args[1]))->first();
+				$entity = (($args[0] === 'App\Models\Team') ? $args[0]::where('id', $args[1])->first() : $args[0]::where('id', $args[1]))->first();
 
 				// Check the entity
-				//
-				if($entity) {
-
-					// Check the ability to entity for current user
-					//
-					if ($request->user()->hasTeamAbility($team, $params, $entity)) {
-						return true;
-					}
-				}
+                // Check the ability to entity for current user
+                //
+                if($entity && $request->user()->hasTeamAbility($team, $params, $entity)) {
+                    return true;
+                }
 			}
 
 
@@ -85,7 +79,7 @@ class Teams
 
 		// Check the permissions
 		//
-		return !Auth::guest() && Auth::user()->$method($team, $params, $require);
+		return !Auth::guest() && Auth::user()?->$method($team, $params, $require);
 	}
 
 	/**
@@ -95,61 +89,71 @@ class Teams
 	 */
 	protected function unauthorized(): RedirectResponse
 	{
+        // Method to be called in the middleware return
+        //
 		$handling = Config::get('teams.middleware.handling');
+
+        // Handlers for the unauthorized method
+        //
 		$handler  = Config::get('teams.middleware.handlers.'.$handling);
 
-		if ($handling == 'abort') {
-			$message = 'User does not have any of the necessary access rights.';
-
-			return App::abort($handler['code'], $handler['message'] ?? $message);
+        // Abort handler simply returns unauthorized message
+        //
+		if ($handling === 'abort') {
+			return App::abort($handler['code'], $handler['message'] ?? 'User does not have any of the necessary access rights.');
 		}
 
+        // Otherwise declare redirect method
+        //
 		$redirect = Redirect::to($handler['url']);
 
+        // Handler message is defined in configuration
+        //
 		if (!empty($handler['message']['content'])) {
+
+            // Append session flash message to redirect
+            //
 			$redirect->with($handler['message']['key'], $handler['message']['content']);
 		}
 
+        // Perform redirect to handler defined route
+        //
 		return $redirect;
 	}
 
 	/**
 	 * Get the arguments parameters for the gate.
+     *
 	 * @param $request
 	 * @param $models
 	 * @return array
 	 */
 	protected function getGateArguments($request, $models): array
 	{
+        // Gate model not defined, return empty array
+        //
 		if (is_null($models)) {
 			return [];
 		}
 
-		return collect($models)->map(function ($model) use ($request) {
-			return $model instanceof Model ? $model : $this->getModel($request, $model);
-		})->all();
+        // Map through all models and detect actual model instance
+        //
+        return array_map(function($model) use ($request) {
+            return $model instanceof Model ? $model : $this->getModel($request, $model);
+        }, $models);
+
 	}
 
 
 	/**
 	 * Get the model to authorize.
+     *
 	 * @param $request
 	 * @param $model
 	 * @return string
 	 */
 	protected function getModel($request, $model): string
 	{
-		return $this->isClassName($model) ? trim($model) : $request->route($model, $model);
-	}
-
-	/**
-	 * Checks if the given string looks like a fully qualified class name.
-	 *
-	 * @param string $value
-	 * @return bool
-	 */
-	protected function isClassName(string $value): bool
-	{
-		return str_contains($value, '\\');
+		return str_contains($model, '\\') ? trim($model) : $request->route($model, $model);
 	}
 }

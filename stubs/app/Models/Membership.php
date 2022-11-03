@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Jurager\Teams\Models\Membership as ModelMembership;
+use Jurager\Teams\Models\Membership as MembershipModel;
 
-class Membership extends ModelMembership
+class Membership extends MembershipModel
 {
     /**
      * Indicates if the IDs are auto-incrementing.

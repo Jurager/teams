@@ -89,16 +89,6 @@ class TeamsServiceProvider extends ServiceProvider
 			return;
 		}
 
-		$router = $this->app['router'];
-
-		if (method_exists($router, 'middleware')) {
-			$registerMethod = 'middleware';
-		} elseif (method_exists($router, 'aliasMiddleware')) {
-			$registerMethod = 'aliasMiddleware';
-		} else {
-			return;
-		}
-
 		$middlewares = [
 			'ability'    => \Jurager\Teams\Middleware\Ability::class,
 			'role'       => \Jurager\Teams\Middleware\Role::class,
@@ -106,7 +96,7 @@ class TeamsServiceProvider extends ServiceProvider
 		];
 
 		foreach ($middlewares as $key => $class) {
-			$router->$registerMethod($key, $class);
+            $this->app['router']->aliasMiddleware($key, $class);
 		}
 	}
 }

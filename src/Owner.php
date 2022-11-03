@@ -37,10 +37,6 @@ class Owner implements JsonSerializable
     /**
      * Create a new role instance.
      *
-     * @param  string  $key
-     * @param  string  $name
-     * @param  array  $permissions
-     * @return void
      */
     public function __construct()
     {

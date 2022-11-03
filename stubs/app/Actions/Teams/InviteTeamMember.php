@@ -2,7 +2,7 @@
 
 namespace App\Actions\Teams;
 
-use App\Mail\Employee\Invited;
+use Jurager\Teams\Mail\Invitation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -37,7 +37,7 @@ class InviteTeamMember implements InvitesTeamMembers
 			'role'  => $role,
 		]);
 
-		Mail::to($email)->send(new Invited($invitation));
+		Mail::to($email)->send(new Invitation($invitation));
 	}
 
 	/**
@@ -74,7 +74,7 @@ class InviteTeamMember implements InvitesTeamMembers
 				$query->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id);
 			})],
 			'role' => Teams::hasRoles()
-				? ['required', 'string', new Role]
+				? ['required', 'string', new Role($team)]
 				: null,
 		]);
 	}
