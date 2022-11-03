@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Jurager\Teams\Events\TeamCreated;
 use Jurager\Teams\Events\TeamDeleted;
 use Jurager\Teams\Events\TeamUpdated;
 use Jurager\Teams\Models\Team as TeamModel;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Team extends TeamModel
 {

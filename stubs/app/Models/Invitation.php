@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use Jurager\Teams\Teams;
-use Jurager\Teams\Models\Invitation as ModelInvitation;
+use Jurager\Teams\Models\Invitation as InvitationModel;
 
-class Invitation extends ModelInvitation
+class Invitation extends InvitationModel
 {
     /**
      * The attributes that are mass assignable.
@@ -19,7 +19,7 @@ class Invitation extends ModelInvitation
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function team()
+    public function team(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Teams::teamModel());
     }

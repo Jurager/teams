@@ -1,24 +1,6 @@
 <?php
 
-use Jurager\Teams\Features;
-
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Features
-    |--------------------------------------------------------------------------
-    |
-    | Some of Team's features are optional. You may disable the features
-    | by removing them from this array. You're free to only remove some of
-    | these features or you can even remove all of these if you need to.
-    |
-    */
-
-    'features' => [
-        Features::accountInvitation(),
-        Features::accountDeletion(),
-    ],
 
 	/*
     |--------------------------------------------------------------------------
@@ -29,8 +11,9 @@ return [
     |
     */
 	'middleware' => [
+
 		/**
-		 * Define if the teams middleware are registered automatically in the service provider
+		 * Define if the team middleware are registered automatically in the service provider
 		 */
 		'register' => true,
 
@@ -124,6 +107,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Support's field in users table
+    | Support users has access to all teams
     |
     */
     'support_field' => 'is_support'

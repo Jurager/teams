@@ -37,7 +37,7 @@ class Invitation extends Mailable
      */
     public function build(): static
     {
-        return $this->markdown('teams::mail.team-invitation', ['acceptUrl' => URL::signedRoute('team-invitations.accept', [
+        return $this->markdown('teams::mail.invitation', ['acceptUrl' => URL::signedRoute('invitations.accept', [
             'invitation' => $this->invitation,
         ])])->subject('Team Invitation');
     }

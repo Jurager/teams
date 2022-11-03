@@ -115,19 +115,6 @@ class Teams
         return new static();
     }
 
-	/**
-	 * Define the default permissions that should be available to new API tokens.
-	 *
-	 * @param  Collection  $permissions
-	 * @return static
-	 */
-	public static function defaultApiTokenPermissions(Collection $permissions)
-	{
-		static::$defaultPermissions = $permissions;
-
-		return new static;
-	}
-
     /**
      * Return the permissions in the given list that are actually defined permissions for the application.
      *
@@ -138,26 +125,6 @@ class Teams
     {
         return array_values(array_intersect($permissions, static::$permissions));
     }
-
-	/**
-	 * Determine if the application is using any account invitation features.
-	 *
-	 * @return bool
-	 */
-	public static function hasAccountInvitationFeatures()
-	{
-		return Features::hasAccountInvitationFeatures();
-	}
-
-	/**
-	 * Determine if the application is using any account deletion features.
-	 *
-	 * @return bool
-	 */
-	public static function hasAccountDeletionFeatures()
-	{
-		return Features::hasAccountDeletionFeatures();
-	}
 
 	/**
 	 * Find a user instance by the given ID.

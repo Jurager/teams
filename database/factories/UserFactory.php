@@ -2,11 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
-use Jurager\Teams\Features;
 
 class UserFactory extends Factory
 {
