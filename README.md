@@ -27,6 +27,8 @@ Users in teams can be combined into groups, with their own rights and permission
   * [Routes](#middleware-routes)
   * [Usage](#middleware-usage)
 * [License](#license)
+
+Support
 -------------------------------------------
 
 Package was tested on Laravel 8.x and 9.x
