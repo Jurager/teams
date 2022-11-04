@@ -1,9 +1,11 @@
-Introduction
--------------------------------------------
+# Jurager/Teams
+[![Latest Stable Version](https://poser.pugx.org/jurager/teams/v/stable)](https://packagist.org/packages/jurager/teams)
+[![Total Downloads](https://poser.pugx.org/jurager/teams/downloads)](https://packagist.org/packages/jurager/teams)
+[![License](https://poser.pugx.org/jurager/teams/license)](https://packagist.org/packages/jurager/teams)
 
-"Teams" is a Laravel package to manage team functionality and operate with user permissions and abilities, supporting multi tenancy, dynamic roles and permissions for each team.
+Laravel package to manage teams and operate with user permissions, abilities, supporting multi-tenant dynamic roles, roles groups, capabilities, and permissions for each team.
 
-Users within a team can be combined into groups with their own rights and permissions, the access rights given to a user group overrides the rights granted to a user in a team
+Users in teams can be combined into groups, with their own rights and permissions, access rights given to a user group overrides the rights granted to a user in a team.
 
 
 > Documentation for the package is in the process of being written, for now use this readme 
