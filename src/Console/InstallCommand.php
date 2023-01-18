@@ -43,10 +43,11 @@ class InstallCommand extends Command
 	    }
 
 	    copy(__DIR__.'/../../stubs/app/Models/Ability.php', app_path('Models/Ability.php'));
-	    copy(__DIR__.'/../../stubs/app/Models/Capability.php', app_path('Models/Capability.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Capability.php', app_path('Models/Capability.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Capability.php', app_path('Models/Group.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Invitation.php', app_path('Models/Invitation.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Membership.php', app_path('Models/Membership.php'));
 	    copy(__DIR__.'/../../stubs/app/Models/Permission.php', app_path('Models/Permission.php'));
-	    copy(__DIR__.'/../../stubs/app/Models/Membership.php', app_path('Models/Membership.php'));
-	    copy(__DIR__.'/../../stubs/app/Models/Invitation.php', app_path('Models/Invitation.php'));
 	    copy(__DIR__.'/../../stubs/app/Models/Role.php', app_path('Models/Role.php'));
 
 	    // Directories...
