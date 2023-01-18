@@ -40,8 +40,8 @@ class Owner implements JsonSerializable
      */
     public function __construct()
     {
-        $this->id          = 1;
-        $this->name        = 'owner';
+        $this->id = 1;
+        $this->name = 'owner';
         $this->permissions = ['*'];
     }
 
@@ -66,10 +66,10 @@ class Owner implements JsonSerializable
     public function jsonSerialize()
     {
         return [
-            'id'            => $this->id,
-            'name'          => __($this->name),
-            'description'   => __($this->description),
-            'permissions'   => $this->permissions,
+            'id' => $this->id,
+            'name' => __($this->name),
+            'description' => __($this->description),
+            'permissions' => $this->permissions,
         ];
     }
 }

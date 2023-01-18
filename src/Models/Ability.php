@@ -21,6 +21,6 @@ abstract class Ability extends Model
      */
 	public function team(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-		return $this->belongsTo(Teams::teamModel());
+		return $this->belongsTo(Teams::$teamModel);
 	}
 }

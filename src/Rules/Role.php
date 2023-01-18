@@ -3,7 +3,6 @@
 namespace Jurager\Teams\Rules;
 
 use Illuminate\Contracts\Validation\Rule;
-use Jurager\Teams\Teams;
 
 class Role implements Rule
 {

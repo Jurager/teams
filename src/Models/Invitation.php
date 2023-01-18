@@ -22,6 +22,6 @@ abstract class Invitation extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::teamModel());
+        return $this->belongsTo(Teams::$teamModel);
     }
 }

@@ -28,7 +28,7 @@ trait HasTeams
      */
     public function ownedTeams(): HasMany
     {
-        return $this->hasMany(Teams::teamModel());
+        return $this->hasMany(Teams::$teamModel);
     }
 
     /**
@@ -38,7 +38,7 @@ trait HasTeams
      */
     public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::teamModel(), Teams::membershipModel())
+        return $this->belongsToMany(Teams::$teamModel, Teams::$membershipModel)
             ->withPivot('role')
             ->withTimestamps()
             ->as('membership');
@@ -236,7 +236,7 @@ trait HasTeams
      */
     public function teamAbilities($team, $entity, bool $forbidden = false)
     {
-        $permissions = Teams::permissionModel()::where([ 'team_id' => $team->id ]);
+        $permissions = Teams::$permissionModel::where([ 'team_id' => $team->id ]);
 
         if ($forbidden) {
             $permissions = $permissions->where('forbidden', true);
@@ -267,7 +267,7 @@ trait HasTeams
     {
         // Checking if a user is tech support
 	    //
-        if ($this->{Config::get('teams.support_field', 'is_support')}) {
+        if ($this->{config('teams.support_field', 'is_support')}) {
             return true;
         }
 
@@ -290,7 +290,7 @@ trait HasTeams
 
         // Get an ability
 	    //
-        $ability = Teams::abilityModel()::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
+        $ability = Teams::$abilityModel::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
 
         // If there is a rule for an entity
 	    //
@@ -298,9 +298,9 @@ trait HasTeams
 
             // Getting permissions on an entity
 	        //
-            $permissions = Teams::permissionModel()::where([
-                'team_id'       => $team->id,
-                'ability_id'    => $ability->id,
+            $permissions = Teams::$permissionModel::where([
+                'team_id' => $team->id,
+                'ability_id' => $ability->id,
             ])->get();
 
 
@@ -361,6 +361,8 @@ trait HasTeams
      */
     public function allowTeamAbility($team, string|array $ability, $entity, $target): bool
     {
+        // @todo: refactor this
+        //
         $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
         $abilityEdit = $entity_type.'s.edit';
 
@@ -369,12 +371,12 @@ trait HasTeams
         }
 
         // Get an ability to perform an action on specific entity object inside team
-        $ability = Teams::abilityModel()::firstOrCreate(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id]);
+        $ability = Teams::$abilityModel::firstOrCreate(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id]);
 
         if ($ability) {
 
             // Create a new permission for user entity
-            $permission = Teams::permissionModel()::updateOrCreate(
+            $permission = Teams::$permissionModel::updateOrCreate(
                 [
                     'team_id'     => $team->id,
                     'ability_id'  => $ability->id,
@@ -405,6 +407,8 @@ trait HasTeams
      */
     public function forbidTeamAbility($team, string|array $ability, $entity, $target): bool
     {
+        // @todo: refactor this
+        //
         $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
         $abilityEdit  =  $entity_type.'s.edit';
 
@@ -414,13 +418,13 @@ trait HasTeams
 
         // Get an ability to perform an action on specific entity object inside team
         //
-        $ability = Teams::abilityModel()::firstOrCreate(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id]);
+        $ability = Teams::$abilityModel::firstOrCreate(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id]);
 
         if ($ability) {
 
             // Create a new permission for user entity
             //
-            $permission = Teams::permissionModel()::updateOrCreate(
+            $permission = Teams::$permissionModel::updateOrCreate(
                 [
                     'team_id'     => $team->id,
                     'ability_id'  => $ability->id,
@@ -460,10 +464,10 @@ trait HasTeams
 
         // Get an ability to perform an action on specific entity object inside team
         //
-        $ability = Teams::abilityModel()::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
+        $ability = Teams::$abilityModel::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
 
         if ($ability) {
-            $permission = Teams::permissionModel()::where([
+            $permission = Teams::$permissionModel::where([
                 'team_id'     => $team->id,
                 'ability_id'  => $ability->id,
                 'entity_id'   => $target->id,

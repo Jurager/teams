@@ -61,12 +61,14 @@ return [
     |
     */
 	'models' => [
-		'user'            => \App\Models\User::class,
-		'team'            => \App\Models\Team::class,
-		'membership'      => \App\Models\Membership::class,
-		'invitation'      => \App\Models\Invitation::class,
-		'ability'         => \App\Models\Ability::class,
-		'permission'      => \App\Models\Permission::class,
+        'team' => Jurager\Teams\Models\Team::class,
+        'ability' => Jurager\Teams\Models\Ability::class,
+        'capability' => Jurager\Teams\Models\Capability::class,
+        'group' => Jurager\Teams\Models\Group::class,
+        'invitation' => Jurager\Teams\Models\Invitation::class,
+        'membership' => Jurager\Teams\Models\Membership::class,
+        'permission' => Jurager\Teams\Models\Permission::class,
+        'role' => Jurager\Teams\Models\Role::class,
 	],
 
 	/*
@@ -78,14 +80,14 @@ return [
     |
     */
 	'tables' => [
-		'users'            => 'users',
-		'teams'            => 'teams',
-		'team_user'        => 'team_user',
-		'team_groups'	   => 'team_groups',
-		'user_group'       => 'user_group',
-		'invitations'      => 'invitations',
-		'permissions'      => 'permissions',
-		'abilities'        => 'abilities',
+		'users' => 'users',
+		'teams' => 'teams',
+		'team_user' => 'team_user',
+		'team_groups' => 'team_groups',
+		'user_group' => 'user_group',
+		'invitations' => 'invitations',
+		'permissions' => 'permissions',
+		'abilities' => 'abilities',
 	],
 
 	/*
@@ -97,7 +99,7 @@ return [
     |
     */
 	'foreign_keys' => [
-		'team_id'         => 'team_id',
+		'team_id' => 'team_id',
 	],
 
     /*

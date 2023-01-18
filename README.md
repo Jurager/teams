@@ -9,8 +9,8 @@ Users in teams can be combined into groups, with their own rights and permission
 
 
 > Documentation for the package is in the process of being written, for now use this readme 
-
-* [Support](#support)
+> 
+* [Requirements](#requirements)
 * [Installation](#installation)
 * [Actions](#actions)
 * [Users](#users)
@@ -28,10 +28,9 @@ Users in teams can be combined into groups, with their own rights and permission
   * [Usage](#middleware-usage)
 * [License](#license)
 
-Support
+Requirements
 -------------------------------------------
-
-Package was tested on Laravel 8.x and 9.x
+`PHP => 8.0` and `Laravel 8.x` or `9.x`
 
 Installation
 -------------------------------------------
@@ -40,17 +39,40 @@ Installation
 composer require jurager/teams
 ```
 
-To complete the installation you need to run `artisan:publish` command to add configs and additional files for package to work.
-
-> Running the following commands **may overwrite your actual directories and files**, please consider doing a backup beforehand.
+> Running the next command **may overwrite your actual directories and files**, please consider doing a backup beforehand.
 
 ```sh
 php artisan teams:install
 ```
 
-> If you also want to add pre-configured `User` and `Team` models, pass the `--models` option to command above, otherwise you need to extend your own models.
+Then, add the `HasTeams` trait to your existing `User` model.
 
-This package is supporting package discovery but, after running `artisan:publish` command, you need to put the `App\Providers\TeamsServiceProvider::class` to app.php config in providers section, this file was publised from stub, and needed for extensibility
+```php
+<?php 
+
+namespace App\Providers;
+
+use Jurager\Teams\Traits\HasTeams;
+
+class User extends Model {
+
+    use HasTeams; // Add this trait
+}
+```
+To complete the installation process add the `TeamPolicy` to your existing `AuthServiceProvider`
+
+```php
+<?php 
+
+namespace App\Providers;
+
+class AuthServiceProvider extends ServiceProvider
+{
+    protected $policies = [
+        App\Models\Team::class => App\Policies\TeamPolicy::class, // Add this class
+    ];
+}
+```
 
 Actions
 -------------------------------------------
@@ -61,11 +83,11 @@ These actions include `CreateTeam`, `UpdateTeamName`, and `DeleteTeam`. Each of 
 
 Users
 -------------------------------------------
-Package provide `Jurager\Teams\Traits\HasTeams` trait, that  applied to your application's `App\Models\User` model during installation and provides methods to inspect a user's teams
 
+`Jurager\Teams\Traits\HasTeams` provides methods to inspect a user's teams
 
 ```php
-// Access all of the team's (including owned teams) that a user belongs to...
+// Access all the team's (including owned teams) that a user belongs to...
 $user->teams : Illuminate\Support\Collection
 
 // Access all of a user's owned teams...

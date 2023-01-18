@@ -17,18 +17,26 @@ abstract class Group extends Model
      */
     protected $fillable = [ 'team_id', 'name' ];
 
-    public $timestamps = false;
     /**
-     * Get the team that the ability belongs to.
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
+
+    /**
+     * Get the team that the group belongs to.
      *
      * @return BelongsTo
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::teamModel());
+        return $this->belongsTo(Teams::$teamModel);
     }
 
     /**
+     * Get all group users
+     *
      * @return BelongsToMany
      */
     public function users(): BelongsToMany
@@ -37,6 +45,8 @@ abstract class Group extends Model
     }
 
     /**
+     * Attach user to a group
+     *
      * @param  object  $users
      * @return array|bool
      */
@@ -63,15 +73,14 @@ abstract class Group extends Model
     }
 
     /**
+     * Detach user or users from group
+     *
      * @param  object|array  $users
      * @return int
      */
     public function detachUser(object|array $users): int
     {
-        if (is_array($users)) {
-            return $this->users()->detach($users);
-        }
-        return $this->users()->detach($users->id);
+        return $this->users()->detach(is_array($users) ? $users : $users->id);
     }
 
 }

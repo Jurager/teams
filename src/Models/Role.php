@@ -16,17 +16,37 @@ abstract class Role extends Model
 	 */
 	protected $fillable = [ 'team_id', 'name', 'description', 'level'];
 
-	public $timestamps = false;
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
 
+    /**
+     * The relationships that should always be loaded.
+     *
+     * @var array
+     */
 	protected $with = [
 	    'capabilities',
     ];
 
-	protected $appends = [
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
 	    'permissions'
     ];
 
-	protected $hidden = [
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
+    protected $hidden = [
 	    'capabilities'
     ];
 

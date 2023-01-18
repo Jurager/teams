@@ -15,6 +15,11 @@ abstract class Capability extends Model
 	 */
 	protected $fillable = ['name', 'code' ];
 
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
     public $timestamps = false;
 
 	/**
@@ -22,6 +27,6 @@ abstract class Capability extends Model
 	 */
 	public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::teamModel(), 'role_capability');
+        return $this->belongsToMany(Teams::$teamModel, 'role_capability');
     }
 }

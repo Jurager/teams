@@ -10,16 +10,13 @@
         }
     ],
     "require": {
-        "php": "^7.4|^8.0",
+        "php": "^8.0",
         "ext-json": "*",
         "illuminate/support": "^8.0|^9.0",
         "illuminate/http": "^8.0|^9.0",
         "illuminate/bus": "^8.0|^9.0",
         "illuminate/mail": "^8.0|^9.0",
         "illuminate/queue": "^8.0|^9.0"
-    },
-    "require-dev": {
-        "laravel/sanctum": "^2.0|^3.0"
     },
     "autoload": {
         "psr-4": {

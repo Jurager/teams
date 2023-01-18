@@ -2,7 +2,6 @@
 
 namespace Jurager\Teams;
 
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Jurager\Teams\Contracts\AddsTeamMembers;
 use Jurager\Teams\Contracts\CreatesTeams;
@@ -23,13 +22,6 @@ class Teams
 	public static Collection $permissions;
 
 	/**
-	 * The default permissions that should be available to new entities.
-	 *
-	 * @var array
-	 */
-	public static $defaultPermissions = [];
-
-	/**
 	 * The user model that should be used by Teams.
 	 *
 	 * @var string
@@ -41,56 +33,56 @@ class Teams
 	 *
 	 * @var string
 	 */
-	public static $abilityModel = 'App\\Models\\Ability';
+	public static $abilityModel = \Jurager\Teams\Models\Ability::class;
 
     /**
      * The capability model that should be used by Teams.
      *
      * @var string
      */
-    public static $capabilityModel = 'App\\Models\\Capability';
+    public static $capabilityModel = \Jurager\Teams\Models\Capability::class;
 
     /**
      * The role model that should be used by Teams.
      *
      * @var string
      */
-    public static $roleModel = 'App\\Models\\Role';
+    public static $roleModel = \Jurager\Teams\Models\Role::class;
 
     /**
      * The group model that should be used by Teams.
      *
      * @var string
      */
-    public static $groupModel = 'App\\Models\\Group';
+    public static $groupModel = \Jurager\Teams\Models\Group::class;
 
 	/**
 	 * The permission model that should be used by Teams.
 	 *
 	 * @var string
 	 */
-	public static $permissionModel = 'App\\Models\\Permission';
+	public static $permissionModel = \Jurager\Teams\Models\Permission::class;
 
 	/**
 	 * The team model that should be used by Teams.
 	 *
 	 * @var string
 	 */
-	public static $teamModel = 'App\\Models\\Team';
+	public static $teamModel = \Jurager\Teams\Models\Team::class;
 
 	/**
 	 * The membership model that should be used by Teams.
 	 *
 	 * @var string
 	 */
-	public static $membershipModel = 'App\\Models\\Membership';
+	public static $membershipModel = \Jurager\Teams\Models\Membership::class;
 
 	/**
 	 * The team invitation model that should be used by Teams.
 	 *
 	 * @var string
 	 */
-	public static $invitationModel = 'App\\Models\\Invitation';
+	public static $invitationModel = \Jurager\Teams\Models\Invitation::class;
 
     /**
      * Determine if any permissions have been registered with Teams.
@@ -272,7 +264,7 @@ class Teams
 	 * @return static
 	 */
 	public static function useTeamModel(string $model)
-	{
+    {
 		static::$teamModel = $model;
 
 		return new static;

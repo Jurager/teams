@@ -20,7 +20,7 @@ abstract class Permission extends Model
 	 */
 	public function team(): BelongsTo
 	{
-		return $this->belongsTo(Teams::teamModel());
+		return $this->belongsTo(Teams::$teamModel);
 	}
 
 	/**
@@ -28,6 +28,6 @@ abstract class Permission extends Model
 	 */
 	public function ability(): BelongsTo
 	{
-		return $this->belongsTo(Teams::abilityModel());
+		return $this->belongsTo(Teams::$abilityModel);
 	}
 }

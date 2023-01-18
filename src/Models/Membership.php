@@ -5,7 +5,6 @@ namespace Jurager\Teams\Models;
 use Jurager\Teams\Teams;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use Illuminate\Support\Facades\Config;
 
 abstract class Membership extends Pivot
 {
@@ -16,6 +15,18 @@ abstract class Membership extends Pivot
      */
     protected $table;
 
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = true;
+
+    /**
+     * The relationships that should always be loaded.
+     *
+     * @var array
+     */
 	protected $with = [
 		'role'
 	];
@@ -25,7 +36,8 @@ abstract class Membership extends Pivot
 	 */
 	public function __construct(array $attributes = [])
     {
-        $this->table = Config::get('teams.tables.team_user', 'team_user');
+        $this->table = config('teams.tables.team_user', 'team_user');
+
         parent::__construct($attributes);
     }
 

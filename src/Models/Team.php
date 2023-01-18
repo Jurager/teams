@@ -4,17 +4,19 @@ namespace Jurager\Teams\Models;
 
 use Jurager\Teams\Owner;
 use Jurager\Teams\Teams;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class Team extends Model
 {
-
+    /**
+     * The relationships that should always be loaded.
+     *
+     * @var array
+     */
     protected $with = [
         'roles.capabilities',
         'groups'
@@ -27,7 +29,7 @@ abstract class Team extends Model
 	 */
 	public function owner(): BelongsTo
 	{
-		return $this->belongsTo(Teams::userModel(), 'user_id');
+		return $this->belongsTo(Teams::$userModel, 'user_id');
 	}
 
 	/**
@@ -47,12 +49,11 @@ abstract class Team extends Model
 	 */
 	public function users(): BelongsToMany
 	{
-		return $this->belongsToMany(Teams::userModel(), Teams::membershipModel())
+		return $this->belongsToMany(Teams::$userModel, Teams::$membershipModel)
 			->withPivot('role')
 			->withTimestamps()
 			->as('membership');
 	}
-
 
 	/**
 	 * Get all the abilities belong to the team.
@@ -61,7 +62,7 @@ abstract class Team extends Model
 	 */
 	public function abilities(): BelongsToMany
 	{
-		return $this->belongsToMany(Teams::abilityModel(), Teams::permissionModel())
+		return $this->belongsToMany(Teams::$abilityModel, Teams::$permissionModel)
 			->withTimestamps()
 			->withPivot(['entity_type', 'entity_id'])
 			->as('permission');
@@ -257,10 +258,10 @@ abstract class Team extends Model
 	/**
 	 * Determine if the given user belongs to the team.
 	 *
-	 * @param User $user
+	 * @param $user
 	 * @return bool
 	 */
-	public function hasUser(User $user): bool
+	public function hasUser($user): bool
 	{
 		return $this->users->contains($user) || $user->ownsTeam($this);
 	}
@@ -281,7 +282,7 @@ abstract class Team extends Model
 	/**
 	 * Determine if the given user has the given permission on the team.
 	 *
-	 * @param User $user
+	 * @param $user
 	 * @param string|array $permission
 	 * @param bool $require
 	 * @return bool
@@ -298,16 +299,16 @@ abstract class Team extends Model
 	 */
 	public function invitations(): HasMany
 	{
-		return $this->hasMany(Teams::invitationModel());
+		return $this->hasMany(Teams::$invitationModel);
 	}
 
 	/**
 	 * Remove the given user from the team.
 	 *
-	 * @param User $user
+	 * @param $user
 	 * @return void
 	 */
-	public function removeUser(User $user): void
+	public function removeUser($user): void
 	{
 		$this->users()->detach($user);
 	}
