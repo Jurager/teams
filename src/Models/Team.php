@@ -309,10 +309,6 @@ abstract class Team extends Model
 	 */
 	public function removeUser(User $user): void
 	{
-		if ($user->{Config::get('teams.foreign_keys.current_team_id', 'current_team_id')} === $this->id) {
-			$user->forceFill([Config::get('teams.foreign_keys.current_team_id', 'current_team_id') => null])->save();
-		}
-
 		$this->users()->detach($user);
 	}
 
@@ -323,12 +319,6 @@ abstract class Team extends Model
 	 */
 	public function purge()
 	{
-		$this->owner()->where(Config::get('teams.foreign_keys.current_team_id', 'current_team_id'), $this->id)
-			->update([Config::get('teams.foreign_keys.current_team_id', 'current_team_id') => null]);
-
-		$this->users()->where(Config::get('teams.foreign_keys.current_team_id', 'current_team_id'), $this->id)
-			->update([Config::get('teams.foreign_keys.current_team_id', 'current_team_id') => null]);
-
 		$this->users()->detach();
 
 		$this->delete();

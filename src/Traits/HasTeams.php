@@ -169,6 +169,8 @@ trait HasTeams
      */
     public function hasTeamPermission($team, string|array $permission, bool $require = false): bool
     {
+        // Checking if a user is tech support
+        //
         if ($this->{Config::get('teams.support_field', 'is_support')}) {
             return true;
         }

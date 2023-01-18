@@ -98,7 +98,6 @@ return [
     */
 	'foreign_keys' => [
 		'team_id'         => 'team_id',
-		'current_team_id' => 'current_team_id'
 	],
 
     /*
