@@ -13,8 +13,9 @@ Users in teams can be combined into groups, with their own rights and permission
 * [Requirements](#requirements)
 * [Installation](#installation)
 * [Actions](#actions)
-* [Users](#users)
 * [Team](#team)
+* [Users](#users)
+* [Group](#group)
 * [Invitations](#invitations)
   * [Actions](#invitation-actions) 
   * [Mail](#invitation-mail)
@@ -78,49 +79,6 @@ Actions
 
 Actions are ready-made code that allows you to quickly start using the package. They can be invoked from `app/Actions/Teams` when their corresponding task is performed by the user. You can create or modify these actions as you need.
 
-Users
--------------------------------------------
-
-`Jurager\Teams\Traits\HasTeams` provides methods to inspect a user's teams
-
-```php
-// Access all the team's (including owned teams) that a user belongs to...
-$user->teams : Illuminate\Support\Collection
-
-// Access all of a user's owned teams...
-$user->ownedTeams : Illuminate\Database\Eloquent\Collection
-
-// Determine if a user owns a given team...
-$user->ownsTeam($team) : bool
-
-// Determine if a user belongs to a given team...
-$user->belongsToTeam($team) : bool
-
-// Get the role that the user is assigned on the team...
-$user->teamRole($team) : \Jurager\Teams\Role
-
-// Determine if the user has the given role on the given team...
-$user->hasTeamRole($team, 'admin') : bool
-
-// Access an array of all permissions a user has for a given team...
-$user->teamPermissions($team) : array
-
-// Determine if a user has a given team permission...
-$user->hasTeamPermission($team, 'server:create') : bool
-
-// Get list of abilities or forbidden abilities for users on certain model
-$user->teamAbilities($team, \App\Models\Server $server) : mixed
-
-// Determine if a user has a given ability on certain model...
-$user->hasTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
-
-// Add an ability for user to action on certain model, if permission is not found, will create a new one
-$user->allowTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
-
-// Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
-$user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
-```
-
 Team
 -------------------------------------------
 Team can be accessed via `$user->team` it provides methods for inspecting the team's attributes and relations:
@@ -180,6 +138,54 @@ $team->invitations()
 // Remove the given user from the team.
 $team->removeUser();
 ```
+
+Users
+-------------------------------------------
+
+`Jurager\Teams\Traits\HasTeams` provides methods to inspect a user's teams
+
+```php
+// Access all the team's (including owned teams) that a user belongs to...
+$user->teams : Illuminate\Support\Collection
+
+// Access all of a user's owned teams...
+$user->ownedTeams : Illuminate\Database\Eloquent\Collection
+
+// Determine if a user owns a given team...
+$user->ownsTeam($team) : bool
+
+// Determine if a user belongs to a given team...
+$user->belongsToTeam($team) : bool
+
+// Get the role that the user is assigned on the team...
+$user->teamRole($team) : \Jurager\Teams\Role
+
+// Determine if the user has the given role on the given team...
+$user->hasTeamRole($team, 'admin') : bool
+
+// Access an array of all permissions a user has for a given team...
+$user->teamPermissions($team) : array
+
+// Determine if a user has a given team permission...
+$user->hasTeamPermission($team, 'server:create') : bool
+
+// Get list of abilities or forbidden abilities for users on certain model
+$user->teamAbilities($team, \App\Models\Server $server) : mixed
+
+// Determine if a user has a given ability on certain model...
+$user->hasTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+
+// Add an ability for user to action on certain model, if permission is not found, will create a new one
+$user->allowTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+
+// Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
+$user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
+```
+
+Group
+-------------------------------------------
+
+This section of the documentation will be available soon.
 
 Invitations
 -------------------------------------------
