@@ -12,7 +12,7 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::table(config('teams.tables.users', 'users'), function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             $table->boolean('is_support')->nullable();
         });
     }
@@ -24,7 +24,7 @@ return new class extends Migration {
      */
     public function down()
     {
-        Schema::table(config('teams.tables.users', 'users'), function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('is_support');
         });
     }

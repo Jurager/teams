@@ -6,7 +6,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Database\Eloquent\Model;
 
@@ -39,7 +38,7 @@ class Teams
 
 		// Foreign key for team_id field
 		//
-		$foreign = Config::get('teams.foreign_keys.team_id');
+		$foreign = config('teams.foreign_keys.team_id', 'team_id')
 
 		// If team id not directly passed get the id by request or route param
 		//
@@ -91,11 +90,11 @@ class Teams
 	{
         // Method to be called in the middleware return
         //
-		$handling = Config::get('teams.middleware.handling');
+		$handling = config('teams.middleware.handling');
 
         // Handlers for the unauthorized method
         //
-		$handler  = Config::get('teams.middleware.handlers.'.$handling);
+		$handler  = config('teams.middleware.handlers.'.$handling);
 
         // Abort handler simply returns unauthorized message
         //

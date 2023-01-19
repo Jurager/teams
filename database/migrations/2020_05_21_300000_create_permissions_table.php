@@ -12,7 +12,7 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::create(config('teams.tables.permissions', 'permissions'), function (Blueprint $table) {
+        Schema::create('permissions', function (Blueprint $table) {
             $table->id();
             $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
             $table->foreignId('ability_id')->constrained()->cascadeOnDelete();
@@ -29,6 +29,6 @@ return new class extends Migration {
      */
     public function down()
     {
-        Schema::dropIfExists(config('teams.tables.permissions', 'permissions'));
+        Schema::dropIfExists('permissions');
     }
 };

@@ -12,7 +12,7 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::create(config('teams.tables.teams', 'teams'), function (Blueprint $table) {
+        Schema::create('teams', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->index();
             $table->string('name');
@@ -27,6 +27,6 @@ return new class extends Migration {
      */
     public function down()
     {
-        Schema::dropIfExists(config('teams.tables.teams', 'teams'));
+        Schema::dropIfExists('teams');
     }
 };

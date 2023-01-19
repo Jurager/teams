@@ -15,7 +15,7 @@ class TeamsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . "/../config/teams.php", "teams");
+        $this->mergeConfigFrom(__DIR__ . '/../config/teams.php', 'teams');
     }
 
     /**
@@ -27,30 +27,12 @@ class TeamsServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->loadViewsFrom(__DIR__ . "/../resources/views", "teams");
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'teams');
 
-        $this->configurePublishing();
         $this->configureCommands();
+        $this->configurePublishing();
         $this->registerMiddlewares();
-
-        Teams::useTeamModel(config("teams.models.team", \Jurager\Teams\Models\Team::class));
-        Teams::useAbilityModel(config("teams.models.ability", \Jurager\Teams\Models\Ability::class));
-        Teams::useCapabilityModel(config("teams.models.capability", \Jurager\Teams\Models\Capability::class));
-        Teams::useGroupModel(config("teams.models.group", \Jurager\Teams\Models\Group::class));
-        Teams::useInvitationModel(config("teams.models.invitation", \Jurager\Teams\Models\Invitation::class));
-        Teams::useMembershipModel(config("teams.models.membership", \Jurager\Teams\Models\Membership::class));
-        Teams::usePermissionModel(config("teams.models.permission", \Jurager\Teams\Models\Permission::class));
-        Teams::useRoleModel(config("teams.models.role", \Jurager\Teams\Models\Role::class));
-
-        //Teams::useUserModel(config("teams.models.user", \App\Models\User::class));
-
-        Teams::createTeamsUsing(\App\Actions\Teams\CreateTeam::class);
-        Teams::updateTeamNamesUsing(\App\Actions\Teams\UpdateTeamName::class);
-        Teams::addTeamMembersUsing(\App\Actions\Teams\AddTeamMember::class);
-        Teams::inviteTeamMembersUsing(\App\Actions\Teams\InviteTeamMember::class);
-        Teams::removeTeamMembersUsing(\App\Actions\Teams\RemoveTeamMember::class);
-        Teams::deleteTeamsUsing(\App\Actions\Teams\DeleteTeam::class);
-        Teams::deleteUsersUsing(\App\Actions\Teams\DeleteUser::class);
+        $this->registerModels();
     }
 
     /**
@@ -65,16 +47,16 @@ class TeamsServiceProvider extends ServiceProvider
         }
 
         $this->publishes([
-            __DIR__ . "/../resources/views" => resource_path("views/vendor/teams")
-        ],"teams-views");
-
-        $this->publishes([
-            __DIR__ . "/../config/teams.php" => config_path("teams.php")
-        ],"teams-config");
+            __DIR__ . '/../config/teams.php' => config_path('teams.php')
+        ], 'teams-config');
 
         $this->publishes([
             __DIR__ . '/../database/migrations/' => database_path('/migrations')
         ], 'teams-migrations');
+
+        $this->publishes([
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/teams')
+        ], 'teams-views');
     }
 
     /**
@@ -91,6 +73,18 @@ class TeamsServiceProvider extends ServiceProvider
         $this->commands([Console\InstallCommand::class]);
     }
 
+    protected function registerModels(): void
+    {
+        Teams::setModel('team', config('teams.models.team', \Jurager\Teams\Models\Team::class));
+        Teams::setModel('ability', config('teams.models.ability', \Jurager\Teams\Models\Ability::class));
+        Teams::setModel('capability', config('teams.models.capability', \Jurager\Teams\Models\Capability::class));
+        Teams::setModel('group', config('teams.models.group', \Jurager\Teams\Models\TeamGroup::class));
+        Teams::setModel('invitation', config('teams.models.invitation', \Jurager\Teams\Models\Invitation::class));
+        Teams::setModel('membership', config('teams.models.membership', \Jurager\Teams\Models\Membership::class));
+        Teams::setModel('permission', config('teams.models.permission', \Jurager\Teams\Models\Permission::class));
+        Teams::setModel('role', config('teams.models.role', \Jurager\Teams\Models\Role::class));
+    }
+
     /**
      * Register the middlewares automatically.
      *
@@ -100,18 +94,18 @@ class TeamsServiceProvider extends ServiceProvider
      */
     protected function registerMiddlewares(): void
     {
-        if (!$this->app["config"]->get("teams.middleware.register")) {
+        if (!$this->app['config']->get('teams.middleware.register')) {
             return;
         }
 
         $middlewares = [
-            "ability" => \Jurager\Teams\Middleware\Ability::class,
-            "role" => \Jurager\Teams\Middleware\Role::class,
-            "permission" => \Jurager\Teams\Middleware\Permission::class,
+            'ability' => \Jurager\Teams\Middleware\Ability::class,
+            'role' => \Jurager\Teams\Middleware\Role::class,
+            'permission' => \Jurager\Teams\Middleware\Permission::class,
         ];
 
         foreach ($middlewares as $key => $class) {
-            $this->app["router"]->aliasMiddleware($key, $class);
+            $this->app['router']->aliasMiddleware($key, $class);
         }
     }
 }

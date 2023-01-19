@@ -12,7 +12,7 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::create(config('teams.tables.capabilities', 'capabilities'), function (Blueprint $table) {
+        Schema::create('capabilities', function (Blueprint $table) {
             $table->id();
             $table->string('name')->nullable();
             $table->string('code');
@@ -26,6 +26,6 @@ return new class extends Migration {
      */
     public function down()
     {
-        Schema::dropIfExists(config('teams.tables.capabilities', 'capabilities'));
+        Schema::dropIfExists('capabilities');
     }
 };

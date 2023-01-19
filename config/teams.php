@@ -64,7 +64,7 @@ return [
         'team' => Jurager\Teams\Models\Team::class,
         'ability' => Jurager\Teams\Models\Ability::class,
         'capability' => Jurager\Teams\Models\Capability::class,
-        'group' => Jurager\Teams\Models\Group::class,
+        'group' => Jurager\Teams\Models\TeamGroup::class,
         'invitation' => Jurager\Teams\Models\Invitation::class,
         'membership' => Jurager\Teams\Models\Membership::class,
         'permission' => Jurager\Teams\Models\Permission::class,
@@ -80,14 +80,7 @@ return [
     |
     */
 	'tables' => [
-		'users' => 'users',
-		'teams' => 'teams',
 		'team_user' => 'team_user',
-		'team_groups' => 'team_groups',
-		'user_group' => 'user_group',
-		'invitations' => 'invitations',
-		'permissions' => 'permissions',
-		'abilities' => 'abilities',
 	],
 
 	/*

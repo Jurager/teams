@@ -2,12 +2,11 @@
 
 namespace Jurager\Teams\Traits;
 
+use Jurager\Teams\Owner;
+use Jurager\Teams\Teams;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Owner;
-use Jurager\Teams\Teams;
 
 trait HasTeams
 {
@@ -75,9 +74,9 @@ trait HasTeams
      */
     public function belongsToTeam($team): bool
     {
-        return $this->teams->contains(function ($t) use ($team) {
+        return $this->ownsTeam($team) || $this->teams->contains(function ($t) use ($team) {
             return $t->id === $team->id;
-        }) || $this->ownsTeam($team);
+        });
     }
 
     /**
@@ -171,7 +170,7 @@ trait HasTeams
     {
         // Checking if a user is tech support
         //
-        if ($this->{Config::get('teams.support_field', 'is_support')}) {
+        if ($this->{config('teams.support_field', 'is_support')}) {
             return true;
         }
 

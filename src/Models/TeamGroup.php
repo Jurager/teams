@@ -8,7 +8,7 @@ use Jurager\Teams\Teams;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
-class Group extends Model
+class TeamGroup extends Model
 {
     /**
      * The attributes that are mass assignable.

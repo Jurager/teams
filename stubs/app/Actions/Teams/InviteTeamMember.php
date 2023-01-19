@@ -70,7 +70,7 @@ class InviteTeamMember implements InvitesTeamMembers
 	protected function rules($team)
 	{
 		return array_filter([
-			'email' => ['required', 'email', Rule::unique(config('teams.tables.invitations', 'invitations'))->where(function ($query) use ($team) {
+			'email' => ['required', 'email', Rule::unique('invitations')->where(function ($query) use ($team) {
 				$query->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id);
 			})],
 			'role' => Teams::hasRoles()

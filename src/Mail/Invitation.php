@@ -39,6 +39,6 @@ class Invitation extends Mailable
     {
         return $this->markdown('teams::mail.invitation', ['acceptUrl' => URL::signedRoute('invitations.accept', [
             'invitation' => $this->invitation,
-        ])])->subject('Team Invitation');
+        ])])->subject(__('Team Invitation'));
     }
 }

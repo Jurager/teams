@@ -31,13 +31,9 @@ class InstallCommand extends Command
         // Publish...
         $this->callSilent('vendor:publish', ['--tag' => 'teams-config', '--force' => true]);
         $this->callSilent('vendor:publish', ['--tag' => 'teams-migrations', '--force' => true]);
+        $this->callSilent('vendor:publish', ['--tag' => 'teams-views', '--force' => true]);
 
-	    // Models...
-	    //if ($this->option('models')) {
-		    //copy(__DIR__.'/../../stubs/app/Models/User.php', app_path('Models/User.php'));
-		    //copy(__DIR__.'/../../stubs/app/Models/Team.php', app_path('Models/Team.php'));
-	    //}
-
+        // Models...
         (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/app/Models', app_path('Models'));
 
 	    // Directories...

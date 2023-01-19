@@ -12,7 +12,7 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::create(config('teams.tables.abilities', 'abilities'), function (Blueprint $table) {
+        Schema::create('abilities', function (Blueprint $table) {
             $table->id();
             $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
             $table->string('name');
@@ -31,6 +31,6 @@ return new class extends Migration {
      */
     public function down()
     {
-        Schema::dropIfExists(config('teams.tables.abilities', 'abilities'));
+        Schema::dropIfExists('abilities');
     }
 };
