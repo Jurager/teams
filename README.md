@@ -39,7 +39,7 @@ Installation
 composer require jurager/teams
 ```
 
-> Running the next command **may overwrite your actual directories and files**, please consider doing a backup beforehand.
+Always **do backups**, next command **may overwrite your actual data.**
 
 ```sh
 php artisan teams:install
@@ -77,7 +77,9 @@ class AuthServiceProvider extends ServiceProvider
 Actions
 -------------------------------------------
 
-Actions are ready-made code that allows you to quickly start using the package. They can be invoked from `app/Actions/Teams` when their corresponding task is performed by the user. You can create or modify these actions as you need.
+Actions are ready-made code that allows you to quickly start using the package.
+
+They can be invoked from `app/Actions/Teams` when their corresponding task is performed by the user. You can create or modify these actions as you need.
 
 Team
 -------------------------------------------
