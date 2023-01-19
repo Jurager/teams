@@ -6,7 +6,7 @@ use Jurager\Teams\Teams;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
-abstract class Invitation extends Model
+class Invitation extends Model
 {
     /**
      * The attributes that are mass assignable.

@@ -39,7 +39,7 @@ trait HasTeams
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Teams::$teamModel, Teams::$membershipModel)
-            ->withPivot('role')
+            ->withPivot('role_id')
             ->withTimestamps()
             ->as('membership');
     }

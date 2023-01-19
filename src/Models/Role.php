@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 
-abstract class Role extends Model
+class Role extends Model
 {
 	/**
 	 * The attributes that are mass assignable.

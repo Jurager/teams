@@ -5,7 +5,7 @@ namespace Jurager\Teams\Models;
 use Jurager\Teams\Teams;
 use Illuminate\Database\Eloquent\Model;
 
-abstract class Ability extends Model
+class Ability extends Model
 {
 	/**
 	 * The attributes that are mass assignable.

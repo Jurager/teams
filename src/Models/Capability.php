@@ -6,7 +6,7 @@ use Jurager\Teams\Teams;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 
-abstract class Capability extends Model
+class Capability extends Model
 {
 	/**
 	 * The attributes that are mass assignable.

@@ -6,7 +6,7 @@ use Jurager\Teams\Teams;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
-abstract class Membership extends Pivot
+class Membership extends Pivot
 {
     /**
      * The table associated with the pivot model.

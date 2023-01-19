@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 
-abstract class Team extends Model
+class Team extends Model
 {
     /**
      * The relationships that should always be loaded.
