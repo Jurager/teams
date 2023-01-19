@@ -69,7 +69,7 @@ namespace App\Providers;
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
-        App\Models\Team::class => App\Policies\TeamPolicy::class, // Add this class
+        \Jurager\Teams\Models\Team::class => \App\Policies\TeamPolicy::class, // Add this class
     ];
 }
 ```
