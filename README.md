@@ -15,7 +15,6 @@ Users in teams can be combined into groups, with their own rights and permission
 * [Actions](#actions)
 * [Users](#users)
 * [Team](#team)
-* [Member Management](#member-management)
 * [Invitations](#invitations)
   * [Actions](#invitation-actions) 
   * [Mail](#invitation-mail)
@@ -181,20 +180,6 @@ $team->invitations()
 // Remove the given user from the team.
 $team->removeUser();
 ```
-
-Member Management
--------------------------------------------
-
-Manage team membership can only owners, this restriction is defined in the `App\Policies\TeamPolicy`. You are free to modify this.
-
-Like the customization process for other package features, team member addition logic may be customized by modifying the `App\Actions\Teams\AddTeamMember` action class.
-
-The class `add` method is invoked with the currently authenticated user, the `Jurager\Teams\Team` instance, the email address of the user being added to the team, and the role (if applicable) of the user being added to the team.
-
-This action is responsible for validating that the user can actually be added to the team and then adding the user to the team. You are free to customize this action based on the needs of your particular application.
-
-Team **member removal** may be customized by modifying the action `App\Actions\Teams\RemoveTeamMember`.
-
 
 Invitations
 -------------------------------------------
