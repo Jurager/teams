@@ -34,10 +34,5 @@
                 "Jurager\\Teams\\TeamsServiceProvider"
             ]
         }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "stable",
-    "prefer-stable": true
+    }
 }
