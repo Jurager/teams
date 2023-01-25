@@ -38,7 +38,7 @@ class Teams
 
 		// Foreign key for team_id field
 		//
-		$foreign = config('teams.foreign_keys.team_id', 'team_id')
+		$foreign = config('teams.foreign_keys.team_id', 'team_id');
 
 		// If team id not directly passed get the id by request or route param
 		//
