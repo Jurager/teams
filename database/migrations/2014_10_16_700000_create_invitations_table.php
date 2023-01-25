@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
             $table->string('email');
-            $table->string('role')->nullable();
+            $table->string('role_id')->nullable();
             $table->timestamps();
 
             $table->unique([config('teams.foreign_keys.team_id', 'team_id'), 'email']);
