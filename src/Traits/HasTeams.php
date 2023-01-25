@@ -233,7 +233,7 @@ trait HasTeams
      * @param bool $forbidden
      * @return mixed
      */
-    public function teamAbilities($team, $entity, bool $forbidden = false)
+    public function teamAbilities($team, $entity, bool $forbidden = false): mixed
     {
         $permissions = Teams::$permissionModel::where([ 'team_id' => $team->id ]);
 
@@ -454,6 +454,8 @@ trait HasTeams
      */
     public function deleteTeamAbility($team, string|array $ability, $entity, $target): bool
     {
+        // @todo: refactor this
+        //
         $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
         $abilityEdit  =  $entity_type.'s.edit';
 

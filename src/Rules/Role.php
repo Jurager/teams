@@ -20,7 +20,7 @@ class Role implements Rule
      */
     public function passes($attribute, $value): bool
     {
-        return in_array($value, $this->team->roles->pluck('name')->toArray(), true);
+        return in_array($value, $this->team->roles->pluck('name')->all(), true);
     }
 
     /**
