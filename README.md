@@ -269,7 +269,7 @@ Abilities
 
 Adding abilities to users is made easy. You do not have to create a role or an ability in advance. Simply pass the name of the ability, and package will create it if it doesn't exist.
 
-For example, to add the ability to edit an article in team for certain user, we need to pass the entity, at this example - article object, an team object
+For example, to add the ability to edit an article in team for certain user, we need to pass the entity, at this example - article object, a team object
 
 ```php
 User::allowTeamAbility('edit', $article, $team));
