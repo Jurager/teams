@@ -75,7 +75,7 @@ class TeamsServiceProvider extends ServiceProvider
 
     protected function registerModels(): void
     {
-        if(!class_exists(config('teams.models.user')) {
+        if(!class_exists(config('teams.models.user'))) {
            throw new \Exception('Please check that user model in config/teams.php is exists');
         }
 
