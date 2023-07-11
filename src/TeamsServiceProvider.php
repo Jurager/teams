@@ -75,6 +75,11 @@ class TeamsServiceProvider extends ServiceProvider
 
     protected function registerModels(): void
     {
+        if(!class_exists(config('teams.models.user')) {
+           throw new \Exception('Please check that user model in config/teams.php is exists');
+        }
+
+        Teams::setModel('user', config('teams.models.user'));
         Teams::setModel('team', config('teams.models.team', \Jurager\Teams\Models\Team::class));
         Teams::setModel('ability', config('teams.models.ability', \Jurager\Teams\Models\Ability::class));
         Teams::setModel('capability', config('teams.models.capability', \Jurager\Teams\Models\Capability::class));
