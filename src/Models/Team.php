@@ -121,7 +121,7 @@ class Team extends Model
 
 			// Add the capability id for attaching
 	        //
-	        array_push($capability_ids, $item->id);
+	        $capability_ids[] = $item->id;
         }
 
 		// Attach the capabilities to the role
@@ -160,7 +160,7 @@ class Team extends Model
 
 	            // Add the capability id for attaching
 	            //
-	            array_push($capability_ids, $item->id);
+	            $capability_ids[] = $item->id;
             }
 
 	        // Sync the capabilities to the role
@@ -274,7 +274,7 @@ class Team extends Model
 	 */
 	public function hasUserWithEmail(string $email): bool
 	{
-		return $this->allUsers()->contains(function ($user) use ($email) {
+		return $this->allUsers()->contains(static function ($user) use ($email) {
 			return $user->email === $email;
 		});
 	}
@@ -318,8 +318,8 @@ class Team extends Model
 	 *
 	 * @return void
 	 */
-	public function purge()
-	{
+	public function purge(): void
+    {
 		$this->users()->detach();
 
 		$this->delete();

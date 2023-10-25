@@ -2,9 +2,9 @@
 
 namespace Jurager\Teams\Models;
 
+use Jurager\Teams\Teams;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Jurager\Teams\Teams;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -60,13 +60,15 @@ class TeamGroup extends Model
 
             // After sorting, checking for emptiness
             //
-            return $users->isNotEmpty() ? $this->users()->sync($users, false) : false;
-        }
-
-        if ($users::class == Teams::$userModel) {
-            if ($this->team->hasUser($users)) {
+            if ($users->isNotEmpty()) {
                 return $this->users()->sync($users, false);
             }
+
+            return false;
+        }
+
+        if ($users::class == Teams::$userModel && $this->team->hasUser($users)) {
+            return $this->users()->syncWithoutDetaching($users);
         }
 
         return false;

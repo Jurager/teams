@@ -13,14 +13,14 @@ class TeamMemberAdded
      *
      * @var mixed
      */
-    public $team;
+    public mixed $team;
 
     /**
      * The team member that was added.
      *
      * @var mixed
      */
-    public $user;
+    public mixed $user;
 
     /**
      * Create a new event instance.
@@ -29,7 +29,7 @@ class TeamMemberAdded
      * @param  mixed  $user
      * @return void
      */
-    public function __construct($team, $user)
+    public function __construct(mixed $team, mixed $user)
     {
         $this->team = $team;
         $this->user = $user;

@@ -13,21 +13,21 @@ class InvitingTeamMember
      *
      * @var mixed
      */
-    public $team;
+    public mixed $team;
 
     /**
      * The email address of the invitee.
      *
      * @var mixed
      */
-    public $email;
+    public mixed $email;
 
     /**
      * The role of the invitee.
      *
      * @var mixed
      */
-    public $role;
+    public mixed $role;
 
     /**
      * Create a new event instance.
@@ -37,7 +37,7 @@ class InvitingTeamMember
      * @param  mixed  $role
      * @return void
      */
-    public function __construct($team, $email, $role)
+    public function __construct(mixed $team, mixed $email, mixed $role)
     {
         $this->team  = $team;
         $this->email = $email;

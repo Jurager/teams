@@ -2,34 +2,22 @@
 
 namespace Jurager\Teams\Rules;
 
-use Illuminate\Contracts\Validation\Rule;
+use Closure;
+use Illuminate\Contracts\Validation\ValidationRule;
 
-class Role implements Rule
+class Role implements ValidationRule
 {
-    
+
     public function __construct(private $team) {
-
-    }
-    
-    /**
-     * Determine if the validation rule passes.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function passes($attribute, $value): bool
-    {
-        return in_array($value, $this->team->roles->pluck('name')->all(), true);
     }
 
     /**
-     * Get the validation error message.
-     *
-     * @return string
+     * Run the validation rule.
      */
-    public function message(): string
+    public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        return __('The :attribute must be a valid role.');
+        if (!in_array($value, $this->team->roles->pluck('name')->all(), true)) {
+            $fail('The :attribute must be a valid role.');
+        }
     }
 }

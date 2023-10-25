@@ -61,7 +61,7 @@ return [
     |
     */
 	'models' => [
-	'user' => App\Models\User::class,
+	    'user' => App\Models\User::class,
         'team' => Jurager\Teams\Models\Team::class,
         'ability' => Jurager\Teams\Models\Ability::class,
         'capability' => Jurager\Teams\Models\Capability::class,

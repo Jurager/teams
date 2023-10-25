@@ -2,74 +2,71 @@
 
 namespace Jurager\Teams;
 
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
-
 class Teams
 {
 
 	/**
 	 * The user model that should be used by Teams.
 	 *
-	 * @var object
+	 * @var mixed
 	 */
-	public static $userModel;
+	public static mixed $userModel;
 
 	/**
 	 * The ability model that should be used by Teams.
 	 *
-	 * @var object
+	 * @var mixed
 	 */
-	public static $abilityModel;
+	public static mixed $abilityModel;
 
     /**
      * The capability model that should be used by Teams.
      *
-     * @var object
+     * @var mixed
      */
-    public static $capabilityModel;
+    public static mixed $capabilityModel;
 
     /**
      * The role model that should be used by Teams.
      *
-     * @var object
+     * @var mixed
      */
-    public static $roleModel;
+    public static mixed $roleModel;
 
     /**
      * The group model that should be used by Teams.
      *
-     * @var object
+     * @var mixed
      */
-    public static $groupModel;
+    public static mixed $groupModel;
 
 	/**
 	 * The permission model that should be used by Teams.
 	 *
-	 * @var object
+	 * @var mixed
 	 */
-	public static $permissionModel;
+	public static mixed $permissionModel;
 
 	/**
 	 * The team model that should be used by Teams.
 	 *
-	 * @var object
+	 * @var mixed
 	 */
-	public static $teamModel;
+	public static mixed $teamModel;
 
 	/**
 	 * The membership model that should be used by Teams.
 	 *
-	 * @var object
+	 * @var mixed
 	 */
-	public static $membershipModel;
+	public static mixed $membershipModel;
 
 	/**
 	 * The team invitation model that should be used by Teams.
 	 *
-	 * @var object
+	 * @var mixed
 	 */
-	public static $invitationModel;
+	public static mixed $invitationModel;
 
     /**
      * Set passed model that will be used by package
@@ -87,9 +84,9 @@ class Teams
      * Return model that will be used by package
      *
      * @param string $model
-     * @return void
+     * @return mixed
      */
-    static function getModel(string $model)
+    static function getModel(string $model): mixed
     {
         return self::${$model.ucfirst('model')};
     }

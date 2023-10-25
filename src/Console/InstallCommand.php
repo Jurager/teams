@@ -26,7 +26,7 @@ class InstallCommand extends Command
      *
      * @return void
      */
-    public function handle()
+    public function handle(): void
     {
         // Publish...
         $this->callSilent('vendor:publish', ['--tag' => 'teams-config', '--force' => true]);

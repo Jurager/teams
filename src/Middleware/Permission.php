@@ -17,7 +17,7 @@ class Permission extends Teams
 	 * @param string|null $options
 	 * @return mixed
 	 */
-	public function handle(Request $request, Closure $next, string|array $permissions, string $team_id = null, ?string $options = ''): mixed
+	public function handle(Request $request, Closure $next, string|array $permissions, string|null $team_id = null, string|null $options = ''): mixed
 	{
 		if (!$this->authorization($request, 'permissions', $permissions, $team_id, [], $options)) {
 			return $this->unauthorized();

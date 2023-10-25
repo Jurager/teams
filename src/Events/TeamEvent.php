@@ -15,7 +15,7 @@ abstract class TeamEvent
      *
      * @var mixed
      */
-    public $team;
+    public mixed $team;
 
     /**
      * Create a new event instance.
@@ -23,7 +23,7 @@ abstract class TeamEvent
      * @param  mixed $team
      * @return void
      */
-    public function __construct($team)
+    public function __construct(mixed $team)
     {
         $this->team = $team;
     }

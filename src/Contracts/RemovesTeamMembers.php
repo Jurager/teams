@@ -12,5 +12,5 @@ interface RemovesTeamMembers
      * @param  mixed  $teamMember
      * @return void
      */
-    public function remove($user, $team, $teamMember);
+    public function remove(mixed $user, mixed $team, mixed $teamMember): void;
 }

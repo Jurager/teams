@@ -19,8 +19,8 @@ class CreateTeam implements CreatesTeams
 	 * @throws \Illuminate\Auth\Access\AuthorizationException
 	 * @throws \Illuminate\Validation\ValidationException
 	 */
-	public function create($user, array $input)
-	{
+	public function create(mixed $user, array $input): mixed
+    {
 		Gate::forUser($user)->authorize('create', Teams::newTeamModel());
 
 		Validator::make($input, [

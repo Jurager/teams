@@ -51,7 +51,7 @@ trait HasTeams
      */
     public function ownsTeam($team): bool
     {
-        if (is_null($team)) {
+        if ($team === null) {
             return false;
         }
 
@@ -74,7 +74,7 @@ trait HasTeams
      */
     public function belongsToTeam($team): bool
     {
-        return $this->ownsTeam($team) || $this->teams->contains(function ($t) use ($team) {
+        return $this->ownsTeam($team) || $this->teams->contains(static function ($t) use ($team) {
             return $t->id === $team->id;
         });
     }
@@ -101,7 +101,11 @@ trait HasTeams
 		    ->membership
 		    ->role;
 
-	    return $role ? $team->findRole($role) : null;
+        if ($role) {
+            return $team->findRole($role);
+        }
+
+        return null;
     }
 
     /**
@@ -119,6 +123,7 @@ trait HasTeams
         }
 
         if (is_array($role)) {
+
             if (empty($role)) {
                 return true;
             }
@@ -136,7 +141,7 @@ trait HasTeams
             return $require;
         }
 
-        return $this->belongsToTeam($team) && optional($team->findRole($team->users->where('id', $this->id)->first()->membership->role))->name === $role;
+        return $this->belongsToTeam($team) && $team->findRole($team->users->where('id', $this->id)->first()->membership->role)?->name === $role;
     }
 
     /**
@@ -170,11 +175,7 @@ trait HasTeams
     {
         // Checking if a user is tech support
         //
-        if ($this->{config('teams.support_field', 'is_support')}) {
-            return true;
-        }
-
-        if ($this->ownsTeam($team)) {
+        if ($this->{config('teams.support_field', 'is_support')} || $this->ownsTeam($team)) {
             return true;
         }
 
@@ -241,7 +242,7 @@ trait HasTeams
             $permissions = $permissions->where('forbidden', true);
         }
 
-        return $permissions->whereHas('ability', function ($query) use ($entity) {
+        return $permissions->whereHas('ability', static function ($query) use ($entity) {
             $query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
         })->with('ability')->get();
     }
@@ -310,7 +311,7 @@ trait HasTeams
 
             // If the permission is disabled for a role
 	        //
-            if ($permission && $permission->forbidden) {
+            if ($permission?->forbidden) {
                 $forbidden_level = 2;
             }
 
@@ -478,7 +479,6 @@ trait HasTeams
                 return $permission->delete();
             }
 
-            return false;
         }
 
         return false;

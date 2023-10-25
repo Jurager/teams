@@ -10,5 +10,5 @@ interface DeletesUsers
      * @param  mixed  $user
      * @return void
      */
-    public function delete($user);
+    public function delete(mixed $user): void;
 }

@@ -22,7 +22,7 @@ class Teams
 	 * @param boolean $require
 	 * @return boolean
 	 */
-	protected function authorization(Request $request, $method, $params, ?string $team_id, $models, bool $require = false): bool
+	protected function authorization(Request $request, $method, $params, string|null $team_id, $models, bool $require = false): bool
 	{
 		// Determinate the method for checking the role or permissions
 		//
@@ -131,14 +131,17 @@ class Teams
 	{
         // Gate model not defined, return empty array
         //
-		if (is_null($models)) {
+		if ($models === null) {
 			return [];
 		}
 
         // Map through all models and detect actual model instance
         //
         return array_map(function($model) use ($request) {
-            return $model instanceof Model ? $model : $this->getModel($request, $model);
+            if ($model instanceof Model) {
+                return $model;
+            }
+            return $this->getModel($request, $model);
         }, $models);
 
 	}
@@ -153,6 +156,9 @@ class Teams
 	 */
 	protected function getModel($request, $model): string
 	{
-		return str_contains($model, '\\') ? trim($model) : $request->route($model, $model);
-	}
+        if (str_contains($model, '\\')) {
+            return trim($model);
+        }
+        return $request->route($model, $model);
+    }
 }

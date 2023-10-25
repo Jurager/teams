@@ -2,6 +2,7 @@
 
 namespace App\Actions\Teams;
 
+use Closure;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Jurager\Teams\Contracts\AddsTeamMembers;
@@ -23,8 +24,8 @@ class AddTeamMember implements AddsTeamMembers
 	 * @throws \Illuminate\Auth\Access\AuthorizationException
 	 * @throws \Illuminate\Validation\ValidationException
 	 */
-	public function add($user, $team, string $email, string $role = null)
-	{
+	public function add(mixed $user, mixed $team, string $email, string|null $role = null): void
+    {
 		Gate::forUser($user)->authorize('addTeamMember', $team);
 
 		$this->validate($team, $email, $role);
@@ -47,29 +48,27 @@ class AddTeamMember implements AddsTeamMembers
 	 * @return void
 	 * @throws \Illuminate\Validation\ValidationException
 	 */
-	protected function validate($team, string $email, ?string $role)
+	protected function validate(mixed $team, string $email, string|null $role)
 	{
-		Validator::make([
-			'email' => $email,
-			'role' => $role,
-		], $this->rules(), [
+		Validator::make(compact('email', 'role'), $this->rules($team), [
 			'email.exists' => __('We were unable to find a registered user with this email address.'),
 		])->after(
 			$this->ensureUserIsNotAlreadyOnTeam($team, $email)
 		)->validateWithBag('addTeamMember');
 	}
 
-	/**
-	 * Get the validation rules for adding a team member.
-	 *
-	 * @return array
-	 */
-	protected function rules()
-	{
+    /**
+     * Get the validation rules for adding a team member.
+     *
+     * @param mixed $team
+     * @return array
+     */
+    protected function rules(mixed $team): array
+    {
 		return array_filter([
 			'email' => ['required', 'email', 'exists:users'],
 			'role' => Teams::hasRoles()
-				? ['required', 'string', new Role]
+				? ['required', 'string', new Role($team)]
 				: null,
 		]);
 	}
@@ -79,11 +78,11 @@ class AddTeamMember implements AddsTeamMembers
 	 *
 	 * @param  mixed  $team
 	 * @param  string  $email
-	 * @return \Closure
+	 * @return Closure
 	 */
-	protected function ensureUserIsNotAlreadyOnTeam($team, string $email)
-	{
-		return function ($validator) use ($team, $email) {
+	protected function ensureUserIsNotAlreadyOnTeam($team, string $email): Closure
+    {
+		return static function ($validator) use ($team, $email) {
 			$validator->errors()->addIf(
 				$team->hasUserWithEmail($email),
 				'email',

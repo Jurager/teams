@@ -10,5 +10,5 @@ interface DeletesTeams
      * @param  mixed  $team
      * @return void
      */
-    public function delete($team);
+    public function delete(mixed $team): void;
 }

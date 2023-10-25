@@ -11,5 +11,5 @@ interface CreatesTeams
      * @param  array  $input
      * @return mixed
      */
-    public function create($user, array $input);
+    public function create(mixed $user, array $input): mixed;
 }

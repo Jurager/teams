@@ -20,8 +20,8 @@ class RemoveTeamMember implements RemovesTeamMembers
 	 * @throws AuthorizationException
 	 * @throws ValidationException
 	 */
-	public function remove($user, $team, $teamMember)
-	{
+	public function remove(mixed $user, mixed $team, mixed $teamMember): void
+    {
 		$this->authorize($user, $team, $teamMember);
 
 		$this->ensureUserDoesNotOwnTeam($teamMember, $team);

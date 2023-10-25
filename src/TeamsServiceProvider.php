@@ -2,6 +2,18 @@
 
 namespace Jurager\Teams;
 
+use Exception;
+use Jurager\Teams\Models\Ability as AbilityModel;
+use Jurager\Teams\Models\Capability as CapabilityModel;
+use Jurager\Teams\Models\Invitation as InvitationModel;
+use Jurager\Teams\Models\Membership as MembershipModel;
+use Jurager\Teams\Models\Permission as PermissionModel;
+use Jurager\Teams\Middleware\Ability as AbilityMiddleware;
+use Jurager\Teams\Middleware\Permission as PermissionMiddleware;
+use Jurager\Teams\Middleware\Role as RoleMiddleware;
+use Jurager\Teams\Models\Role as RoleModel;
+use Jurager\Teams\Models\Team as TeamModel;
+use Jurager\Teams\Models\TeamGroup as TeamGroupModel;
 use Illuminate\Support\ServiceProvider;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -24,6 +36,7 @@ class TeamsServiceProvider extends ServiceProvider
      * @return void
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
+     * @throws Exception
      */
     public function boot(): void
     {
@@ -73,21 +86,26 @@ class TeamsServiceProvider extends ServiceProvider
         $this->commands([Console\InstallCommand::class]);
     }
 
+    /**
+     * Register the models offered by the application.
+     *
+     * @throws Exception
+     */
     protected function registerModels(): void
     {
         if(!class_exists(config('teams.models.user'))) {
-           throw new \Exception('Please check that user model in config/teams.php is exists');
+           throw new Exception('Please check that user model in config/teams.php is exists');
         }
 
         Teams::setModel('user', config('teams.models.user'));
-        Teams::setModel('team', config('teams.models.team', \Jurager\Teams\Models\Team::class));
-        Teams::setModel('ability', config('teams.models.ability', \Jurager\Teams\Models\Ability::class));
-        Teams::setModel('capability', config('teams.models.capability', \Jurager\Teams\Models\Capability::class));
-        Teams::setModel('group', config('teams.models.group', \Jurager\Teams\Models\TeamGroup::class));
-        Teams::setModel('invitation', config('teams.models.invitation', \Jurager\Teams\Models\Invitation::class));
-        Teams::setModel('membership', config('teams.models.membership', \Jurager\Teams\Models\Membership::class));
-        Teams::setModel('permission', config('teams.models.permission', \Jurager\Teams\Models\Permission::class));
-        Teams::setModel('role', config('teams.models.role', \Jurager\Teams\Models\Role::class));
+        Teams::setModel('team', config('teams.models.team', TeamModel::class));
+        Teams::setModel('ability', config('teams.models.ability', AbilityModel::class));
+        Teams::setModel('capability', config('teams.models.capability', CapabilityModel::class));
+        Teams::setModel('group', config('teams.models.group', TeamGroupModel::class));
+        Teams::setModel('invitation', config('teams.models.invitation', InvitationModel::class));
+        Teams::setModel('membership', config('teams.models.membership', MembershipModel::class));
+        Teams::setModel('permission', config('teams.models.permission', PermissionModel::class));
+        Teams::setModel('role', config('teams.models.role', RoleModel::class));
     }
 
     /**
@@ -104,9 +122,9 @@ class TeamsServiceProvider extends ServiceProvider
         }
 
         $middlewares = [
-            'ability' => \Jurager\Teams\Middleware\Ability::class,
-            'role' => \Jurager\Teams\Middleware\Role::class,
-            'permission' => \Jurager\Teams\Middleware\Permission::class,
+            'ability' => AbilityMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
         ];
 
         foreach ($middlewares as $key => $class) {

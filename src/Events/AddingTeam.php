@@ -13,7 +13,7 @@ class AddingTeam
      *
      * @var mixed
      */
-    public $owner;
+    public mixed $owner;
 
     /**
      * Create a new event instance.
@@ -21,7 +21,7 @@ class AddingTeam
      * @param  mixed  $owner
      * @return void
      */
-    public function __construct($owner)
+    public function __construct(mixed $owner)
     {
         $this->owner = $owner;
     }

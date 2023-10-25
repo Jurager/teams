@@ -12,5 +12,5 @@ interface UpdatesTeamNames
      * @param  array  $input
      * @return void
      */
-    public function update($user, $team, array $input);
+    public function update(mixed $user, mixed $team, array $input): void;
 }

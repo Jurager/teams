@@ -2,6 +2,7 @@
 
 namespace App\Actions\Teams;
 
+use Closure;
 use Jurager\Teams\Mail\Invitation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
@@ -24,18 +25,15 @@ class InviteTeamMember implements InvitesTeamMembers
 	 * @return void
 	 * @throws \Illuminate\Auth\Access\AuthorizationException
 	 */
-	public function invite($user, $team, string $email, string $role = null)
-	{
+	public function invite(mixed $user, mixed $team, string $email, string|null $role = null): void
+    {
 		Gate::forUser($user)->authorize('addTeamMember', $team);
 
 		$this->validate($team, $email, $role);
 
 		InvitingTeamMember::dispatch($team, $email, $role);
 
-		$invitation = $team->invitations()->create([
-			'email' => $email,
-			'role'  => $role,
-		]);
+		$invitation = $team->invitations()->create(compact('email', 'role'));
 
 		Mail::to($email)->send(new Invitation($invitation));
 	}
@@ -49,12 +47,9 @@ class InviteTeamMember implements InvitesTeamMembers
 	 * @return void
 	 * @throws \Illuminate\Validation\ValidationException
 	 */
-	protected function validate($team, string $email, ?string $role)
+	protected function validate(mixed $team, string $email, string|null $role)
 	{
-		Validator::make([
-			'email' => $email,
-			'role'  => $role,
-		], $this->rules($team), [
+		Validator::make(compact('email', 'role'), $this->rules($team), [
 			'email.unique' => __('This user has already been invited to the team.'),
 		])->after(
 			$this->ensureUserIsNotAlreadyOnTeam($team, $email)
@@ -64,11 +59,11 @@ class InviteTeamMember implements InvitesTeamMembers
 	/**
 	 * Get the validation rules for inviting a team member.
 	 *
-	 * @param  mixed  $team
+	 * @param mixed $team
 	 * @return array
 	 */
-	protected function rules($team)
-	{
+	protected function rules(mixed $team): array
+    {
 		return array_filter([
 			'email' => ['required', 'email', Rule::unique('invitations')->where(function ($query) use ($team) {
 				$query->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id);
@@ -84,11 +79,11 @@ class InviteTeamMember implements InvitesTeamMembers
 	 *
 	 * @param  mixed  $team
 	 * @param  string  $email
-	 * @return \Closure
+	 * @return Closure
 	 */
-	protected function ensureUserIsNotAlreadyOnTeam($team, string $email)
-	{
-		return function ($validator) use ($team, $email) {
+	protected function ensureUserIsNotAlreadyOnTeam($team, string $email): Closure
+    {
+		return static function ($validator) use ($team, $email) {
 			$validator->errors()->addIf(
 				$team->hasUserWithEmail($email),
 				'email',
