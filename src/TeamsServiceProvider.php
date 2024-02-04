@@ -2,21 +2,13 @@
 
 namespace Jurager\Teams;
 
-use Exception;
-use Jurager\Teams\Models\Ability as AbilityModel;
-use Jurager\Teams\Models\Capability as CapabilityModel;
-use Jurager\Teams\Models\Invitation as InvitationModel;
-use Jurager\Teams\Models\Membership as MembershipModel;
-use Jurager\Teams\Models\Permission as PermissionModel;
 use Jurager\Teams\Middleware\Ability as AbilityMiddleware;
 use Jurager\Teams\Middleware\Permission as PermissionMiddleware;
 use Jurager\Teams\Middleware\Role as RoleMiddleware;
-use Jurager\Teams\Models\Role as RoleModel;
-use Jurager\Teams\Models\Team as TeamModel;
-use Jurager\Teams\Models\TeamGroup as TeamGroupModel;
 use Illuminate\Support\ServiceProvider;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Exception;
 
 class TeamsServiceProvider extends ServiceProvider
 {
@@ -93,19 +85,20 @@ class TeamsServiceProvider extends ServiceProvider
      */
     protected function registerModels(): void
     {
-        if(!class_exists(config('teams.models.user'))) {
-           throw new Exception('Please check that user model in config/teams.php is exists');
-        }
+        $models = ['user', 'team', 'ability', 'capability', 'group', 'invitation', 'membership', 'permission', 'role'];
+        
+        foreach ($models as $model) {
+            
+            if(!array_key_exists($model, config('teams.models'))) {
+                throw new Exception('Error, missing '.$model.' model configuration');
+            }
 
-        Teams::setModel('user', config('teams.models.user'));
-        Teams::setModel('team', config('teams.models.team', TeamModel::class));
-        Teams::setModel('ability', config('teams.models.ability', AbilityModel::class));
-        Teams::setModel('capability', config('teams.models.capability', CapabilityModel::class));
-        Teams::setModel('group', config('teams.models.group', TeamGroupModel::class));
-        Teams::setModel('invitation', config('teams.models.invitation', InvitationModel::class));
-        Teams::setModel('membership', config('teams.models.membership', MembershipModel::class));
-        Teams::setModel('permission', config('teams.models.permission', PermissionModel::class));
-        Teams::setModel('role', config('teams.models.role', RoleModel::class));
+            if(!class_exists(config('teams.models.'.$model))) {
+                throw new Exception('Error, configured model '.config('teams.models.'.$model).' not exists');
+            }
+
+            Teams::setModel($model, config('teams.models.'.$model));
+        }
     }
 
     /**

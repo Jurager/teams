@@ -13,7 +13,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('users', static function (Blueprint $table) {
-            $table->boolean('is_support')->nullable();
+            $table->boolean(config('teams.support_field', 'is_support'))->nullable();
         });
     }
 
@@ -25,7 +25,7 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('users', static function (Blueprint $table) {
-            $table->dropColumn('is_support');
+            $table->dropColumn(config('teams.support_field', 'is_support'));
         });
     }
 };

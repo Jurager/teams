@@ -21,7 +21,7 @@ class CreateTeam implements CreatesTeams
 	 */
 	public function create(mixed $user, array $input): mixed
     {
-		Gate::forUser($user)->authorize('create', Teams::newTeamModel());
+		Gate::forUser($user)->authorize('create');
 
 		Validator::make($input, [
 			'name' => ['required', 'string', 'max:255'],
