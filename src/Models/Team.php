@@ -13,6 +13,13 @@ use Illuminate\Database\Eloquent\Model;
 class Team extends Model
 {
     /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [ 'user_id', 'name'];
+
+    /**
      * The relationships that should always be loaded.
      *
      * @var array
