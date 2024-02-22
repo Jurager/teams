@@ -12,7 +12,7 @@ class Role extends Model
 	/**
 	 * The attributes that are mass assignable.
 	 *
-	 * @var array
+	 * @var array<string>
 	 */
 	protected $fillable = [ 'team_id', 'name', 'description', 'level'];
 
@@ -35,7 +35,7 @@ class Role extends Model
     /**
      * The accessors to append to the model's array form.
      *
-     * @var array
+     * @var array<int, string>
      */
     protected $appends = [
 	    'permissions'
@@ -44,7 +44,7 @@ class Role extends Model
     /**
      * The attributes that should be hidden for arrays.
      *
-     * @var array
+     * @var array<int, string>
      */
     protected $hidden = [
 	    'capabilities'

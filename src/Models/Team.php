@@ -15,7 +15,7 @@ class Team extends Model
     /**
      * The attributes that are mass assignable.
      *
-     * @var array
+     * @var array<string>
      */
     protected $fillable = [ 'user_id', 'name'];
 
@@ -229,21 +229,21 @@ class Team extends Model
 	 * Find the role with the given id.
 	 *
 	 * @param string $id
-	 * @return Model|bool
+	 * @return Model|null
 	 */
-    public function findRole(string $id): Model|bool
+    public function findRole(string $id): Model|null
     {
 	    // Return the resulting role
 	    //
-        return $this->roles->firstWhere('id', $id) ?? false;
+        return $this->roles->firstWhere('id', $id) ?? null;
     }
 
 
 	/**
 	 * @param $user
-	 * @return Model|Owner|bool
+	 * @return Model|Owner|null
 	 */
-	public function userRole($user): Model|Owner|bool
+	public function userRole($user): Model|Owner|null
 	{
 	    // If user is owner, return the owner model object
 	    //
@@ -254,12 +254,12 @@ class Team extends Model
 	    // If team doesn't have such user
 	    //
         if (!$this->hasUser($user)) {
-            return false;
+            return null;
         }
 
 		// Return the resulting role
 		//
-	    return $this->findRole($this->users->where( 'id', $user->id)->first()->membership->role) ?? false;
+	    return $this->findRole($this->users->where( 'id', $user->id)->first()->membership->role) ?? null;
     }
 
 	/**

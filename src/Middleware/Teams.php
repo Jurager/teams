@@ -11,18 +11,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class Teams
 {
-	/**
-	 * Check if the request has authorization to continue.
-	 *
-	 * @param Request $request
-	 * @param $method
-	 * @param $params
-	 * @param string|null $team_id
-	 * @param $models
-	 * @param boolean $require
-	 * @return boolean
-	 */
-	protected function authorization(Request $request, $method, $params, string|null $team_id, $models, bool $require = false): bool
+    /**
+     * Check if the request has authorization to continue.
+     *
+     * @param Request $request
+     * @param string $method
+     * @param string|array $params
+     * @param string|null $team_id
+     * @param $models
+     * @param boolean $require
+     * @return boolean
+     */
+	protected function authorization(Request $request, string $method, string|array $params, string|null $team_id, $models, bool $require = false): bool
 	{
 		// Determinate the method for checking the role or permissions
 		//
