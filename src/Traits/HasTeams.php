@@ -219,11 +219,6 @@ trait HasTeams
         }
 
         return false;
-
-        //return in_array($permission, $permissions) ||
-        //	in_array('*', $permissions) ||
-        //	(Str::endsWith($permission, ':create') && in_array('*:create', $permissions)) ||
-        //	(Str::endsWith($permission, ':update') && in_array('*:update', $permissions));
     }
 
     /**
@@ -266,38 +261,31 @@ trait HasTeams
     public function hasTeamAbility($team, $ability, $entity, bool $require = false): bool
     {
         // Checking if a user is tech support
-	    //
         if ($this->{config('teams.support_field', 'is_support')}) {
             return true;
         }
 
         // Checking if a user is the owner of an entity
-	    //
         if (method_exists($entity, 'isOwner') && $entity->isOwner($this)) {
             return true;
         }
 
         // The meaning of the default access levels
-	    //
         $allow_level = 0;
         $forbidden_level = 1;
 
         // Check permission by role properties
-	    //
         if ($this->hasTeamPermission($team, $ability)) {
             $allow_level = 1;
         }
 
         // Get an ability
-	    //
         $ability = Teams::$abilityModel::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
 
         // If there is a rule for an entity
-	    //
         if ($ability) {
 
             // Getting permissions on an entity
-	        //
             $permissions = Teams::$permissionModel::where([
                 'team_id' => $team->id,
                 'ability_id' => $ability->id,
@@ -310,17 +298,14 @@ trait HasTeams
             $permission = $permissions->where('entity_id', $role->id)->firstWhere('entity_type', $role::class);
 
             // If the permission is disabled for a role
-	        //
             if ($permission?->forbidden) {
                 $forbidden_level = 2;
             }
 
             // If the user is attached to a group
-	        //
             if ($group) {
 
 	            // Get group restrictions
-				//
                 $permission = $permissions->where('entity_id', $group->id)->firstWhere('entity_type', $group::class);
 
                 if ($permission) {
@@ -333,7 +318,6 @@ trait HasTeams
             }
 
             // Getting user restrictions
-	        //
             $permission = $permissions->where('entity_id', $this->id)->firstWhere('entity_type', $this::class);
 
             if ($permission) {
@@ -346,7 +330,6 @@ trait HasTeams
         }
 
         // Access level comparison
-	    //
         return $allow_level >= $forbidden_level;
     }
 

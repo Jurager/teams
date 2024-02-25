@@ -96,6 +96,17 @@ class Team extends Model
     }
 
     /**
+     * Get team group by its name
+     *
+     * @param string $name
+     * @return Model|null
+     */
+    public function group( string $name): Model|null
+    {
+        return $this->groups()->where('name', $name)->first();
+    }
+
+    /**
      * Determine if Team has registered roles.
      *
      * @return bool
@@ -112,31 +123,19 @@ class Team extends Model
 	 */
     public function addRole(string $name, array $capabilities): Model
     {
-		// Create the new role
-	    //
         $role = $this->roles()->create(['name' => $name]);
 
-		// Array of capability id's
-	    //
         $capability_ids = [];
 
         foreach ($capabilities as $capability) {
 
-			// Get or create the new capability
-	        //
             $item = (Teams::$capabilityModel)::firstOrCreate(['code' => $capability]);
 
-			// Add the capability id for attaching
-	        //
 	        $capability_ids[] = $item->id;
         }
 
-		// Attach the capabilities to the role
-	    //
         $role->capabilities()->attach($capability_ids);
 
-		// Return the resulting role
-	    //
         return $role;
     }
 
@@ -147,35 +146,21 @@ class Team extends Model
 	 */
     public function updateRole(string $name, array $capabilities): Model|HasMany|bool
     {
-	    // Get the role
-	    //
         $role = $this->roles()->firstWhere('name', $name);
 
-	    // If found the role
-	    //
         if ($role) {
 
-	        // Array of capability id's
-	        //
             $capability_ids = [];
 
             foreach ($capabilities as $capability) {
 
-	            // Get or create the new capability
-	            //
                 $item = (Teams::$capabilityModel)::firstOrCreate(['code' => $capability]);
 
-	            // Add the capability id for attaching
-	            //
 	            $capability_ids[] = $item->id;
             }
 
-	        // Sync the capabilities to the role
-	        //
             $role->capabilities()->sync($capability_ids);
 
-	        // Return the resulting role
-	        //
 	        return $role;
         }
 
@@ -200,6 +185,8 @@ class Team extends Model
     }
 
     /**
+     * Adds a new group to the team
+     *
      * @param string $name
      * @return Model
      */
@@ -209,7 +196,7 @@ class Team extends Model
     }
 
 	/**
-	 * Delete group from the team
+	 * Removes a group from a team
 	 *
 	 * @param string $name
 	 * @return Model|bool
@@ -233,8 +220,6 @@ class Team extends Model
 	 */
     public function findRole(string $id): Model|null
     {
-	    // Return the resulting role
-	    //
         return $this->roles->firstWhere('id', $id) ?? null;
     }
 
@@ -245,20 +230,14 @@ class Team extends Model
 	 */
 	public function userRole($user): Model|Owner|null
 	{
-	    // If user is owner, return the owner model object
-	    //
         if ($this->owner == $user) {
             return new Owner;
         }
 
-	    // If team doesn't have such user
-	    //
         if (!$this->hasUser($user)) {
             return null;
         }
 
-		// Return the resulting role
-		//
 	    return $this->findRole($this->users->where( 'id', $user->id)->first()->membership->role) ?? null;
     }
 
@@ -315,7 +294,7 @@ class Team extends Model
 	 * @param $user
 	 * @return void
 	 */
-	public function removeUser($user): void
+	public function deleteUser($user): void
 	{
 		$this->users()->detach($user);
 	}

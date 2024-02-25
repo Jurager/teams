@@ -26,7 +26,7 @@ class RemoveTeamMember implements RemovesTeamMembers
 
 		$this->ensureUserDoesNotOwnTeam($teamMember, $team);
 
-		$team->removeUser($teamMember);
+		$team->deleteUser($teamMember);
 
 		TeamMemberRemoved::dispatch($team, $teamMember);
 	}
