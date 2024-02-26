@@ -45,30 +45,33 @@ class TeamGroup extends Model
     }
 
     /**
-     * Attach user to a group
+     * Attach user or users to a group
      *
-     * @param  object  $users
-     * @return array|bool
+     * @param Collection|Model $user
+     * @return bool
      */
-    public function attachUser(object $users): array|bool
+    public function attachUser(Collection|Model $user): bool
     {
-        if ($users instanceof Collection) {
+        // When a collection of users is received.
+        if ($user instanceof Collection) {
 
-            // Exclude from the collection users who are not in the current team
-            //
-            $users = $users->reject(fn ($user) => !$this->team->hasUser($user));
+            // Reject users not in the current team.
+            $user = $user->reject(fn ($item) => !$this->team->hasUser($item));
 
-            // After sorting, checking for emptiness
-            //
-            if ($users->isNotEmpty()) {
-                return $this->users()->sync($users, false);
+            // After sorting, ensure that there are no empty elements.
+            if ($user->isNotEmpty() && count($this->users()->sync($user, false))) {
+                return true;
             }
 
             return false;
         }
 
-        if ($users::class == Teams::$userModel && $this->team->hasUser($users)) {
-            return $this->users()->syncWithoutDetaching($users);
+        // When a single user model is received
+        if ($user::class === Teams::$userModel
+            && $this->team->hasUser($user)
+            && count($this->users()->syncWithoutDetaching($user))
+        ) {
+            return true;
         }
 
         return false;
@@ -77,12 +80,30 @@ class TeamGroup extends Model
     /**
      * Detach user or users from group
      *
-     * @param  object|array  $users
-     * @return int
+     * @param Collection|Model $user
+     * @return bool
      */
-    public function detachUser(object|array $users): int
+    public function detachUser(Collection|Model $user): bool
     {
-        return $this->users()->detach(is_array($users) ? $users : $users->id);
+        // When a collection of users is received.
+        if ($user instanceof Collection) {
+
+            // Reject users not in the current team.
+            $user = $user->reject(fn ($item) => !$this->team->hasUser($item));
+
+            // After sorting, ensure that there are no empty elements.
+            return $user->isNotEmpty() && $this->users()->detach($user->pluck('id')->all());
+        }
+
+        // When a single user model is received
+        if ($user::class === Teams::$userModel
+            && $this->team->hasUser($user)
+            && $this->users()->detach($user->id)
+        ) {
+            return true;
+        }
+
+        return false;
     }
 
 }

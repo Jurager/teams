@@ -86,7 +86,7 @@ class Teams
 
         // Abort handler simply returns unauthorized message
 		if ($handling === 'abort') {
-			return App::abort($handler['code'], $handler['message'] ?? 'User does not have any of the necessary access rights.');
+			return App::abort($handler['code'], $handler['message'] ?? 'Access denied');
 		}
 
         // Otherwise declare redirect method

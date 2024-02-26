@@ -75,7 +75,7 @@ class Teams
      * @param $namespace
      * @return void
      */
-    static function setModel(string $model, $namespace): void
+    public static function setModel(string $model, $namespace): void
     {
         self::${$model.ucfirst('model')} = $namespace;
     }
@@ -86,7 +86,7 @@ class Teams
      * @param string $model
      * @return mixed
      */
-    static function getModel(string $model): mixed
+    public static function getModel(string $model): mixed
     {
         return self::${$model.ucfirst('model')};
     }

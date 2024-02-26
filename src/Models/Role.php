@@ -51,7 +51,7 @@ class Role extends Model
     ];
 
 	/**
-	 * Get the team that the invitation belongs to.
+	 * Get the team that the role belongs to.
 	 *
 	 * @return BelongsTo
 	 */
@@ -61,6 +61,8 @@ class Role extends Model
 	}
 
 	/**
+     * Get the capabilities that belongs to team.
+     *
 	 * @return BelongsToMany
 	 */
 	public function capabilities(): BelongsToMany
@@ -69,6 +71,8 @@ class Role extends Model
     }
 
 	/**
+     * Get the permissions of all team capabilities.
+     *
 	 * @return array
 	 */
 	public function getPermissionsAttribute(): array

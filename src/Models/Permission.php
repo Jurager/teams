@@ -16,6 +16,8 @@ class Permission extends Model
 	protected $fillable = [ 'team_id', 'ability_id', 'entity_id', 'entity_type', 'forbidden'];
 
 	/**
+     * Get the team that the permission belongs to.
+     *
 	 * @return BelongsTo
 	 */
 	public function team(): BelongsTo
@@ -24,6 +26,8 @@ class Permission extends Model
 	}
 
 	/**
+     * Get the ability that the permission belongs to.
+     *
 	 * @return BelongsTo
 	 */
 	public function ability(): BelongsTo

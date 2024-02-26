@@ -221,11 +221,11 @@ $team->group(string $name);
 // Get all group users
 $team->group(string $name)->users();
 
-// Attach user to a group
-$team->group(string $name)->attachUser($user);
+// Attach users or user to a group
+$team->group(string $name)->attachUser(Collection|Model $user);
 
-// Detach user or users from group
-$team->group(string $name)->detachUser($user);
+// Detach users or user from group
+$team->group(string $name)->detachUser(Collection|Model $user);
 ```
 
 You can work with permissions within a group using the following methods

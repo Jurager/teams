@@ -42,6 +42,8 @@ class Membership extends Pivot
     }
 
 	/**
+     * Get the role that the membership belongs to.
+     *
 	 * @return BelongsTo
 	 */
 	public function role(): BelongsTo

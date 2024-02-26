@@ -40,17 +40,7 @@ class Team extends Model
 	}
 
 	/**
-	 * Get all the team's users including its owner.
-	 *
-	 * @return Collection
-	 */
-	public function allUsers(): Collection
-	{
-		return $this->users->merge([$this->owner]);
-	}
-
-	/**
-	 * Get all the users that belong to the team.
+	 * Get all users of the team.
 	 *
 	 * @return BelongsToMany
 	 */
@@ -61,6 +51,16 @@ class Team extends Model
 			->withTimestamps()
 			->as('membership');
 	}
+
+    /**
+     * Get all the team's users including its owner.
+     *
+     * @return Collection
+     */
+    public function allUsers(): Collection
+    {
+        return $this->users->merge([$this->owner]);
+    }
 
 	/**
 	 * Get all the abilities belong to the team.
@@ -101,13 +101,13 @@ class Team extends Model
      * @param string $name
      * @return Model|null
      */
-    public function group( string $name): Model|null
+    public function group(string $name): Model|null
     {
-        return $this->groups()->where('name', $name)->first();
+        return $this->groups()->firstWhere('name', $name);
     }
 
     /**
-     * Determine if Team has registered roles.
+     * Check if the team has registered roles
      *
      * @return bool
      */
@@ -129,9 +129,7 @@ class Team extends Model
 
         foreach ($capabilities as $capability) {
 
-            $item = (Teams::$capabilityModel)::firstOrCreate(['code' => $capability]);
-
-	        $capability_ids[] = $item->id;
+            $capability_ids[] = (Teams::$capabilityModel)::firstOrCreate(['code' => $capability])->id;
         }
 
         $role->capabilities()->attach($capability_ids);
@@ -154,9 +152,7 @@ class Team extends Model
 
             foreach ($capabilities as $capability) {
 
-                $item = (Teams::$capabilityModel)::firstOrCreate(['code' => $capability]);
-
-	            $capability_ids[] = $item->id;
+                $capability_ids[] = (Teams::$capabilityModel)::firstOrCreate(['code' => $capability])->id;
             }
 
             $role->capabilities()->sync($capability_ids);
@@ -220,7 +216,7 @@ class Team extends Model
 	 */
     public function findRole(string $id): Model|null
     {
-        return $this->roles->firstWhere('id', $id) ?? null;
+        return $this->roles->firstWhere('id', $id);
     }
 
 
@@ -230,7 +226,7 @@ class Team extends Model
 	 */
 	public function userRole($user): Model|Owner|null
 	{
-        if ($this->owner == $user) {
+        if ($this->owner === $user) {
             return new Owner;
         }
 
@@ -238,7 +234,7 @@ class Team extends Model
             return null;
         }
 
-	    return $this->findRole($this->users->where( 'id', $user->id)->first()->membership->role) ?? null;
+	    return $this->findRole($this->users->where('id', $user->id)->first()->membership->role);
     }
 
 	/**
@@ -260,9 +256,7 @@ class Team extends Model
 	 */
 	public function hasUserWithEmail(string $email): bool
 	{
-		return $this->allUsers()->contains(static function ($user) use ($email) {
-			return $user->email === $email;
-		});
+		return $this->allUsers()->contains(static fn($user) => $user->email === $email);
 	}
 
 	/**
