@@ -289,7 +289,7 @@ trait HasTeams
     {
         // Check if user is tech support or entity owner
         // Check permission by role properties
-        if ($this->isSupport() || $entity?->isOwner($this) || $this->hasTeamPermission($team, $ability)) {
+        if ($this->isSupport() || method_exists($entity, 'isOwner') && $entity?->isOwner($this) || $this->hasTeamPermission($team, $ability)) {
             return true;
         }
 
