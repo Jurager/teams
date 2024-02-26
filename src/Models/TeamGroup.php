@@ -87,23 +87,19 @@ class TeamGroup extends Model
     {
         // When a collection of users is received.
         if ($user instanceof Collection) {
+            // Filter out users not in the current team.
+            $users_to_remove = $user->filter(fn($item) => $this->team->hasUser($item));
 
-            // Reject users not in the current team.
-            $user = $user->reject(fn ($item) => !$this->team->hasUser($item));
-
-            // After sorting, ensure that there are no empty elements.
-            return $user->isNotEmpty() && $this->users()->detach($user->pluck('id')->all());
+            // Detach only if there are users to remove.
+            return $users_to_remove->isNotEmpty() && $this->users()->detach($users_to_remove->pluck('id')->all());
         }
 
         // When a single user model is received
-        if ($user::class === Teams::$userModel
-            && $this->team->hasUser($user)
-            && $this->users()->detach($user->id)
-        ) {
-            return true;
+        if ($user instanceof Model && $this->team->hasUser($user)) {
+            return $this->users()->detach($user->id);
         }
 
-        return false;
+         return false;
     }
 
 }

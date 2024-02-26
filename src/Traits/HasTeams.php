@@ -59,6 +59,16 @@ trait HasTeams
     }
 
     /**
+     * Determine if the user is a tech support
+     *
+     * @return bool
+     */
+    private function isSupport(): bool
+    {
+        return $this->{config('teams.support_field', 'is_support')};
+    }
+
+    /**
      * @return BelongsToMany
      */
     public function groups(): BelongsToMany
@@ -74,9 +84,13 @@ trait HasTeams
      */
     public function belongsToTeam($team): bool
     {
-        return $this->ownsTeam($team) || $this->teams->contains(static function ($t) use ($team) {
-            return $t->id === $team->id;
-        });
+        // If the user is the owner of the team, then we consider that he belongs to it.
+        if ($this->ownsTeam($team)) {
+            return true;
+        }
+
+        // We check whether the user has access to the command by identifier.
+        return $this->teams()->where('id', $team->id)->exists();
     }
 
     /**
@@ -87,61 +101,69 @@ trait HasTeams
      */
     public function teamRole($team): mixed
     {
+        // If the user is the owner of the team, return the Owner object.
         if ($this->ownsTeam($team)) {
             return new Owner();
         }
 
-        if (! $this->belongsToTeam($team)) {
+        // If the user does not belong to the team, return null.
+        if (!$this->belongsToTeam($team)) {
             return null;
         }
 
-	    $role = $team->users
-		    ->where('id', $this->id)
-		    ->first()
-		    ->membership
-		    ->role;
+        // Get the user's role in the team.
+        $role = $team->users()->where('id', $this->id)->first()->membership->role;
 
-        if ($role) {
-            return $team->findRole($role);
-        }
-
-        return null;
+        // If the user has a role, return the role object, otherwise return null.
+        return $role ? $team->findRole($role) : null;
     }
 
     /**
      * Determine if the user has the given role on the given team.
      *
      * @param  $team
-     * @param string|array $role
+     * @param string|array $roles
      * @param bool $require
      * @return bool
      */
-    public function hasTeamRole($team, string|array $role, bool $require = false): bool
+    public function hasTeamRole($team, string|array $roles, bool $require = false): bool
     {
+        // If the user owns the team, he has all the roles.
         if ($this->ownsTeam($team)) {
             return true;
         }
 
-        if (is_array($role)) {
+        // If the user does not belong to the team, return false.
+        if (!$this->belongsToTeam($team)) {
+            return false;
+        }
 
-            if (empty($role)) {
-                return true;
-            }
+        // Convert a string to an array if a single role is passed.
+        $roles = (array) $roles;
 
-            foreach ($role as $roleName) {
-                $hasRole = $this->hasTeamRole($team, $roleName);
-
-                if ($hasRole && !$require) {
-                    return true;
-                } elseif (!$hasRole && $require) {
-                    return false;
-                }
-            }
-
+        // If the list of roles is empty, then we return true or false depending on $require.
+        if (empty($roles)) {
             return $require;
         }
 
-        return $this->belongsToTeam($team) && $team->findRole($team->users->where('id', $this->id)->first()->membership->role)?->name === $role;
+        // Checking roles.
+        foreach ($roles as $role) {
+
+            // Obtain the user's role in the team.
+            $user_role = $team->findRole($team->users->where('id', $this->id)->first()->membership->role);
+
+            // If the user has at least one of the roles and $require is false, then we return true.
+            if ($user_role && $user_role->name === $role && !$require) {
+                return true;
+            }
+
+            // If the user does not have at least one of the roles and $require is true, then we return false.
+            if (!$user_role || $user_role->name !== $role && $require) {
+                return false;
+            }
+        }
+
+        return $require;
     }
 
     /**
@@ -152,73 +174,77 @@ trait HasTeams
      */
     public function teamPermissions($team): array
     {
+        // If the user is the team owner, grant him all rights.
         if ($this->ownsTeam($team)) {
             return ['*'];
         }
 
+        // If the user does not belong to the team, return an empty array of rights.
         if (! $this->belongsToTeam($team)) {
             return [];
         }
 
-        return $this->teamRole($team)->permissions;
+        // Get the user's role in the team.
+        $role = $this->teamRole($team);
+
+        // Return the role's permissions.
+        return (!$role) ? [] : $role->permissions;
     }
 
     /**
      * Determine if the user has the given permission on the given team.
      *
      * @param  $team
-     * @param string|array $permission
+     * @param string|array $permissions
      * @param bool $require
      * @return bool
      */
-    public function hasTeamPermission($team, string|array $permission, bool $require = false): bool
+    public function hasTeamPermission($team, string|array $permissions, bool $require = false): bool
     {
-        // Checking if a user is tech support
-        //
-        if ($this->{config('teams.support_field', 'is_support')} || $this->ownsTeam($team)) {
+        // Allow tech support or team owner unrestricted access
+        if ($this->isSupport() || $this->ownsTeam($team)) {
             return true;
         }
 
+        // If the user does not belong to the team, deny access
         if (! $this->belongsToTeam($team)) {
             return false;
         }
 
-        if (is_array($permission)) {
-            if (empty($permission)) {
+        // Convert a string to an array if a single permission is passed.
+        $permissions = (array) $permissions;
+
+        // If the permission array is empty, return true if not required, false otherwise
+        if (empty($permissions)) {
+            return !$require;
+        }
+
+        // Get user's permissions for the team
+        $user_permissions = $this->teamPermissions($team);
+
+        // Check each permission
+        foreach ($permissions as $permission) {
+
+            // Calculate wildcard permissions
+            $calculated_permissions = [...array_map(static fn($part) => $part . '.*', explode('.', $permission)), $permission];
+
+            // Check if user has any of the calculated permissions
+            $has_permission = !empty(array_intersect($calculated_permissions, $user_permissions));
+
+            // Return true if the permission is found and not required
+            if ($has_permission && !$require) {
                 return true;
             }
 
-            foreach ($permission as $permissionName) {
-                $hasPermission = $this->hasTeamPermission($team, $permissionName);
-
-                if ($hasPermission && !$require) {
-                    return true;
-                } elseif (!$hasPermission && $require) {
-                    return false;
-                }
+            // Return false if the permission is required but not found
+            if (!$has_permission && $require) {
+                return false;
             }
 
-            return $require;
         }
 
-        $permissions = $this->teamPermissions($team);
-
-        $calculated  = [];
-        $abilities 	 = explode('.', $permission);
-
-        for ($i=1; $i < count($abilities); $i++) {
-            $calculated[] = implode('.', array_slice($abilities, 0, $i)).'.*';
-        }
-		
-        $calculated[] = $permission;
-
-        foreach ($calculated as $item) {
-            if (in_array($item, $permissions)) {
-                return true;
-            }
-        }
-
-        return false;
+        // If all permissions have been checked and nothing matched, return the value of $require
+        return $require;
     }
 
     /**
@@ -231,15 +257,21 @@ trait HasTeams
      */
     public function teamAbilities($team, $entity, bool $forbidden = false): mixed
     {
-        $permissions = Teams::$permissionModel::where([ 'team_id' => $team->id ]);
+        // Start building the query to retrieve permissions
+        $permissions = Teams::$permissionModel::where('team_id', $team->id);
 
+        // If filtering by forbidden permissions, add the condition
         if ($forbidden) {
-            $permissions = $permissions->where('forbidden', true);
+            $permissions->where('forbidden', true);
         }
 
-        return $permissions->whereHas('ability', static function ($query) use ($entity) {
-            $query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
-        })->with('ability')->get();
+        // Filter permissions based on the entity
+        $permissions->whereHas('ability', static function ($query) use ($entity) {
+            $query->where(['entity_id', $entity->id, 'entity_type', $entity::class]);
+        });
+
+        // Retrieve the permissions along with their associated abilities
+        return $permissions->with('ability')->get();
     }
 
     /**
@@ -251,217 +283,192 @@ trait HasTeams
      * @param bool $require
      * @return bool
      *
-     * 			Allow_level		Forbidden_level
-     * Default		 0				  1
-     * Role			 1				  2
-     * Group		 2				  3
-     * User			 3				  4
-     *
      */
     public function hasTeamAbility($team, $ability, $entity, bool $require = false): bool
     {
-        // Checking if a user is tech support
-        if ($this->{config('teams.support_field', 'is_support')}) {
-            return true;
-        }
-
-        // Checking if a user is the owner of an entity
-        if (method_exists($entity, 'isOwner') && $entity->isOwner($this)) {
-            return true;
-        }
-
-        // The meaning of the default access levels
-        $allow_level = 0;
-        $forbidden_level = 1;
-
+        // Check if user is tech support or entity owner
         // Check permission by role properties
-        if ($this->hasTeamPermission($team, $ability)) {
-            $allow_level = 1;
+        if ($this->isSupport() || $entity?->isOwner($this) || $this->hasTeamPermission($team, $ability)) {
+            return true;
         }
 
         // Get an ability
-        $ability = Teams::$abilityModel::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
+        $ability = Teams::$abilityModel::firstWhere([
+            'team_id' => $team->id,
+            'entity_id' => $entity->id,
+            'entity_type' => $entity::class,
+            'name' => $ability
+        ]);
 
         // If there is a rule for an entity
         if ($ability) {
 
-            // Getting permissions on an entity
+            // Get permissions
             $permissions = Teams::$permissionModel::where([
                 'team_id' => $team->id,
                 'ability_id' => $ability->id,
             ])->get();
 
+            $role = $this->teamRole($team);
+            $group = $this->groups()->firstWhere('team_id', $team->id);
 
-            $role   = $this->teamRole($team);
-            $group  = $this->groups()->where('team_id', $team->id)->first();
+            // Check permissions for role, group, and user
+            $entities_to_check = [$role, $group, $this];
 
-            $permission = $permissions->where('entity_id', $role->id)->firstWhere('entity_type', $role::class);
+            foreach ($entities_to_check as $entity) {
 
-            // If the permission is disabled for a role
-            if ($permission?->forbidden) {
-                $forbidden_level = 2;
-            }
-
-            // If the user is attached to a group
-            if ($group) {
-
-	            // Get group restrictions
-                $permission = $permissions->where('entity_id', $group->id)->firstWhere('entity_type', $group::class);
+                $permission = $permissions->firstWhere(['entity_id', $entity?->id, 'entity_type', $entity::class]);
 
                 if ($permission) {
-                    if ($permission->forbidden) {
-                        $forbidden_level = 3;
-                    } else {
-                        $allow_level = 2;
-                    }
+                    return !$permission->forbidden;
                 }
             }
 
-            // Getting user restrictions
-            $permission = $permissions->where('entity_id', $this->id)->firstWhere('entity_type', $this::class);
-
-            if ($permission) {
-                if ($permission->forbidden) {
-                    $forbidden_level = 4;
-                } else {
-                    $allow_level = 3;
-                }
-            }
         }
 
-        // Access level comparison
-        return $allow_level >= $forbidden_level;
+        return false;
     }
 
     /**
      * Allow user to perform an ability
      *
      * @param $team
-     * @param string|array $ability
+     * @param string $ability
      * @param $entity
      * @param $target
      * @return bool
      */
-    public function allowTeamAbility($team, string|array $ability, $entity, $target): bool
+    public function allowTeamAbility($team, string $ability, $entity, $target): bool
     {
-        // @todo: refactor this
-        //
-        $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
-        $abilityEdit = $entity_type.'s.edit';
+        // Determine the ability required to edit the entity
+        $ability_to_edit = lcfirst(class_basename($entity)) . 's.edit';
 
-        if (!$this->hasTeamAbility($team, $abilityEdit, $entity)) {
+        // Check if the user has the required ability to edit the entity
+        if (!$this->hasTeamAbility($team, $ability_to_edit, $entity)) {
             return false;
         }
 
-        // Get an ability to perform an action on specific entity object inside team
-        $ability = Teams::$abilityModel::firstOrCreate(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id]);
+        // Get or create the ability model for the specified action
+        $ability_model = Teams::$abilityModel::firstOrCreate([
+            'team_id' => $team->id,
+            'entity_id' => $entity->id,
+            'entity_type' => $entity::class,
+            'name' => $ability
+        ]);
 
-        if ($ability) {
-
-            // Create a new permission for user entity
-            $permission = Teams::$permissionModel::updateOrCreate(
-                [
-                    'team_id'     => $team->id,
-                    'ability_id'  => $ability->id,
-                    'entity_id'   => $target->id,
-                    'entity_type' => get_class($target)
-                ],
-                [
-                    'forbidden'   => 0
-                ]
-            );
-
-            if ($permission) {
-                return true;
-            }
+        // Ensure the ability model is successfully retrieved or created
+        if (!$ability_model) {
+            return false;
         }
 
-        return false;
+        // Update or create permission for the user entity to perform the action on the target
+        Teams::$permissionModel::updateOrCreate(
+            [
+                'team_id'     => $team->id,
+                'ability_id'  => $ability_model->id,
+                'entity_id'   => $target->id,
+                'entity_type' => get_class($target)
+            ],
+            [
+                'forbidden'   => false
+            ]
+        );
+
+        return true;
     }
 
     /**
      * Forbid user to perform an ability
      *
      * @param $team
-     * @param string|array $ability
+     * @param string $ability
      * @param $entity
      * @param $target
      * @return bool
      */
-    public function forbidTeamAbility($team, string|array $ability, $entity, $target): bool
+    public function forbidTeamAbility($team, string $ability, $entity, $target): bool
     {
-        // @todo: refactor this
-        //
-        $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
-        $abilityEdit  =  $entity_type.'s.edit';
+        // Determine the ability required to edit the entity
+        $ability_to_edit = lcfirst(class_basename($entity)) . 's.edit';
 
-        if (!$this->hasTeamAbility($team, $abilityEdit, $entity)) {
+        // Check if the user has the required ability to edit the entity
+        if (!$this->hasTeamAbility($team, $ability_to_edit, $entity)) {
             return false;
         }
 
         // Get an ability to perform an action on specific entity object inside team
         //
-        $ability = Teams::$abilityModel::firstOrCreate(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id]);
+        $ability_model = Teams::$abilityModel::firstOrCreate([
+            'team_id' => $team->id,
+            'entity_id' => $entity->id,
+            'entity_type' => $entity::class,
+            'name' => $ability,
+        ]);
 
-        if ($ability) {
-
-            // Create a new permission for user entity
-            //
-            $permission = Teams::$permissionModel::updateOrCreate(
-                [
-                    'team_id'     => $team->id,
-                    'ability_id'  => $ability->id,
-                    'entity_id'   => $target->id,
-                    'entity_type' => get_class($target)
-                ],
-                [
-                    'forbidden'   => 1
-                ]
-            );
-
-            if ($permission) {
-                return true;
-            }
+        // Ensure the ability model is successfully retrieved or created
+        if (!$ability_model) {
+            return false;
         }
 
-        return false;
+        // Update or create permission for the user entity to perform the action on the target
+        Teams::$permissionModel::updateOrCreate(
+            [
+                'team_id'     => $team->id,
+                'ability_id'  => $ability_model->id,
+                'entity_id'   => $target->id,
+                'entity_type' => get_class($target)
+            ],
+            [
+                'forbidden'   => true
+            ]
+        );
+
+        return true;
     }
 
     /**
      * Delete user ability
      *
      * @param $team
-     * @param string|array $ability
+     * @param string $ability
      * @param $entity
      * @param $target
      * @return bool
      */
-    public function deleteTeamAbility($team, string|array $ability, $entity, $target): bool
+    public function deleteTeamAbility($team, string $ability, $entity, $target): bool
     {
-        // @todo: refactor this
-        //
-        $entity_type = lcfirst(str_replace('App\Models\\', '', $entity::class));
-        $abilityEdit  =  $entity_type.'s.edit';
+        // Determine the ability required to edit the entity
+        $ability_to_edit = lcfirst(class_basename($entity)) . 's.edit';
 
-        if (!$this->hasTeamAbility($team, $abilityEdit, $entity)) {
+        // Check if the user has the required ability to edit the entity
+        if (!$this->hasTeamAbility($team, $ability_to_edit, $entity)) {
             return false;
         }
 
         // Get an ability to perform an action on specific entity object inside team
         //
-        $ability = Teams::$abilityModel::where(['name' => $ability, 'entity_id' => $entity->id, 'entity_type' => $entity::class, 'team_id' => $team->id])->first();
+        $ability_model = Teams::$abilityModel::firstWhere([
+            'team_id' => $team->id,
+            'entity_id' => $entity->id,
+            'entity_type' => $entity::class,
+            'name' => $ability
+        ]);
 
-        if ($ability) {
-            $permission = Teams::$permissionModel::where([
-                'team_id'     => $team->id,
-                'ability_id'  => $ability->id,
-                'entity_id'   => $target->id,
-                'entity_type' => get_class($target)])->first();
+        // Ensure the ability model is successfully retrieved or created
+        if (!$ability_model) {
+            return false;
+        }
 
-            if ($permission) {
-                return $permission->delete();
-            }
+        // Find permission for the user entity to perform the action on the target
+        $permission = Teams::$permissionModel::firstWhere([
+            'team_id'     => $team->id,
+            'ability_id'  => $ability_model->id,
+            'entity_id'   => $target->id,
+            'entity_type' => get_class($target)
+        ]);
 
+        if ($permission->delete()) {
+            return true;
         }
 
         return false;
