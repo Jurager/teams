@@ -151,11 +151,14 @@ Users
 `Jurager\Teams\Traits\HasTeams` provides methods to inspect a user's teams
 
 ```php
-// Access all the team's (including owned teams) that a user belongs to...
-$user->teams : Illuminate\Support\Collection
+// Access the team's that a user belongs to...
+$user->teams : Illuminate\Database\Eloquent\Collection
 
 // Access all of a user's owned teams...
 $user->ownedTeams : Illuminate\Database\Eloquent\Collection
+
+// Access all the team's (including owned teams) that a user belongs to...
+$user->allTeams() : Illuminate\Database\Eloquent\Collection
 
 // Determine if a user owns a given team...
 $user->ownsTeam($team) : bool

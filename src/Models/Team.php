@@ -234,7 +234,7 @@ class Team extends Model
             return null;
         }
 
-	    return $this->findRole($this->users->where('id', $user->id)->first()->membership->role);
+	    return $this->findRole($this->users->where('id', $user->id)->first()->membership->role->id);
     }
 
 	/**

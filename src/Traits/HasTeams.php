@@ -65,7 +65,7 @@ trait HasTeams
      */
     private function isSupport(): bool
     {
-        return $this->{config('teams.support_field', 'is_support')};
+        return $this->{config('teams.support_field', 'is_support')} ?? false;
     }
 
     /**
@@ -90,7 +90,7 @@ trait HasTeams
         }
 
         // We check whether the user has access to the command by identifier.
-        return $this->teams()->where('id', $team->id)->exists();
+        return $this->teams()->where('team_id', $team?->id)->exists();
     }
 
     /**
@@ -112,10 +112,10 @@ trait HasTeams
         }
 
         // Get the user's role in the team.
-        $role = $team->users()->where('id', $this->id)->first()->membership->role;
-
+        $role = $team->users->where('id', $this->id)->first()->membership->role;
+        
         // If the user has a role, return the role object, otherwise return null.
-        return $role ? $team->findRole($role) : null;
+        return $role ? $team->findRole($role->id) : null;
     }
 
     /**
@@ -150,7 +150,7 @@ trait HasTeams
         foreach ($roles as $role) {
 
             // Obtain the user's role in the team.
-            $user_role = $team->findRole($team->users->where('id', $this->id)->first()->membership->role);
+            $user_role = $team->findRole($team->users->where('id', $this->id)->first()->membership->role->id);
 
             // If the user has at least one of the roles and $require is false, then we return true.
             if ($user_role && $user_role->name === $role && !$require) {
@@ -267,8 +267,9 @@ trait HasTeams
 
         // Filter permissions based on the entity
         $permissions->whereHas('ability', static function ($query) use ($entity) {
-            $query->where(['entity_id', $entity->id, 'entity_type', $entity::class]);
+            $query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
         });
+
 
         // Retrieve the permissions along with their associated abilities
         return $permissions->with('ability')->get();
@@ -317,7 +318,7 @@ trait HasTeams
 
             foreach ($entities_to_check as $entity) {
 
-                $permission = $permissions->firstWhere(['entity_id', $entity?->id, 'entity_type', $entity::class]);
+                $permission = $permissions->firstWhere(['entity_id' => $entity?->id, 'entity_type' => $entity::class]);
 
                 if ($permission) {
                     return !$permission->forbidden;
