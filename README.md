@@ -31,7 +31,7 @@ You can add a user to a global group to grant them access to all teams with the 
 
 Requirements
 -------------------------------------------
-`PHP >= 8.1` and `Laravel >= 8.x`
+`PHP >= 8.1` and `Laravel 8.x or higher`
 
 Installation
 -------------------------------------------
@@ -274,12 +274,11 @@ Otherwise, Laravel will be unable to send team invitation emails to your applica
  Roles / Permissions
 -------------------------------------------
 
-Each team member added to a team may be assigned a given role, and each role is assigned a set of permissions.
+Roles and permissions provide a flexible way to manage access control within your application. Each team member added to a team can be assigned a role, and each role is associated with a set of permissions.
 
-Roles and permissions are stored in your application's database. This allows flexibility in the use of roles and permissions, e.g. you can implement role and permission management in your app's administration pages.
+These roles and permissions are stored in your application's database, allowing for dynamic management of access control. This enables features like role and permission management within your application's administration pages.
 
-For example to create new `Team` and attach to it some `Role` and `Permission`
-
+Example: Creating a New Team with Roles and Permissions
 
 ```php
 $team = new Team();
@@ -315,120 +314,137 @@ if ($team->save()) {
 }
 ```
 
-The second argument for `$team->addRole` is array of `capabilities`, they are stored in the database and determine the capabilities of your entire application that will be available for attaching to roles
+In the above example, we create a new team and assign it two roles: "admin" and "user". Each role is associated with a set of capabilities that define what actions users with that role can perform within the application. These capabilities are stored in the database and can be managed dynamically.
+
+The second argument for `$team->addRole()` is an array of capabilities, which determine the actions that users with the corresponding role can perform in the application.
 
 ### Authorization
 
-The application will need to understand that incoming requests initiated by a team member can actually be performed by that user.
+To ensure that incoming requests initiated by a team member can be executed by that user, the application needs to verify the permissions of the user's team. This verification can be done using the `hasTeamPermission` method, which is available through the `Jurager\Teams\Traits\HasTeams` trait.
 
-The permissions of a user's team can be checked using the `hasTeamPermission` method, available through the trait `Jurager\Teams\Traits\HasTeams`.
-
-> **You usually don't need to check a user's role. You just need to verify that the user has a specific granular permission.** Roles are simply a presentational concept used to group granular permissions. Typically, you will execute calls to this method within your application's [authorization policies](https://laravel.com/docs/authorization#creating-policies)
+> [!NOTE]  
+> In most cases, it's unnecessary to check a user's role directly. Instead, focus on verifying specific granular permissions. Roles primarily serve as a way to group granular permissions for organizational purposes. Typically, you'll execute calls to this method within your application's [authorization policies](https://laravel.com/docs/authorization#creating-policies).
 
 ```php
 return $user->hasTeamPermission($server->team, 'server:update');
 ```
 
+This example demonstrates how to check if a user within a team has permission to update a server. Adjust the parameters according to your application's specific requirements and use cases.
+
 Abilities
 -------------------------------------------
 
-Adding abilities to users is simple. You don't need to create a role or an ability beforehand. Just pass the name of the ability, and the package will create it if it's not already existing.
+Adding abilities to users is straightforward. You don't need to create a role or an ability beforehand.
 
-For example, to add the ability to edit an article in team for certain user, we need to pass the entity, at this example - article object, a team object
+Simply pass the name of the ability, and the package will create it if it's not already existing.
+
+
+### Adding an Ability
+
+To add the ability to edit an article within a team for a specific user, you need to provide the entity, such as the article object, and the team object:
 
 ```php
 User::allowTeamAbility(Model $team, string 'edit', Model $article);
 ```
 
-For example, to check this ability in feature, use:
+### Checking an Ability
+
+To check if a user has a specific ability in a team, you can use the following method:
     
 ```php
 User::hasTeamAbility(Model $team, string 'edit', Model $article);
 ```
 
-To forbid user from some ability (in case if role abilities is allowing this ability)
+### Forbidding an Ability
+
+If you need to forbid a user from having a certain ability for instance, if the role abilities allow this ability, you can do so using the following method:
 
 ```php
 User::forbidTeamAbility(string 'edit', Model $article, Model $team);
 ```
 
-To create abilities without attaching it to user, use the Ability model which is published during install
+### Creating Abilities
+
+If you need to create abilities without attaching them to a user, you can use the `Ability` model provided by this package.
+
+This model is published during installation, allowing you to create abilities separately:
     
 ```php
 Ability::firstOrCreate([ 'name' => 'edit', 'title' => 'Edit' ]);
 ```
- 
 
 Middlewares
 -----------------------------------------
 
 ### Middleware Configuration
 
-The middleware is registered automatically as `role`, `permission`, `ability`.
+The middleware provided by this package is automatically registered as `role`, `permission`, and `ability`.
 
-If you want to use your own customized middlewares, change the `middleware.register` in `config/teams.php`, then implement your own middlewares, and register them.
+However, if you wish to use your own customized middlewares, you can modify the `middleware.register` in the `config/teams.php`.
 
 ### Middleware Routes
 
-You can use a middleware to filter routes and route groups by permission or role:
+You can use middleware to filter routes and route groups based on permissions or roles. 
+
+Note, that `team_id` represents the actual ID of the team in the database.
+
+If you need to customize the name of this variable, adjust the `foreign_keys.team_id` value in your `config/teams.php` file to match your database structure.
+
 
 ```php
-Route::group(['prefix' => 'admin', 'middleware' => ['role:admin,#team_id#']], function() {
-    Route::get('/', 'CommonController@commonIndex');
-    Route::get('/users', ['middleware' => ['permission:views-users,#team_id#'], 'uses' => 'CommonController@commonUsers']);
+Route::group(['prefix' => 'admin', 'middleware' => ['role:admin,team_id']], function() {
+    Route::get('/users', 'UserController@usersIndex');
+    Route::get('/user/edit', ['middleware' => ['permission:edit-users,team_id'], 'uses' => 'UserController@userEdit']);
 });
 ```
 
-Where `#team_id#` is your actual ID of the team in database. 
+> [!NOTE]  
+> Middleware logic may vary based on how you pass the `team_id` variable.
 
-If you want to change or customize the name of this variable, go to your `config/teams.php` and set the `foreign_keys.team_id` value to follow your database structure.
+* You can pass the `team_id` variable as a route parameter:
 
-Note, that middleware logic may be varied on how you pass the `team_id` variable:
-
-You can pass the `team_id` variable as route param:
- 
 ```php
 Route::get('/{team_id}/users', ['middleware' => ['permission:views-users'], 'uses' => 'CommonController@commonUsers']);
 ```
 
-You can pass the `team_id` variable directly as middleware option
-    
+* You can pass the `team_id` variable directly as a middleware option:
+
 ```php
-'middleware' => ['role:admin|root,#team_id#']
+'middleware' => ['role:admin|root,team_id']
 ```
 
-You can pass the `team_id` variable with each GET/POST/PUT or other type requests.
+* You can send the `team_id` variable with each request type (GET/POST/PUT, etc.).
 
 ### Middleware Usage
 
-If you want to use OR operation use the pipe symbol:
+For OR operations, use the pipe symbol:
 
 ```php
-'middleware' => ['role:admin|root,{team_id}']
+'middleware' => ['role:admin|root,team_id']
 // $user->hasTeamRole($team, ['admin', 'root']);
 
 'middleware' => ['permission:edit-post|edit-user']
 // $user->hasTeamPermission($team, ['edit-post', 'edit-user']);
 ```
 
-If you want to use AND functionality you can do:
+For AND functionality:
 
 ```php
-'middleware' => ['role:admin|root,{team_id},require']
-// $user->hasTeamRole($team, ['admin', 'root'], '{team_id}', true);
+'middleware' => ['role:admin|root,team_id,require']
+// $user->hasTeamRole($team, ['admin', 'root'], 'team_id', true);
 
-'middleware' => ['permission:edit-post|edit-user,{team_id},require']
-// $user->hasTeamPermission($team, ['edit-post', 'edit-user'], '{team_id}', true);
+'middleware' => ['permission:edit-post|edit-user,team_id,require']
+// $user->hasTeamPermission($team, ['edit-post', 'edit-user'], 'team_id', true);
 ```
 
-To check the `ability` to action on certain model item you can use `ability` middleware:
+To check the ability to perform an action on a specific model item, use the ability middleware:
     
 ```php
 'middleware' => ['ability:edit,App\Models\Article,atricle_id']
 // $user->hasTeamAbility($team, 'edit', $article);
 ```
 
-In this case you need to pass `atricle_id` as `request param` or `route param` to allow package identify model object
+In this case, pass `article_id` as a request parameter or route parameter to allow the package to identify the model object.
 
 ## License
 
