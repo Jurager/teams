@@ -35,6 +35,8 @@ You can add a user to a global group to grant them access to all teams with the 
   - [Middleware Usage](#middleware-usage)
 - [License](#license)
 
+---
+
 Requirements
 -------------------------------------------
 `PHP >= 8.1` and `Laravel 8.x or higher`
@@ -84,11 +86,9 @@ class AuthServiceProvider extends ServiceProvider
 Actions
 -------------------------------------------
 
-Actions are pre-defined blocks of code provided by the package to facilitate common tasks and streamline development. These actions are located in the `app/Actions/Teams` directory and can be invoked when specific tasks are performed by users within your application.
+Actions are predefined code blocks provided by the package to simplify common tasks in your application. Found in the `app/Actions/Teams` directory, these blocks can be easily invoked when users perform specific actions. They offer a quick way to implement functionality without starting from scratch. You can also customize or extend these actions to fit your needs precisely.
 
-You can leverage these actions to quickly implement functionality without the need to write boilerplate code from scratch. Additionally, you have the flexibility to create or modify these actions according to your specific requirements.
-
-Feel free to explore the available actions and customize them as needed to suit your application's needs. By utilizing actions, you can expedite the development process and maintain a cleaner, more organized codebase.
+Explore the available actions and adapt them as necessary to maintain a clean and efficient codebase, speeding up your development process.
 
 Teams
 -------------------------------------------
