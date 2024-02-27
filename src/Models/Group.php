@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
-class TeamGroup extends Model
+class Group extends Model
 {
     /**
      * The attributes that are mass assignable.
@@ -42,6 +42,16 @@ class TeamGroup extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(Teams::$userModel, 'user_group', 'group_id', 'user_id');
+    }
+
+    /**
+     * Get the capabilities that belongs to team.
+     *
+     * @return BelongsToMany
+     */
+    public function capabilities(): BelongsToMany
+    {
+        return $this->belongsToMany(Teams::$capabilityModel, 'group_capability');
     }
 
     /**
@@ -100,6 +110,16 @@ class TeamGroup extends Model
         }
 
          return false;
+    }
+
+    /**
+     * Get the permissions of all team capabilities.
+     *
+     * @return array
+     */
+    public function getPermissionsAttribute(): array
+    {
+        return $this->capabilities->pluck('code')->all();
     }
 
 }

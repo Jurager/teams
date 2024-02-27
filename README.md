@@ -198,8 +198,6 @@ Users within teams can be organized into groups with their own set of permission
 
 > Access rights granted to a group of users takes precedence over rights granted to a user in a team.
 
-> At the moment there is a restriction, a team user can only belong to one group.
-
 Examples of use of this behavior:
 
  * The user has permission to `server:edit` within the team, but is part of a group that is restricted from `server:edit` for certain entities.

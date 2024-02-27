@@ -16,10 +16,10 @@ return new class extends Migration {
             $table->id();
             $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->string('title');
+            $table->string('title')->nullable();
             $table->morphs('entity');
-            $table->boolean('only_owned');
-            $table->text('options');
+            $table->boolean('only_owned')->nullable();
+            $table->text('options')->nullable();
             $table->timestamps();
         });
     }

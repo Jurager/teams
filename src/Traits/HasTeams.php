@@ -59,16 +59,6 @@ trait HasTeams
     }
 
     /**
-     * Determine if the user is a tech support
-     *
-     * @return bool
-     */
-    private function isSupport(): bool
-    {
-        return $this->{config('teams.support_field', 'is_support')} ?? false;
-    }
-
-    /**
      * @return BelongsToMany
      */
     public function groups(): BelongsToMany
@@ -158,7 +148,7 @@ trait HasTeams
             }
 
             // If the user does not have at least one of the roles and $require is true, then we return false.
-            if (!$user_role || $user_role->name !== $role && $require) {
+            if (!$user_role || ($user_role->name !== $role && $require)) {
                 return false;
             }
         }
@@ -201,8 +191,7 @@ trait HasTeams
      */
     public function hasTeamPermission($team, string|array $permissions, bool $require = false): bool
     {
-        // Allow tech support or team owner unrestricted access
-        if ($this->isSupport() || $this->ownsTeam($team)) {
+        if ($this->ownsTeam($team)) {
             return true;
         }
 
@@ -216,35 +205,43 @@ trait HasTeams
 
         // If the permission array is empty, return true if not required, false otherwise
         if (empty($permissions)) {
-            return !$require;
+            return true;
         }
 
         // Get user's permissions for the team
         $user_permissions = $this->teamPermissions($team);
 
-        // Check each permission
-        foreach ($permissions as $permission) {
+        // Check simple permission
+        $check_permission = static function ($permission) use ($user_permissions) {
 
             // Calculate wildcard permissions
             $calculated_permissions = [...array_map(static fn($part) => $part . '.*', explode('.', $permission)), $permission];
 
             // Check if user has any of the calculated permissions
-            $has_permission = !empty(array_intersect($calculated_permissions, $user_permissions));
+            $common_permissions = array_intersect($calculated_permissions, $user_permissions);
 
             // Return true if the permission is found and not required
-            if ($has_permission && !$require) {
+            if (!empty($common_permissions)) {
                 return true;
             }
 
             // Return false if the permission is required but not found
-            if (!$has_permission && $require) {
+            return false;
+        };
+
+        // Check each permission
+        foreach ($permissions as $permission) {
+            $has_permission = $check_permission($permission);
+
+            if ($has_permission && !$require) {
+                return true;
+            } elseif (!$has_permission && $require) {
                 return false;
             }
-
         }
 
         // If all permissions have been checked and nothing matched, return the value of $require
-        return $require;
+        return true;
     }
 
     /**
@@ -275,8 +272,15 @@ trait HasTeams
         return $permissions->with('ability')->get();
     }
 
+
     /**
-     * Determinate if user can perform an action
+     * Determinate if user has ability outside team
+     *
+     * This function is employed to verify abilities within a universal group,
+     * especially in cases where a team requires a group enabling user additions
+     * and removals without direct affiliation with the team
+     *
+     * Example: Each team should have a global group of moderators.
      *
      * @param $team
      * @param $ability
@@ -285,12 +289,63 @@ trait HasTeams
      * @return bool
      *
      */
-    public function hasTeamAbility($team, $ability, $entity, bool $require = false): bool
+    private function hasAbility(string $ability): bool
+    {
+        // Get all global groups
+        $groups = $this->groups()->whereNull('team_id');
+
+        $capabilities = [];
+
+        foreach ($groups as $group) {
+
+            $group->load('capabilities');
+
+            // All user permissions from global groups
+            $capabilities = [ ...$capabilities, ...$group->permissions];
+        }
+
+        // Calculate wildcard permissions
+        $calculated_permissions = [...array_map(static fn($part) => $part . '.*', explode('.', $ability)), $ability];
+
+        // Check if user has any of the calculated permissions
+        $common_permissions = array_intersect($calculated_permissions, $capabilities);
+
+        // Return true if the permission is found and not required
+        if (!empty($common_permissions)) {
+            return true;
+        }
+
+        // Return false if the permission is required but not found
+        return false;
+    }
+
+    /**
+     * Determinate if user can perform an action
+     *
+     * @param $team
+     * @param $ability
+     * @param $entity
+     * @return bool
+     *
+     */
+    public function hasTeamAbility($team, $ability, $entity): bool
     {
         // Check if user is tech support or entity owner
         // Check permission by role properties
-        if ($this->isSupport() || method_exists($entity, 'isOwner') && $entity?->isOwner($this) || $this->hasTeamPermission($team, $ability)) {
+        if ((method_exists($entity, 'isOwner') && $entity?->isOwner($this))) {
             return true;
+        }
+
+        // The meaning of the default access levels
+        $allowed = 0;
+        $forbidden = 1;
+
+        if ($this->hasTeamPermission($team, $ability)) {
+            $allowed = 1;
+        }
+
+        if($this->hasAbility($ability)) {
+            $allowed = 2;
         }
 
         // Get an ability
@@ -311,23 +366,49 @@ trait HasTeams
             ])->get();
 
             $role = $this->teamRole($team);
-            $group = $this->groups()->firstWhere('team_id', $team->id);
+            $groups = $this->groups()->where('team_id', $team->id);
 
             // Check permissions for role, group, and user
-            $entities_to_check = [$role, $group, $this];
+            $entities_to_check = [$role, ...$groups, $this];
 
-            foreach ($entities_to_check as $entity) {
+            $access_levels = [
+                Teams::$roleModel => [
+                    'allowed' => 1,
+                    'forbidden' => 2,
+                ],
+                Teams::$groupModel => [
+                    'allowed' => 2,
+                    'forbidden' => 3,
+                ],
+                $this::class => [
+                    'allowed' => 3,
+                    'forbidden' => 4,
+                ]
+            ];
 
-                $permission = $permissions->firstWhere(['entity_id' => $entity?->id, 'entity_type' => $entity::class]);
+            foreach ($entities_to_check as $item) {
+
+                // Checking if $item exists
+                if (!isset($item)) {
+                    continue;
+                }
+
+                $permission = $permissions->firstWhere(['entity_id' => $item?->id, 'entity_type' => $item::class]);
 
                 if ($permission) {
-                    return !$permission->forbidden;
+                    if ($permission->forbidden) {
+                        $forbidden = $access_levels[$item::class]['forbidden'];
+                    } else {
+                        $allowed = $access_levels[$item::class]['allowed'];
+                    }
                 }
             }
 
         }
 
-        return false;
+        // Access level comparison
+        //
+        return $allowed >= $forbidden;
     }
 
     /**
@@ -336,10 +417,9 @@ trait HasTeams
      * @param $team
      * @param string $ability
      * @param $entity
-     * @param $target
      * @return bool
      */
-    public function allowTeamAbility($team, string $ability, $entity, $target): bool
+    public function allowTeamAbility($team, string $ability, $entity): bool
     {
         // Determine the ability required to edit the entity
         $ability_to_edit = lcfirst(class_basename($entity)) . 's.edit';
@@ -367,8 +447,8 @@ trait HasTeams
             [
                 'team_id'     => $team->id,
                 'ability_id'  => $ability_model->id,
-                'entity_id'   => $target->id,
-                'entity_type' => get_class($target)
+                'entity_id'   => $this->id,
+                'entity_type' => $this::class
             ],
             [
                 'forbidden'   => false
@@ -384,10 +464,9 @@ trait HasTeams
      * @param $team
      * @param string $ability
      * @param $entity
-     * @param $target
      * @return bool
      */
-    public function forbidTeamAbility($team, string $ability, $entity, $target): bool
+    public function forbidTeamAbility($team, string $ability, $entity): bool
     {
         // Determine the ability required to edit the entity
         $ability_to_edit = lcfirst(class_basename($entity)) . 's.edit';
@@ -416,8 +495,8 @@ trait HasTeams
             [
                 'team_id'     => $team->id,
                 'ability_id'  => $ability_model->id,
-                'entity_id'   => $target->id,
-                'entity_type' => get_class($target)
+                'entity_id'   => $this->id,
+                'entity_type' => $this::class
             ],
             [
                 'forbidden'   => true
@@ -433,10 +512,9 @@ trait HasTeams
      * @param $team
      * @param string $ability
      * @param $entity
-     * @param $target
      * @return bool
      */
-    public function deleteTeamAbility($team, string $ability, $entity, $target): bool
+    public function deleteTeamAbility($team, string $ability, $entity): bool
     {
         // Determine the ability required to edit the entity
         $ability_to_edit = lcfirst(class_basename($entity)) . 's.edit';
@@ -464,8 +542,8 @@ trait HasTeams
         $permission = Teams::$permissionModel::firstWhere([
             'team_id'     => $team->id,
             'ability_id'  => $ability_model->id,
-            'entity_id'   => $target->id,
-            'entity_type' => get_class($target)
+            'entity_id'   => $this->id,
+            'entity_type' => $this::class
         ]);
 
         if ($permission->delete()) {

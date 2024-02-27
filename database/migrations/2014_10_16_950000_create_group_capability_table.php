@@ -12,8 +12,10 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('users', static function (Blueprint $table) {
-            $table->boolean(config('teams.support_field', 'is_support'))->nullable();
+        Schema::create('group_capability', static function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('role_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('capability_id')->constrained()->cascadeOnDelete();
         });
     }
 
@@ -24,8 +26,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('users', static function (Blueprint $table) {
-            $table->dropColumn(config('teams.support_field', 'is_support'));
-        });
+        Schema::dropIfExists('group_capability');
     }
 };

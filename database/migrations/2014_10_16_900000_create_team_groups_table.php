@@ -12,9 +12,9 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('team_groups', static function (Blueprint $table) {
+        Schema::create('groups', static function (Blueprint $table) {
             $table->id();
-            $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
+            $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->nullable()->constrained()->cascadeOnDelete();
             $table->string('name');
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('team_groups');
+        Schema::dropIfExists('groups');
     }
 };
