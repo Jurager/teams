@@ -9,17 +9,26 @@ Laravel package to manage teams and operate with user permissions, abilities, su
 Users in teams can be combined into groups, with their own abilities, access rights given to a user group overrides the rights granted to a user in a team. 
 
 You can add a user to a global group to grant them access to all teams with the group's permissions. This feature is handy when you want to, for instance, provide support for all teams without assigning the user to created teams.
-> Documentation for the package is in the process of being written, for now use this readme 
-> 
+
+> [!NOTE]
+> The documentation for this package is currently being written. For now, please refer to this readme for information on the functionality and usage of the package.
+
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Actions](#actions)
 - [Teams](#teams)
 - [Users](#users)
 - [Groups](#groups)
+    - [Scope of Use](#scope-of-use)
+    - [Groups Managing](#groups-managing)
+    - [Groups Permissions](#groups-permissions)
 - [Roles & Permissions](#roles--permissions)
     - [Authorization](#authorization)
 - [Abilities](#abilities)
+  - [Adding an Ability](#adding-an-ability)
+  - [Checking an Ability](#checking-an-ability)
+  - [Forbidding an Ability](#forbidding-an-ability)
+  - [Creating Abilities](#creating-abilities)
 - [Middlewares](#middlewares)
   - [Middleware Configuration](#middleware-configuration)
   - [Middleware Routes](#middleware-routes)
@@ -202,13 +211,13 @@ Users within teams can be organized into groups, each with its own set of permis
 > [!NOTE]  
 > Access rights granted to a group of users take precedence over rights granted to a user within a team.
 
-### Examples of Usage
+### Scope of Use
 
- * A user may have permission to `server:edit` within the team but is part of a group restricted from `server:edit` for certain entities.
+ * A user can `server:edit` within the team, but is part of a group restricted from `server:edit` for specific entities.
 
- * A user may lack `server:edit` permission but is in a group permitted to `server:edit` certain entities.
+ * A user can't `server:edit` within the team, but is in a group permitted to `server:edit` specific entities.
 
-### Managing Groups
+### Groups Managing
 
 The `Jurager\Teams\Traits\HasTeams` trait provides methods to inspect a user's team groups:
 
@@ -235,7 +244,7 @@ $team->group(string $name)->attachUser(Collection|Model $user);
 $team->group(string $name)->detachUser(Collection|Model $user);
 ```
 
-### Group Permissions
+### Groups Permissions
 
 You can manage permissions within a group using the following methods:
 
