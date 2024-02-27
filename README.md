@@ -6,9 +6,9 @@
 
 Laravel package to manage teams and operate with user permissions, abilities, supporting multi-tenant dynamic roles, roles groups, capabilities, and permissions for each team.
 
-Users in teams can be combined into groups, with their own abilities, access rights given to a user group overrides the rights granted to a user in a team.
+Users in teams can be combined into groups, with their own abilities, access rights given to a user group overrides the rights granted to a user in a team. 
 
-
+You can add a user to a global group to grant them access to all teams with the group's permissions. This feature is handy when you want to, for instance, provide support for all teams without assigning the user to created teams.
 > Documentation for the package is in the process of being written, for now use this readme 
 > 
 * [Requirements](#requirements)
