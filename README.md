@@ -35,8 +35,6 @@ You can add a user to a global group to grant them access to all teams with the 
   - [Middleware Usage](#middleware-usage)
 - [License](#license)
 
----
-
 Requirements
 -------------------------------------------
 `PHP >= 8.1` and `Laravel 8.x or higher`
