@@ -11,23 +11,20 @@ Users in teams can be combined into groups, with their own abilities, access rig
 You can add a user to a global group to grant them access to all teams with the group's permissions. This feature is handy when you want to, for instance, provide support for all teams without assigning the user to created teams.
 > Documentation for the package is in the process of being written, for now use this readme 
 > 
-* [Requirements](#requirements)
-* [Installation](#installation)
-* [Actions](#actions)
-* [Team](#team)
-* [Users](#users)
-* [Group](#group)
-* [Invitations](#invitations)
-  * [Actions](#invitation-actions) 
-  * [Mail](#invitation-mail)
-* [Roles/Permissions](#roles--permissions)
-    * [Authorization](#authorization)
-* [Abilities](#abilities)
-* [Middlewares](#middlewares)
-  * [Configuration](#middleware-configuration)
-  * [Routes](#middleware-routes)
-  * [Usage](#middleware-usage)
-* [License](#license)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Actions](#actions)
+- [Teams](#teams)
+- [Users](#users)
+- [Groups](#groups)
+- [Roles & Permissions](#roles--permissions)
+    - [Authorization](#authorization)
+- [Abilities](#abilities)
+- [Middlewares](#middlewares)
+  - [Middleware Configuration](#middleware-configuration)
+  - [Middleware Routes](#middleware-routes)
+  - [Middleware Usage](#middleware-usage)
+- [License](#license)
 
 Requirements
 -------------------------------------------
@@ -78,13 +75,15 @@ class AuthServiceProvider extends ServiceProvider
 Actions
 -------------------------------------------
 
-Actions are ready-made code that allows you to quickly start using the package.
+Actions are pre-defined blocks of code provided by the package to facilitate common tasks and streamline development. These actions are located in the `app/Actions/Teams` directory and can be invoked when specific tasks are performed by users within your application.
 
-They can be invoked from `app/Actions/Teams` when their corresponding task is performed by the user. You can create or modify these actions as you need.
+You can leverage these actions to quickly implement functionality without the need to write boilerplate code from scratch. Additionally, you have the flexibility to create or modify these actions according to your specific requirements.
 
-Team
+Feel free to explore the available actions and customize them as needed to suit your application's needs. By utilizing actions, you can expedite the development process and maintain a cleaner, more organized codebase.
+
+Teams
 -------------------------------------------
-Team can be accessed via `$user->team` it provides methods for inspecting the team's attributes and relations:
+A team can be accessed via `$user->team`, providing methods for inspecting the team's attributes and relations:
 
 ```php
 // Access the team's owner...
@@ -145,10 +144,12 @@ $team->invitations()
 $team->deleteUser();
 ```
 
+These methods allow you to efficiently manage and interact with teams, including roles, users, permissions, and invitations.
+
 Users
 -------------------------------------------
 
-`Jurager\Teams\Traits\HasTeams` provides methods to inspect a user's teams
+The `Jurager\Teams\Traits\HasTeams` trait provides methods to inspect a user's teams:
 
 ```php
 // Access the team's that a user belongs to...
@@ -191,20 +192,25 @@ $user->allowTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
 $user->forbidTeamAbility($team, 'server:edit', \App\Models\Server $server) : bool
 ```
 
-Group
+These methods enable you to efficiently manage and inspect a user's teams, roles, permissions, and abilities within your application.
+
+Groups
 -------------------------------------------
 
-Users within teams can be organized into groups with their own set of permissions.
+Users within teams can be organized into groups, each with its own set of permissions. 
 
-> Access rights granted to a group of users takes precedence over rights granted to a user in a team.
+> [!NOTE]  
+> Access rights granted to a group of users take precedence over rights granted to a user within a team.
 
-Examples of use of this behavior:
+### Examples of Usage
 
- * The user has permission to `server:edit` within the team, but is part of a group that is restricted from `server:edit` for certain entities.
+ * A user may have permission to `server:edit` within the team but is part of a group restricted from `server:edit` for certain entities.
 
- * The user lacks `server:edit` permission but is in a group permitted to `server:edit` certain entities.
+ * A user may lack `server:edit` permission but is in a group permitted to `server:edit` certain entities.
 
-`Jurager\Teams\Traits\HasTeams` provides methods to inspect a user's team groups
+### Managing Groups
+
+The `Jurager\Teams\Traits\HasTeams` trait provides methods to inspect a user's team groups:
 
 ```php
 // Add new group to the team
@@ -229,7 +235,9 @@ $team->group(string $name)->attachUser(Collection|Model $user);
 $team->group(string $name)->detachUser(Collection|Model $user);
 ```
 
-You can work with permissions within a group using the following methods
+### Group Permissions
+
+You can manage permissions within a group using the following methods:
 
 ```php
 // Add an ability for user to action on certain model within team group, if permission is not found, will create a new one
@@ -241,37 +249,19 @@ $user->forbidTeamAbility(Model $team, string 'server:edit', Model $server, Model
 // Delete user ability to action on certain model within team group
 $user->deleteTeamAbility(Model $team, string 'server:edit', Model $server, Model $group);
 ```
-
-> Team groups work together with abilities. This means that you should use ability checking methods to determine if users have specific access rights within groups.
-
-We check if the user has permissions within the team and belongs to the team group. 
-
-Since a user can only belong to one team group at a time, we don't need the `$group` variable
+> [!NOTE]
+> Team groups work together with abilities, so you should use ability checking methods to determine if users have specific access rights within groups.
 
 ```php
 // Determinate if user can perform an action
 $user->hasTeamAbility(Model $team, string 'server:edit', Model $server)
 ```
 
-Middleware `ability` is used to check the user's rights within the team group, during requests to your application.
+Middleware `ability` is used to check the user's rights within the team group during requests to your application
 
 Refer to the [middlewares](#middlewares) section in the documentation for more information.
 
-Invitations
--------------------------------------------
-
-Many applications prefer to send invitation emails to users who are invited to teams. If the user does not have an account, the invitation email may tell them to create an account and accept the invitation. Or, if the user already has an account, they can choose to accept or ignore the invitation.
-
-#### Invitation Actions
-When a user is invited to the team, application's `App\Actions\Teams\InviteTeamMember` action will be invoked with the team that the new user is invited to, email address of the invited user, and the role that should be assigned to the user once they join the team.
-#### Invitation Mail
-
-Before using the team invitation feature, you should ensure that your Laravel application is configured to [send emails](https://laravel.com/docs/mail) .
-
-Otherwise, Laravel will be unable to send team invitation emails to your application's users.
-
-
- Roles / Permissions
+ Roles & Permissions
 -------------------------------------------
 
 Roles and permissions provide a flexible way to manage access control within your application. Each team member added to a team can be assigned a role, and each role is associated with a set of permissions.
@@ -386,7 +376,8 @@ However, if you wish to use your own customized middlewares, you can modify the 
 
 You can use middleware to filter routes and route groups based on permissions or roles. 
 
-Note, that `team_id` represents the actual ID of the team in the database.
+> [!NOTE]  
+> Consider, that `team_id` represents the actual ID of the team in the database.
 
 If you need to customize the name of this variable, adjust the `foreign_keys.team_id` value in your `config/teams.php` file to match your database structure.
 
