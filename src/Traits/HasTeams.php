@@ -425,8 +425,6 @@ trait HasTeams
             return false;
         }
 
-        //dd($group::class);
-
         // Update or create permission for the user entity to perform the action on the target
         Teams::$permissionModel::updateOrCreate(
             [

@@ -99,9 +99,9 @@ class Team extends Model
      * Get team group by its code
      *
      * @param string $code
-     * @return Model|null
+     * @return object|null
      */
-    public function group(string $code): Model|null
+    public function group(string $code): object|null
     {
         return $this->groups->firstWhere('code', $code);
     }
@@ -119,9 +119,9 @@ class Team extends Model
 	/**
 	 * @param string $name
 	 * @param array $capabilities
-	 * @return Model
+	 * @return object
 	 */
-    public function addRole(string $name, array $capabilities): Model
+    public function addRole(string $name, array $capabilities): object
     {
         $role = $this->roles()->create(['name' => $name]);
 
@@ -140,9 +140,9 @@ class Team extends Model
 	/**
 	 * @param string $name
 	 * @param array $capabilities
-	 * @return bool|Model|HasMany
+	 * @return object|bool
 	 */
-    public function updateRole(string $name, array $capabilities): Model|HasMany|bool
+    public function updateRole(string $name, array $capabilities): object|bool
     {
         $role = $this->roles()->firstWhere('name', $name);
 
@@ -185,9 +185,9 @@ class Team extends Model
      *
      * @param string $code
      * @param string $name
-     * @return Model
+     * @return object
      */
-    public function addGroup(string $code, string $name): Model
+    public function addGroup(string $code, string $name): object
     {
         return $this->groups()->create(['code' => $code, 'name' => $name]);
     }
@@ -196,9 +196,9 @@ class Team extends Model
 	 * Removes a group from a team
 	 *
 	 * @param string $name
-	 * @return Model|bool
+	 * @return object|bool
 	 */
-    public function deleteGroup(string $code): Model|bool
+    public function deleteGroup(string $code): object|bool
     {
         $group = $this->groups->firstWhere('code', $code);
 
@@ -213,19 +213,18 @@ class Team extends Model
      * Find the role with the given id.
      *
      * @param int|string $id
-     * @return Model|null
+     * @return object|null
      */
-    public function findRole(int|string $id): Model|null
+    public function findRole(int|string $id): object|null
     {
-        return $this->roles->where('id', $id)->orWhere('name', $id)->first();
+        return $this->roles->filter(fn($role) => $role->id === $id || $role->name === $id)->first();
     }
-
 
     /**
      * @param object $user
-     * @return Model|Owner|null
+     * @return object|null
      */
-	public function userRole(object $user): Model|Owner|null
+	public function userRole(object $user): object|null
 	{
         if ($this->owner === $user) {
             return new Owner;
