@@ -17,8 +17,9 @@ return new class extends Migration {
             $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->nullable()->constrained()->cascadeOnDelete();
             $table->string('code');
             $table->string('name');
+            $table->timestamps();
 
-            $table->unique(['team_id', 'code']);
+            $table->unique([config('teams.foreign_keys.team_id', 'team_id'), 'code']);
         });
     }
 

@@ -17,11 +17,11 @@ class Teams
      * @param string $method
      * @param string|array $params
      * @param string|null $team_id
-     * @param $models
+     * @param array|null $models
      * @param boolean $require
      * @return boolean
      */
-	protected function authorization(Request $request, string $method, string|array $params, string|null $team_id, $models, bool $require = false): bool
+	protected function authorization(Request $request, string $method, string|array $params, string|null $team_id, array|null $models, bool $require = false): bool
 	{
         // Mapping of method names
 		$method_types = [
@@ -123,14 +123,14 @@ class Teams
 	}
 
 
-	/**
-	 * Get the model to authorize.
+    /**
+     * Get the model to authorize.
      *
-	 * @param $request
-	 * @param $model
-	 * @return string
-	 */
-	protected function getModel($request, $model): string
+     * @param Request $request
+     * @param $model
+     * @return string
+     */
+	protected function getModel(Request $request, $model): string
 	{
         if (str_contains($model, '\\')) {
             return trim($model);
