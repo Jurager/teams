@@ -18,8 +18,6 @@ return new class extends Migration {
             $table->string('name');
             $table->string('title')->nullable();
             $table->morphs('entity');
-            $table->boolean('only_owned')->nullable();
-            $table->text('options')->nullable();
             $table->timestamps();
         });
     }

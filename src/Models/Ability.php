@@ -13,7 +13,7 @@ class Ability extends Model
 	 *
 	 * @var array<string>
 	 */
-	protected $fillable = [ 'team_id', 'name', 'title', 'entity_id', 'entity_type', 'only_owned', 'options' ];
+	protected $fillable = [ 'team_id', 'name', 'title', 'entity_id', 'entity_type' ];
 
 	/**
 	 * Get the team that the ability belongs to.

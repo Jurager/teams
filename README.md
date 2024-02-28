@@ -51,6 +51,11 @@ Always **do backups**, next command **may overwrite your actual data.**
 ```sh
 php artisan teams:install
 ```
+Run the migrations
+
+```sh
+php artisan migrate
+```
 
 Then, add the `HasTeams` trait to your existing `User` model.
 
@@ -96,17 +101,26 @@ A team can be accessed via `$user->team`, providing methods for inspecting the t
 // Access the team's owner...
 $team->owner
 
-// Get all the abilities belong to the team.
-$team->abilities()
-
 // Get all the team's users, excluding owner
 $team->users()
 
 // Get all the team's users, including the owner...
 $team->allUsers()
 
+// Determine if the given user is a team member...
+$team->hasUser($user)
+
+// Get all the abilities belong to the team.
+$team->abilities()
+
 // Get all the team's roles.
 $team->roles()
+
+// Get the role from the team by role id 
+$team->findRole(int $id)
+
+// Return the user role object from the team
+$team->userRole($user)
 
 // Add new role to the team
 $team->addRole(string $name, array $capabilities)
@@ -129,26 +143,17 @@ $team->addGroup(string $name)
 // Delete group from the team
 $team->deleteGroup(string $name)
 
-// Get the role from the team by role id 
-$team->findRole(int $id)
-
-// Return the user role object from the team
-$team->userRole($user)
-
-// Determine if the given user is a team member...
-$team->hasUser($user)
-
 // Determine if the team has a member with the given email address...
 $team->hasUserWithEmail(array $emailAddress)
 
 // Determine if the given user is a team member with the given permission...
 $team->userHasPermission($user, string|array $permission, bool $require = false)
 
+// Remove the given user from the team.
+$team->deleteUser($user);
+
 // Determine if the team has a member with the given email address...
 $team->invitations()
-
-// Remove the given user from the team.
-$team->deleteUser();
 ```
 
 These methods allow you to efficiently manage and interact with teams, including roles, users, permissions, and invitations.

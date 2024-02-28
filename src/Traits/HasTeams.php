@@ -55,7 +55,7 @@ trait HasTeams
             return false;
         }
 
-        return $this->id == $team->{$this->getForeignKey()};
+        return $this->id === $team->{$this->getForeignKey()};
     }
 
     /**
@@ -74,13 +74,8 @@ trait HasTeams
      */
     public function belongsToTeam($team): bool
     {
-        // If the user is the owner of the team, then we consider that he belongs to it.
-        if ($this->ownsTeam($team)) {
-            return true;
-        }
-
-        // We check whether the user has access to the command by identifier.
-        return $this->teams()->where('team_id', $team?->id)->exists();
+        // We check whether the user has access to the team by identifier.
+        return $this->ownsTeam($team) || $this->teams()->where('team_id', $team?->id)->exists();
     }
 
     /**

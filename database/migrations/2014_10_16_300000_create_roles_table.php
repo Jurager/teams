@@ -17,7 +17,6 @@ return new class extends Migration {
             $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('description')->nullable();
-            $table->integer('level')->nullable();
         });
     }
 

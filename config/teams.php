@@ -77,7 +77,7 @@ return [
     | Tables
     |--------------------------------------------------------------------------
     |
-    | List of models bound to package models
+    | List of model tables bound to package models
     |
     */
 	'tables' => [
