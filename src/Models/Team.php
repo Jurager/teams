@@ -96,14 +96,14 @@ class Team extends Model
     }
 
     /**
-     * Get team group by its name
+     * Get team group by its code
      *
-     * @param string $name
+     * @param string $code
      * @return Model|null
      */
-    public function group(string $name): Model|null
+    public function group(string $code): Model|null
     {
-        return $this->groups()->firstWhere('name', $name);
+        return $this->groups->firstWhere('code', $code);
     }
 
     /**
@@ -183,12 +183,13 @@ class Team extends Model
     /**
      * Adds a new group to the team
      *
+     * @param string $code
      * @param string $name
      * @return Model
      */
-    public function addGroup(string $name): Model
+    public function addGroup(string $code, string $name): Model
     {
-        return $this->groups()->create(['name' => $name]);
+        return $this->groups()->create(['code' => $code, 'name' => $name]);
     }
 
 	/**
@@ -197,9 +198,9 @@ class Team extends Model
 	 * @param string $name
 	 * @return Model|bool
 	 */
-    public function deleteGroup(string $name): Model|bool
+    public function deleteGroup(string $code): Model|bool
     {
-        $group = $this->groups->firstWhere('name', $name);
+        $group = $this->groups->firstWhere('code', $code);
 
         if ($group) {
             return $this->groups()->delete($group);

@@ -15,7 +15,7 @@ class Group extends Model
      *
      * @var array<string>
      */
-    protected $fillable = [ 'team_id', 'name' ];
+    protected $fillable = [ 'team_id', 'code', 'name' ];
 
     /**
      * Indicates if the model should be timestamped.

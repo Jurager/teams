@@ -15,7 +15,10 @@ return new class extends Migration {
         Schema::create('groups', static function (Blueprint $table) {
             $table->id();
             $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->nullable()->constrained()->cascadeOnDelete();
+            $table->string('code');
             $table->string('name');
+
+            $table->unique(['team_id', 'code']);
         });
     }
 

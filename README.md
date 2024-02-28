@@ -134,14 +134,14 @@ $team->deleteRole(string $name)
 // Get all groups of the team.
 $team->groups()
 
-// Get team group by its name
-$team->group(string $name)
+// Get team group by its code
+$team->group(string $code)
 
 // Add new group to the team
-$team->addGroup(string $name)
+$team->addGroup(string $code, string $name)
 
 // Delete group from the team
-$team->deleteGroup(string $name)
+$team->deleteGroup(string $code)
 
 // Determine if the team has a member with the given email address...
 $team->hasUserWithEmail(array $emailAddress)
@@ -226,25 +226,25 @@ The `Jurager\Teams\Traits\HasTeams` trait provides methods to inspect a user's t
 
 ```php
 // Add new group to the team
-$team->addGroup(string $name)
+$team->addGroup(string $code, string $name)
 
 // Delete group from the team
-$team->deleteGroup(string $name)
+$team->deleteGroup(string $code)
 
 // Get all groups of the team.
 $team->groups();
 
-// Get team group by its name
-$team->group(string $name);
+// Get team group by its code
+$team->group(string $code);
 
 // Get all group users
-$team->group(string $name)->users();
+$team->group(string $code)->users();
 
 // Attach users or user to a group
-$team->group(string $name)->attachUser(Collection|Model $user);
+$team->group(string $code)->attachUser(Collection|Model $user);
 
 // Detach users or user from group
-$team->group(string $name)->detachUser(Collection|Model $user);
+$team->group(string $code)->detachUser(Collection|Model $user);
 ```
 
 ### Groups Permissions

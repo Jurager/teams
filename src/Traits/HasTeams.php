@@ -280,7 +280,7 @@ trait HasTeams
     private function hasAbility(string $ability): bool
     {
         // Get all global groups
-        $groups = $this->groups()->whereNull('team_id');
+        $groups = $this->groups->whereNull('team_id');
 
         $capabilities = [];
 
@@ -349,7 +349,7 @@ trait HasTeams
             ])->get();
 
             $role = $this->teamRole($team);
-            $groups = $this->groups()->where('team_id', $team->id);
+            $groups = $this->groups->where('team_id', $team->id);
 
             // Check permissions for role, group, and user
             $entities_to_check = [$role, ...$groups, $this];
