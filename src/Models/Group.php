@@ -69,11 +69,7 @@ class Group extends Model
             $user = $user->reject(fn ($item) => !$this->team->hasUser($item));
 
             // After sorting, ensure that there are no empty elements.
-            if ($user->isNotEmpty() && count($this->users()->sync($user, false))) {
-                return true;
-            }
-
-            return false;
+            return $user->isNotEmpty() && count($this->users()->sync($user, false));
         }
 
         // When a single user model is received
@@ -105,7 +101,7 @@ class Group extends Model
         }
 
         // When a single user model is received
-        if ($user instanceof Model && $this->team->hasUser($user)) {
+        if ($this->team->hasUser($user)) {
             return $this->users()->detach($user->id);
         }
 

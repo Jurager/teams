@@ -6,6 +6,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 class Teams
 {
@@ -34,7 +35,7 @@ class Teams
 
         // Ensure method is valid
         if ($action === null) {
-            throw new \InvalidArgumentException('Invalid method');
+            throw new InvalidArgumentException('Invalid method');
         }
 
         // Convert params to array if it's not already

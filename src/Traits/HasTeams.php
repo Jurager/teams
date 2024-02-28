@@ -216,12 +216,7 @@ trait HasTeams
             $common_permissions = array_intersect($calculated_permissions, $user_permissions);
 
             // Return true if the permission is found and not required
-            if (!empty($common_permissions)) {
-                return true;
-            }
-
-            // Return false if the permission is required but not found
-            return false;
+            return !empty($common_permissions);
         };
 
         // Check each permission
@@ -230,7 +225,9 @@ trait HasTeams
 
             if ($has_permission && !$require) {
                 return true;
-            } elseif (!$has_permission && $require) {
+            }
+
+            if (!$has_permission && $require) {
                 return false;
             }
         }
@@ -277,12 +274,8 @@ trait HasTeams
      *
      * Example: Each team should have a global group of moderators.
      *
-     * @param $team
-     * @param $ability
-     * @param $entity
-     * @param bool $require
+     * @param string $ability
      * @return bool
-     *
      */
     private function hasAbility(string $ability): bool
     {
@@ -306,12 +299,7 @@ trait HasTeams
         $common_permissions = array_intersect($calculated_permissions, $capabilities);
 
         // Return true if the permission is found and not required
-        if (!empty($common_permissions)) {
-            return true;
-        }
-
-        // Return false if the permission is required but not found
-        return false;
+        return !empty($common_permissions);
     }
 
     /**
@@ -388,7 +376,7 @@ trait HasTeams
                     continue;
                 }
 
-                $permission = $permissions->firstWhere(['entity_id' => $item?->id, 'entity_type' => $item::class]);
+                $permission = $permissions->firstWhere(['entity_id' => $item->id, 'entity_type' => $item::class]);
 
                 if ($permission) {
                     if ($permission->forbidden) {

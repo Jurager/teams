@@ -28,7 +28,7 @@ class InstallCommand extends Command
      */
     public function handle(): void
     {
-        if (!$this->confirm('Do you wish to continue?', false)) {
+        if (!$this->confirm('Do you wish to continue?')) {
             return;
         }
 
