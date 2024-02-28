@@ -209,23 +209,23 @@ class Team extends Model
         return false;
     }
 
-	/**
-	 * Find the role with the given id.
-	 *
-	 * @param string $id
-	 * @return Model|null
-	 */
-    public function findRole(string $id): Model|null
+    /**
+     * Find the role with the given id.
+     *
+     * @param int|string $id
+     * @return Model|null
+     */
+    public function findRole(int|string $id): Model|null
     {
-        return $this->roles->firstWhere('id', $id);
+        return $this->roles->where('id', $id)->orWhere('name', $id)->first();
     }
 
 
-	/**
-	 * @param $user
-	 * @return Model|Owner|null
-	 */
-	public function userRole($user): Model|Owner|null
+    /**
+     * @param object $user
+     * @return Model|Owner|null
+     */
+	public function userRole(object $user): Model|Owner|null
 	{
         if ($this->owner === $user) {
             return new Owner;
@@ -238,13 +238,13 @@ class Team extends Model
 	    return $this->findRole($this->users->where('id', $user->id)->first()->membership->role->id);
     }
 
-	/**
-	 * Determine if the given user belongs to the team.
-	 *
-	 * @param $user
-	 * @return bool
-	 */
-	public function hasUser($user): bool
+    /**
+     * Determine if the given user belongs to the team.
+     *
+     * @param object $user
+     * @return bool
+     */
+	public function hasUser(object $user): bool
 	{
 		return $this->users->contains($user) || $user->ownsTeam($this);
 	}
@@ -268,7 +268,7 @@ class Team extends Model
 	 * @param bool $require
 	 * @return bool
 	 */
-	public function userHasPermission($user, string|array $permission, bool $require = false): bool
+	public function userHasPermission(object $user, string|array $permission, bool $require = false): bool
 	{
 		return $user->hasTeamPermission($this, $permission, $require);
 	}
@@ -289,7 +289,7 @@ class Team extends Model
 	 * @param $user
 	 * @return void
 	 */
-	public function deleteUser($user): void
+	public function deleteUser(object $user): void
 	{
 		$this->users()->detach($user);
 	}
