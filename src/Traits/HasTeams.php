@@ -49,6 +49,9 @@ trait HasTeams
         return $this->id === $team->{$this->getForeignKey()};
     }
 
+    /**
+     * Get all the groups the user belongs to.
+     */
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(Teams::$groupModel, 'user_group', 'user_id', 'group_id');
@@ -245,6 +248,7 @@ trait HasTeams
 
         foreach ($groups as $group) {
 
+            // Eager load a relationship after modify
             $group->load('capabilities');
 
             // All user permissions from global groups
@@ -343,7 +347,6 @@ trait HasTeams
         }
 
         // Access level comparison
-        //
         return $allowed >= $forbidden;
     }
 
