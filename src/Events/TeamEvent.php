@@ -12,15 +12,12 @@ abstract class TeamEvent
 
     /**
      * The team instance.
-     *
-     * @var mixed
      */
     public mixed $team;
 
     /**
      * Create a new event instance.
      *
-     * @param  mixed $team
      * @return void
      */
     public function __construct(mixed $team)

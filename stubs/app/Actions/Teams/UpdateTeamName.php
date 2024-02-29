@@ -10,11 +10,6 @@ class UpdateTeamName implements UpdatesTeamNames
 {
     /**
      * Validate and update the given team's name.
-     *
-     * @param mixed $user
-     * @param mixed $team
-     * @param  array  $input
-     * @return void
      */
     public function update(mixed $user, mixed $team, array $input): void
     {

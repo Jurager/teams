@@ -2,11 +2,11 @@
 
 namespace Jurager\Teams\Models;
 
-use Jurager\Teams\Teams;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Jurager\Teams\Teams;
 
 class Group extends Model
 {
@@ -15,7 +15,7 @@ class Group extends Model
      *
      * @var array<string>
      */
-    protected $fillable = [ 'team_id', 'code', 'name' ];
+    protected $fillable = ['team_id', 'code', 'name'];
 
     /**
      * Indicates if the model should be timestamped.
@@ -26,8 +26,6 @@ class Group extends Model
 
     /**
      * Get the team that the group belongs to.
-     *
-     * @return BelongsTo
      */
     public function team(): BelongsTo
     {
@@ -36,8 +34,6 @@ class Group extends Model
 
     /**
      * Get all group users
-     *
-     * @return BelongsToMany
      */
     public function users(): BelongsToMany
     {
@@ -46,8 +42,6 @@ class Group extends Model
 
     /**
      * Get the capabilities that belongs to team.
-     *
-     * @return BelongsToMany
      */
     public function capabilities(): BelongsToMany
     {
@@ -56,9 +50,6 @@ class Group extends Model
 
     /**
      * Attach user or users to a group
-     *
-     * @param Collection|Model $user
-     * @return bool
      */
     public function attachUser(Collection|Model $user): bool
     {
@@ -66,7 +57,7 @@ class Group extends Model
         if ($user instanceof Collection) {
 
             // Reject users not in the current team.
-            $user = $user->reject(fn ($item) => !$this->team->hasUser($item));
+            $user = $user->reject(fn ($item) => ! $this->team->hasUser($item));
 
             // After sorting, ensure that there are no empty elements.
             return $user->isNotEmpty() && count($this->users()->sync($user, false));
@@ -85,16 +76,13 @@ class Group extends Model
 
     /**
      * Detach user or users from group
-     *
-     * @param Collection|Model $user
-     * @return bool
      */
     public function detachUser(Collection|Model $user): bool
     {
         // When a collection of users is received.
         if ($user instanceof Collection) {
             // Filter out users not in the current team.
-            $users_to_remove = $user->filter(fn($item) => $this->team->hasUser($item));
+            $users_to_remove = $user->filter(fn ($item) => $this->team->hasUser($item));
 
             // Detach only if there are users to remove.
             return $users_to_remove->isNotEmpty() && $this->users()->detach($users_to_remove->pluck('id')->all());
@@ -105,17 +93,14 @@ class Group extends Model
             return $this->users()->detach($user->id);
         }
 
-         return false;
+        return false;
     }
 
     /**
      * Get the permissions of all team capabilities.
-     *
-     * @return array
      */
     public function getPermissionsAttribute(): array
     {
         return $this->capabilities->pluck('code')->all();
     }
-
 }

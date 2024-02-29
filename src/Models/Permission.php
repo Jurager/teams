@@ -2,36 +2,32 @@
 
 namespace Jurager\Teams\Models;
 
-use Jurager\Teams\Teams;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Jurager\Teams\Teams;
 
 class Permission extends Model
 {
-	/**
-	 * The attributes that are mass assignable.
-	 *
-	 * @var array<string>
-	 */
-	protected $fillable = [ 'team_id', 'ability_id', 'entity_id', 'entity_type', 'forbidden'];
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<string>
+     */
+    protected $fillable = ['team_id', 'ability_id', 'entity_id', 'entity_type', 'forbidden'];
 
-	/**
+    /**
      * Get the team that the permission belongs to.
-     *
-	 * @return BelongsTo
-	 */
-	public function team(): BelongsTo
-	{
-		return $this->belongsTo(Teams::$teamModel);
-	}
+     */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Teams::$teamModel);
+    }
 
-	/**
+    /**
      * Get the ability that the permission belongs to.
-     *
-	 * @return BelongsTo
-	 */
-	public function ability(): BelongsTo
-	{
-		return $this->belongsTo(Teams::$abilityModel);
-	}
+     */
+    public function ability(): BelongsTo
+    {
+        return $this->belongsTo(Teams::$abilityModel);
+    }
 }

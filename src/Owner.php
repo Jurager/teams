@@ -8,35 +8,26 @@ class Owner implements JsonSerializable
 {
     /**
      * The key identifier for the role.
-     *
-     * @var string|int
      */
     public string|int $id;
 
     /**
      * The name of the role.
-     *
-     * @var string
      */
     public string $name;
 
     /**
      * The role's permissions.
-     *
-     * @var array
      */
     public array $permissions;
 
     /**
      * The role's description.
-     *
-     * @var string
      */
     public string $description;
 
     /**
      * Create a new role instance.
-     *
      */
     public function __construct()
     {
@@ -48,7 +39,6 @@ class Owner implements JsonSerializable
     /**
      * Describe the role.
      *
-     * @param  string  $description
      * @return $this
      */
     public function description(string $description): static
@@ -60,8 +50,6 @@ class Owner implements JsonSerializable
 
     /**
      * Get the JSON serializable representation of the object.
-     *
-     * @return array
      */
     public function jsonSerialize(): array
     {

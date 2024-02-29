@@ -7,8 +7,8 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class Role implements ValidationRule
 {
-
-    public function __construct(private $team) {
+    public function __construct(private $team)
+    {
     }
 
     /**
@@ -16,7 +16,7 @@ class Role implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (!in_array($value, $this->team->roles->pluck('name')->all(), true)) {
+        if (! in_array($value, $this->team->roles->pluck('name')->all(), true)) {
             $fail('The :attribute must be a valid role.');
         }
     }

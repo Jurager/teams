@@ -14,15 +14,12 @@ class Invitation extends Mailable
 
     /**
      * The team invitation instance.
-     *
-     * @var InvitationModel
      */
     public InvitationModel $invitation;
 
     /**
      * Create a new message instance.
      *
-     * @param InvitationModel $invitation
      * @return void
      */
     public function __construct(InvitationModel $invitation)

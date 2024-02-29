@@ -2,19 +2,19 @@
 
 namespace Jurager\Teams\Models;
 
-use Jurager\Teams\Teams;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Model;
+use Jurager\Teams\Teams;
 
 class Role extends Model
 {
-	/**
-	 * The attributes that are mass assignable.
-	 *
-	 * @var array<string>
-	 */
-	protected $fillable = [ 'team_id', 'name', 'description'];
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<string>
+     */
+    protected $fillable = ['team_id', 'name', 'description'];
 
     /**
      * Indicates if the model should be timestamped.
@@ -28,8 +28,8 @@ class Role extends Model
      *
      * @var array
      */
-	protected $with = [
-	    'capabilities',
+    protected $with = [
+        'capabilities',
     ];
 
     /**
@@ -38,7 +38,7 @@ class Role extends Model
      * @var array<int, string>
      */
     protected $appends = [
-	    'permissions'
+        'permissions',
     ];
 
     /**
@@ -47,36 +47,30 @@ class Role extends Model
      * @var array<int, string>
      */
     protected $hidden = [
-	    'capabilities'
+        'capabilities',
     ];
 
-	/**
-	 * Get the team that the role belongs to.
-	 *
-	 * @return BelongsTo
-	 */
-	public function team(): BelongsTo
-	{
-		return $this->belongsTo(Teams::$teamModel);
-	}
+    /**
+     * Get the team that the role belongs to.
+     */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Teams::$teamModel);
+    }
 
-	/**
+    /**
      * Get the capabilities that belongs to team.
-     *
-	 * @return BelongsToMany
-	 */
-	public function capabilities(): BelongsToMany
-	{
+     */
+    public function capabilities(): BelongsToMany
+    {
         return $this->belongsToMany(Teams::$capabilityModel, 'role_capability');
     }
 
-	/**
+    /**
      * Get the permissions of all team capabilities.
-     *
-	 * @return array
-	 */
-	public function getPermissionsAttribute(): array
-	{
+     */
+    public function getPermissionsAttribute(): array
+    {
         return $this->capabilities->pluck('code')->all();
     }
 }

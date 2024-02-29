@@ -8,50 +8,41 @@ use Jurager\Teams\Contracts\DeletesUsers;
 
 class DeleteUser implements DeletesUsers
 {
-	/**
-	 * The team deleter implementation.
-	 *
-	 * @var \Jurager\Teams\Contracts\DeletesTeams
-	 */
-	protected DeletesTeams $deletesTeams;
+    /**
+     * The team deleter implementation.
+     */
+    protected DeletesTeams $deletesTeams;
 
-	/**
-	 * Create a new action instance.
-	 *
-	 * @param  \Jurager\Teams\Contracts\DeletesTeams  $deletesTeams
-	 * @return void
-	 */
-	public function __construct(DeletesTeams $deletesTeams)
-	{
-		$this->deletesTeams = $deletesTeams;
-	}
-
-	/**
-	 * Delete the given user.
-	 *
-	 * @param mixed $user
-	 * @return void
-	 */
-	public function delete(mixed $user): void
+    /**
+     * Create a new action instance.
+     *
+     * @return void
+     */
+    public function __construct(DeletesTeams $deletesTeams)
     {
-		DB::transaction(function () use ($user) {
-			$this->deleteTeams($user);
-			$user->delete();
-		});
-	}
+        $this->deletesTeams = $deletesTeams;
+    }
 
-	/**
-	 * Delete the teams and team associations attached to the user.
-	 *
-	 * @param  mixed  $user
-	 * @return void
-	 */
-	protected function deleteTeams(mixed $user): void
+    /**
+     * Delete the given user.
+     */
+    public function delete(mixed $user): void
     {
-		$user->teams()->detach();
+        DB::transaction(function () use ($user) {
+            $this->deleteTeams($user);
+            $user->delete();
+        });
+    }
 
-		$user->ownedTeams->each(function ($team) {
-			$this->deletesTeams->delete($team);
-		});
-	}
+    /**
+     * Delete the teams and team associations attached to the user.
+     */
+    protected function deleteTeams(mixed $user): void
+    {
+        $user->teams()->detach();
+
+        $user->ownedTeams->each(function ($team) {
+            $this->deletesTeams->delete($team);
+        });
+    }
 }

@@ -2,9 +2,9 @@
 
 namespace Jurager\Teams\Models;
 
-use Jurager\Teams\Teams;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Jurager\Teams\Teams;
 
 class Invitation extends Model
 {
@@ -13,12 +13,10 @@ class Invitation extends Model
      *
      * @var array<string>
      */
-    protected $fillable = [ 'email', 'role' ];
+    protected $fillable = ['email', 'role'];
 
     /**
      * Get the team that the invitation belongs to.
-     *
-     * @return BelongsTo
      */
     public function team(): BelongsTo
     {

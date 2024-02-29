@@ -2,13 +2,13 @@
 
 namespace Jurager\Teams\Models;
 
-use Jurager\Teams\Owner;
-use Jurager\Teams\Teams;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Model;
+use Jurager\Teams\Owner;
+use Jurager\Teams\Teams;
 
 class Team extends Model
 {
@@ -17,7 +17,7 @@ class Team extends Model
      *
      * @var array<string>
      */
-    protected $fillable = [ 'user_id', 'name'];
+    protected $fillable = ['user_id', 'name'];
 
     /**
      * The relationships that should always be loaded.
@@ -26,69 +26,57 @@ class Team extends Model
      */
     protected $with = [
         'roles.capabilities',
-        'groups'
+        'groups',
     ];
 
-	/**
-	 * Get the owner of the team.
-	 *
-	 * @return BelongsTo
-	 */
-	public function owner(): BelongsTo
-	{
-		return $this->belongsTo(Teams::$userModel, 'user_id');
-	}
+    /**
+     * Get the owner of the team.
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(Teams::$userModel, 'user_id');
+    }
 
-	/**
-	 * Get all users of the team.
-	 *
-	 * @return BelongsToMany
-	 */
-	public function users(): BelongsToMany
-	{
-		return $this->belongsToMany(Teams::$userModel, Teams::$membershipModel)
-			->withPivot('role_id')
-			->withTimestamps()
-			->as('membership');
-	}
+    /**
+     * Get all users of the team.
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(Teams::$userModel, Teams::$membershipModel)
+            ->withPivot('role_id')
+            ->withTimestamps()
+            ->as('membership');
+    }
 
     /**
      * Get all the team's users including its owner.
-     *
-     * @return Collection
      */
     public function allUsers(): Collection
     {
         return $this->users->merge([$this->owner]);
     }
 
-	/**
-	 * Get all the abilities belong to the team.
-	 *
-	 * @return BelongsToMany
-	 */
-	public function abilities(): BelongsToMany
-	{
-		return $this->belongsToMany(Teams::$abilityModel, Teams::$permissionModel)
-			->withTimestamps()
-			->withPivot(['entity_type', 'entity_id'])
-			->as('permission');
-	}
+    /**
+     * Get all the abilities belong to the team.
+     */
+    public function abilities(): BelongsToMany
+    {
+        return $this->belongsToMany(Teams::$abilityModel, Teams::$permissionModel)
+            ->withTimestamps()
+            ->withPivot(['entity_type', 'entity_id'])
+            ->as('permission');
+    }
 
     /**
      * Get all roles of the team.
-     *
-     * @return HasMany
      */
-	public function roles(): HasMany
-	{
+    public function roles(): HasMany
+    {
         return $this->hasMany(Teams::$roleModel);
     }
 
     /**
      * Get all groups of the team.
-     *
-     * @return HasMany
      */
     public function groups(): HasMany
     {
@@ -97,30 +85,20 @@ class Team extends Model
 
     /**
      * Get team group by its code
-     *
-     * @param string $code
-     * @return object|null
      */
-    public function group(string $code): object|null
+    public function group(string $code): ?object
     {
         return $this->groups->firstWhere('code', $code);
     }
 
     /**
      * Check if the team has registered roles
-     *
-     * @return bool
      */
     public function hasRoles(): bool
     {
         return count($this->roles) > 0;
     }
 
-	/**
-	 * @param string $name
-	 * @param array $capabilities
-	 * @return object
-	 */
     public function addRole(string $name, array $capabilities): object
     {
         $role = $this->roles()->create(['name' => $name]);
@@ -137,11 +115,6 @@ class Team extends Model
         return $role;
     }
 
-	/**
-	 * @param string $name
-	 * @param array $capabilities
-	 * @return object|bool
-	 */
     public function updateRole(string $name, array $capabilities): object|bool
     {
         $role = $this->roles()->firstWhere('name', $name);
@@ -157,7 +130,7 @@ class Team extends Model
 
             $role->capabilities()->sync($capability_ids);
 
-	        return $role;
+            return $role;
         }
 
         return false;
@@ -165,9 +138,6 @@ class Team extends Model
 
     /**
      * Deletes the given role from team
-     *
-     * @param string $name
-     * @return bool
      */
     public function deleteRole(string $name): bool
     {
@@ -182,22 +152,17 @@ class Team extends Model
 
     /**
      * Adds a new group to the team
-     *
-     * @param string $code
-     * @param string $name
-     * @return object
      */
     public function addGroup(string $code, string $name): object
     {
         return $this->groups()->create(['code' => $code, 'name' => $name]);
     }
 
-	/**
-	 * Removes a group from a team
-	 *
-	 * @param string $name
-	 * @return object|bool
-	 */
+    /**
+     * Removes a group from a team
+     *
+     * @param  string  $name
+     */
     public function deleteGroup(string $code): object|bool
     {
         $group = $this->groups->firstWhere('code', $code);
@@ -211,97 +176,72 @@ class Team extends Model
 
     /**
      * Find the role with the given id.
-     *
-     * @param int|string $id
-     * @return object|null
      */
-    public function findRole(int|string $id): object|null
+    public function findRole(int|string $id): ?object
     {
-        return $this->roles->filter(fn($role) => $role->id === $id || $role->name === $id)->first();
+        return $this->roles->filter(fn ($role) => $role->id === $id || $role->name === $id)->first();
     }
 
-    /**
-     * @param object $user
-     * @return object|null
-     */
-	public function userRole(object $user): object|null
-	{
+    public function userRole(object $user): ?object
+    {
         if ($this->owner === $user) {
             return new Owner;
         }
 
-        if (!$this->hasUser($user)) {
+        if (! $this->hasUser($user)) {
             return null;
         }
 
-	    return $this->findRole($this->users->where('id', $user->id)->first()->membership->role->id);
+        return $this->findRole($this->users->where('id', $user->id)->first()->membership->role->id);
     }
 
     /**
      * Determine if the given user belongs to the team.
-     *
-     * @param object $user
-     * @return bool
      */
-	public function hasUser(object $user): bool
-	{
-		return $this->users->contains($user) || $user->ownsTeam($this);
-	}
-
-	/**
-	 * Determine if the given email address belongs to a user on the team.
-	 *
-	 * @param  string  $email
-	 * @return bool
-	 */
-	public function hasUserWithEmail(string $email): bool
-	{
-		return $this->allUsers()->contains(static fn($user) => $user->email === $email);
-	}
-
-	/**
-	 * Determine if the given user has the given permission on the team.
-	 *
-	 * @param $user
-	 * @param string|array $permission
-	 * @param bool $require
-	 * @return bool
-	 */
-	public function userHasPermission(object $user, string|array $permission, bool $require = false): bool
-	{
-		return $user->hasTeamPermission($this, $permission, $require);
-	}
-
-	/**
-	 * Get all the pending user invitations for the team.
-	 *
-	 * @return HasMany
-	 */
-	public function invitations(): HasMany
-	{
-		return $this->hasMany(Teams::$invitationModel);
-	}
-
-	/**
-	 * Remove the given user from the team.
-	 *
-	 * @param $user
-	 * @return void
-	 */
-	public function deleteUser(object $user): void
-	{
-		$this->users()->detach($user);
-	}
-
-	/**
-	 * Purge all the team's resources.
-	 *
-	 * @return void
-	 */
-	public function purge(): void
+    public function hasUser(object $user): bool
     {
-		$this->users()->detach();
+        return $this->users->contains($user) || $user->ownsTeam($this);
+    }
 
-		$this->delete();
-	}
+    /**
+     * Determine if the given email address belongs to a user on the team.
+     */
+    public function hasUserWithEmail(string $email): bool
+    {
+        return $this->allUsers()->contains(static fn ($user) => $user->email === $email);
+    }
+
+    /**
+     * Determine if the given user has the given permission on the team.
+     */
+    public function userHasPermission(object $user, string|array $permission, bool $require = false): bool
+    {
+        return $user->hasTeamPermission($this, $permission, $require);
+    }
+
+    /**
+     * Get all the pending user invitations for the team.
+     */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(Teams::$invitationModel);
+    }
+
+    /**
+     * Remove the given user from the team.
+     */
+    public function deleteUser(object $user): void
+    {
+        $this->users()->detach($user);
+    }
+
+    /**
+     * Purge all the team's resources.
+     */
+    public function purge(): void
+    {
+        $this->users()->detach();
+
+        $this->delete();
+    }
 }

@@ -10,23 +10,17 @@ class RemovingTeamMember
 
     /**
      * The team instance.
-     *
-     * @var mixed
      */
     public mixed $team;
 
     /**
      * The team member being removed.
-     *
-     * @var mixed
      */
     public mixed $user;
 
     /**
      * Create a new event instance.
      *
-     * @param  mixed  $team
-     * @param  mixed  $user
      * @return void
      */
     public function __construct(mixed $team, mixed $user)

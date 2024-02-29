@@ -2,37 +2,34 @@
 
 namespace Jurager\Teams;
 
+use Exception;
+use Illuminate\Support\ServiceProvider;
 use Jurager\Teams\Middleware\Ability as AbilityMiddleware;
 use Jurager\Teams\Middleware\Permission as PermissionMiddleware;
 use Jurager\Teams\Middleware\Role as RoleMiddleware;
-use Illuminate\Support\ServiceProvider;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
-use Exception;
 
 class TeamsServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
-     *
-     * @return void
      */
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/teams.php', 'teams');
+        $this->mergeConfigFrom(__DIR__.'/../config/teams.php', 'teams');
     }
 
     /**
      * Bootstrap any application services.
      *
-     * @return void
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws Exception
      */
     public function boot(): void
     {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'teams');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'teams');
 
         $this->configureCommands();
         $this->configurePublishing();
@@ -42,36 +39,32 @@ class TeamsServiceProvider extends ServiceProvider
 
     /**
      * Configure publishing for the package.
-     *
-     * @return void
      */
     protected function configurePublishing(): void
     {
-        if (!$this->app->runningInConsole()) {
+        if (! $this->app->runningInConsole()) {
             return;
         }
 
         $this->publishes([
-            __DIR__ . '/../config/teams.php' => config_path('teams.php')
+            __DIR__.'/../config/teams.php' => config_path('teams.php'),
         ], 'teams-config');
 
         $this->publishes([
-            __DIR__ . '/../database/migrations/' => database_path('/migrations')
+            __DIR__.'/../database/migrations/' => database_path('/migrations'),
         ], 'teams-migrations');
 
         $this->publishes([
-            __DIR__ . '/../resources/views' => resource_path('views/vendor/teams')
+            __DIR__.'/../resources/views' => resource_path('views/vendor/teams'),
         ], 'teams-views');
     }
 
     /**
      * Configure the commands offered by the application.
-     *
-     * @return void
      */
     protected function configureCommands(): void
     {
-        if (!$this->app->runningInConsole()) {
+        if (! $this->app->runningInConsole()) {
             return;
         }
 
@@ -86,14 +79,14 @@ class TeamsServiceProvider extends ServiceProvider
     protected function registerModels(): void
     {
         $models = ['user', 'team', 'ability', 'capability', 'group', 'invitation', 'membership', 'permission', 'role'];
-        
+
         foreach ($models as $model) {
-            
-            if(!array_key_exists($model, config('teams.models'))) {
+
+            if (! array_key_exists($model, config('teams.models'))) {
                 throw new Exception('Error, missing '.$model.' model configuration');
             }
 
-            if(!class_exists(config('teams.models.'.$model))) {
+            if (! class_exists(config('teams.models.'.$model))) {
                 throw new Exception('Error, configured model '.config('teams.models.'.$model).' not exists');
             }
 
@@ -104,13 +97,12 @@ class TeamsServiceProvider extends ServiceProvider
     /**
      * Register the middlewares automatically.
      *
-     * @return void
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
     protected function registerMiddlewares(): void
     {
-        if (!$this->app['config']->get('teams.middleware.register')) {
+        if (! $this->app['config']->get('teams.middleware.register')) {
             return;
         }
 

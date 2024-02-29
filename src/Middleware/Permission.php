@@ -7,22 +7,15 @@ use Illuminate\Http\Request;
 
 class Permission extends Teams
 {
-	/**
-	 * Handle incoming request.
-	 *
-	 * @param Request $request
-	 * @param  Closure $next
-	 * @param string|array $permissions
-	 * @param string|null $team_id
-	 * @param bool $options
-	 * @return mixed
-	 */
-	public function handle(Request $request, Closure $next, string|array $permissions, string|null $team_id = null, bool $options = false): mixed
-	{
-		if (!$this->authorization($request, 'permissions', $permissions, $team_id, [], $options)) {
-			return $this->unauthorized();
-		}
+    /**
+     * Handle incoming request.
+     */
+    public function handle(Request $request, Closure $next, string|array $permissions, ?string $team_id = null, bool $options = false): mixed
+    {
+        if (! $this->authorization($request, 'permissions', $permissions, $team_id, [], $options)) {
+            return $this->unauthorized();
+        }
 
-		return $next($request);
-	}
+        return $next($request);
+    }
 }
