@@ -28,7 +28,7 @@ trait HasTeams
 	 */
 	public function ownedTeams(): \Illuminate\Database\Eloquent\Relations\HasMany
 	{
-		return $this->hasMany(Teams::teamModel());
+		return $this->hasMany(Teams::teamModel())->setEagerLoads([]);
 	}
 
 	/**
@@ -39,6 +39,7 @@ trait HasTeams
 	public function teams()
 	{
 		return $this->belongsToMany(Teams::teamModel(), Teams::membershipModel())
+			->setEagerLoads([])
 			->withPivot('role')
 			->withTimestamps()
 			->as('membership');
