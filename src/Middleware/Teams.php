@@ -49,7 +49,7 @@ class Teams
 
 		// Get the team model
 		//
-		$team = (\Jurager\Teams\Teams::teamModel())::where('id', $foreign_id)->withoutRelations()->firstOrFail();
+		$team = (\Jurager\Teams\Teams::teamModel())::where('id', $foreign_id)->setEagerLoads([])->firstOrFail();
 
 		// Check the ability
 		//
