@@ -23,7 +23,7 @@ trait HasTeams
      */
     public function ownedTeams(): HasMany
     {
-        return $this->hasMany(Teams::$teamModel);
+        return $this->hasMany(Teams::$teamModel)->setEagerLoads([]);
     }
 
     /**
@@ -32,6 +32,7 @@ trait HasTeams
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Teams::$teamModel, Teams::$membershipModel)
+            ->setEagerLoads([])
             ->withPivot('role_id')
             ->withTimestamps()
             ->as('membership');
