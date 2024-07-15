@@ -373,10 +373,10 @@ class Teams
 	/**
 	 * Register a class / callback that should be used to create teams.
 	 *
-	 * @param  string  $class
+	 * @param $class
 	 * @return void
 	 */
-	public static function createTeamsUsing(string $class)
+	public static function createTeamsUsing($class)
 	{
 		return app()->singleton(CreatesTeams::class, $class);
 	}
@@ -384,10 +384,10 @@ class Teams
 	/**
 	 * Register a class / callback that should be used to update team names.
 	 *
-	 * @param  string  $class
+	 * @param $class
 	 * @return void
 	 */
-	public static function updateTeamNamesUsing(string $class)
+	public static function updateTeamNamesUsing($class)
 	{
 		return app()->singleton(UpdatesTeamNames::class, $class);
 	}
@@ -395,10 +395,10 @@ class Teams
 	/**
 	 * Register a class / callback that should be used to add team members.
 	 *
-	 * @param  string  $class
+	 * @param $class
 	 * @return void
 	 */
-	public static function addTeamMembersUsing(string $class)
+	public static function addTeamMembersUsing($class)
 	{
 		return app()->singleton(AddsTeamMembers::class, $class);
 	}
@@ -406,10 +406,10 @@ class Teams
 	/**
 	 * Register a class / callback that should be used to add team members.
 	 *
-	 * @param  string  $class
+	 * @param $class
 	 * @return void
 	 */
-	public static function inviteTeamMembersUsing(string $class)
+	public static function inviteTeamMembersUsing($class)
 	{
 		return app()->singleton(InvitesTeamMembers::class, $class);
 	}
@@ -417,10 +417,10 @@ class Teams
 	/**
 	 * Register a class / callback that should be used to remove team members.
 	 *
-	 * @param  string  $class
+	 * @param $class
 	 * @return void
 	 */
-	public static function removeTeamMembersUsing(string $class)
+	public static function removeTeamMembersUsing($class)
 	{
 		return app()->singleton(RemovesTeamMembers::class, $class);
 	}
@@ -428,10 +428,10 @@ class Teams
 	/**
 	 * Register a class / callback that should be used to delete teams.
 	 *
-	 * @param  string  $class
+	 * @param $class
 	 * @return void
 	 */
-	public static function deleteTeamsUsing(string $class)
+	public static function deleteTeamsUsing($class)
 	{
 		return app()->singleton(DeletesTeams::class, $class);
 	}
@@ -439,10 +439,10 @@ class Teams
 	/**
 	 * Register a class / callback that should be used to delete users.
 	 *
-	 * @param  string  $class
+	 * @param $class
 	 * @return void
 	 */
-	public static function deleteUsersUsing(string $class)
+	public static function deleteUsersUsing($class)
 	{
 		return app()->singleton(DeletesUsers::class, $class);
 	}
