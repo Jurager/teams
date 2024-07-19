@@ -157,57 +157,64 @@ trait HasTeams
     /**
      * Determine if the user has the given permission on the given team.
      */
-    public function hasTeamPermission(object $team, string|array $permissions, bool $require = false): bool
-    {
-        if ($this->ownsTeam($team)) {
-            return true;
-        }
+    public function hasTeamPermission(object $team, string|array $permissions = [], bool $require = false): bool
+  {
 
-        // If the user does not belong to the team, deny access
-        if (! $this->belongsToTeam($team)) {
-            return false;
-        }
+    //$require = true  (all permissions in the array are required)
+    //$require = false  (only one or more permissions in the array are required or $permissions var is empty)
 
-        // Convert a string to an array if a single permission is passed.
-        $permissions = (array) $permissions;
-
-        // If the permission array is empty, return true if not required, false otherwise
-        if (empty($permissions)) {
-            return true;
-        }
-
-        // Get user's permissions for the team
-        $user_permissions = $this->teamPermissions($team);
-
-        // Check simple permission
-        $check_permission = static function ($permission) use ($user_permissions) {
-
-            // Calculate wildcard permissions
-            $calculated_permissions = [...array_map(static fn ($part) => $part.'.*', explode('.', $permission)), $permission];
-
-            // Check if user has any of the calculated permissions
-            $common_permissions = array_intersect($calculated_permissions, $user_permissions);
-
-            // Return true if the permission is found and not required
-            return ! empty($common_permissions);
-        };
-
-        // Check each permission
-        foreach ($permissions as $permission) {
-            $has_permission = $check_permission($permission);
-
-            if ($has_permission && ! $require) {
-                return true;
-            }
-
-            if (! $has_permission && $require) {
-                return false;
-            }
-        }
-
-        // If all permissions have been checked and nothing matched, return the value of $require
-        return true;
+    if ($this->ownsTeam($team)) {
+      return true;
     }
+
+    // If the user does not belong to the team, deny access
+    if (!$this->belongsToTeam($team)) {
+      return false;
+    }
+
+    // Convert a string to an array if a single permission is passed.
+    $permissions = (array) $permissions;
+
+    // If the permission array is empty, return true if not required, false otherwise
+    if (empty($permissions) && !$require) {
+      return true;
+    }
+    // Get user's permissions for the team
+    $user_permissions = $this->teamPermissions($team);
+
+    // Check simple permission
+    $check_permission = static function ($permission) use ($user_permissions) {
+
+      // Calculate wildcard permissions
+      $calculated_permissions = [...array_map(static fn ($part) => $part . '.*', explode('.', $permission)), $permission];
+
+      // Check if user has any of the calculated permissions
+      $common_permissions = array_intersect($calculated_permissions, $user_permissions);
+
+      // Return true if the permission is found and not required
+      return !empty($common_permissions);
+    };
+
+    // Check each permission
+    foreach ($permissions as $permission) {
+      $has_permission = $check_permission($permission);
+
+      //$require == false  (only one or more permissions in the array are required or $permissions is empty) 
+      //return true after first permission right found
+      if ($has_permission && !$require) {
+        return true;
+      }
+
+      //$require == true  (all permissions in the array are required)
+      //return false after first permission right found
+      if (!$has_permission && $require) {
+        return false;
+      }
+    }
+
+    //return $require var, cause if $require is true all the checks has been made, and if false you dont have the required permissions
+    return $require;
+  }
 
     /**
      * Get all abilities to specific entity
