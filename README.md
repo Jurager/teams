@@ -1,7 +1,7 @@
 # Jurager/Teams
 [![Latest Stable Version](https://poser.pugx.org/jurager/teams/v/stable)](https://packagist.org/packages/jurager/teams)
 [![Total Downloads](https://poser.pugx.org/jurager/teams/downloads)](https://packagist.org/packages/jurager/teams)
-[![PHP Version Require](http://poser.pugx.org/jurager/teams/require/php)](https://packagist.org/packages/jurager/teams)
+[![PHP Version Require](https://poser.pugx.org/jurager/teams/require/php)](https://packagist.org/packages/jurager/teams)
 [![License](https://poser.pugx.org/jurager/teams/license)](https://packagist.org/packages/jurager/teams)
 
 Laravel package to manage teams and operate with user permissions, abilities, supporting multi-tenant dynamic roles, roles groups, capabilities, and permissions for each team.
