@@ -10,9 +10,9 @@ class Permission extends Teams
     /**
      * Handle incoming request.
      */
-    public function handle(Request $request, Closure $next, string|array $permissions, ?string $team_id = null, bool $options = false): mixed
+    public function handle(Request $request, Closure $next, string|array $permissions, ?string $teamId = null, bool $options = false): mixed
     {
-        if (! $this->authorization($request, 'permissions', $permissions, $team_id, [], $options)) {
+        if (! $this->authorization($request, 'permissions', $permissions, $teamId, [], $options)) {
             return $this->unauthorized();
         }
 

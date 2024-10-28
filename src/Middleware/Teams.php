@@ -13,17 +13,17 @@ class Teams
     /**
      * Check if the request has authorization to continue.
      */
-    protected function authorization(Request $request, string $method, string|array $params, ?string $team_id, ?array $models, bool $require = false): bool
+    protected function authorization(Request $request, string $method, string|array $params, ?string $teamId, ?array $models, bool $require = false): bool
     {
         // Mapping of method names
-        $method_types = [
+        $methodTypes = [
             'roles' => 'hasTeamRole',
             'permissions' => 'hasTeamPermission',
             'ability' => 'hasTeamAbility',
         ];
 
         // Determine the action for checking the role or permissions
-        $action = $method_types[$method] ?? null;
+        $action = $methodTypes[$method] ?? null;
 
         // Ensure method is valid
         if ($action === null) {
@@ -34,34 +34,45 @@ class Teams
         $params = is_array($params) ? $params : explode('|', $params);
 
         // Foreign key for team_id field
-        $foreign = config('teams.foreign_keys.team_id', 'team_id');
+        $foreignKey = config('teams.foreign_keys.team_id', 'team_id');
 
-        // If team id not directly passed get the id by request or route param
-        $foreign_id = $team_id ?? ($request->input($foreign) ?? $request->route($foreign));
+        // If team id not directly passed, get the id from request or route param
+        $foreignId = $teamId ?? $request->input($foreignKey) ?? $request->route($foreignKey);
 
         // Get the team model
-        $team = (\Jurager\Teams\Teams::$teamModel)::where('id', $foreign_id)->setEagerLoads([])->firstOrFail();
+        $team = (\Jurager\Teams\Teams::$teamModel)::findOrFail($foreignId);
 
         // Check the ability
         if ($action === 'hasTeamAbility') {
-
-            // Get the models for ability check
-            [$entity_class, $entity_id] = $this->getGateArguments($request, $models);
-
-            // Ensure entity id is provided
-            if ($entity_id === null) {
-                return false;
-            }
-
-            // Fetch the entity model or return false if not found
-            $entity = $entity_class::findOrFail($entity_id);
-
-            // Check the ability for the entity for the current user
-            return $entity && $request->user()->hasTeamAbility($team, $params, $entity);
+            return $this->checkTeamAbility($request, $team, $params, $models);
         }
 
         // Check the permissions
-        return ! Auth::guest() && Auth::user()?->$action($team, $params, $require);
+        return !Auth::guest() && Auth::user()?->$action($team, $params, $require);
+    }
+
+    /**
+     * Check user's ability for the team.
+     */
+    protected function checkTeamAbility(Request $request, $team, array $params, ?array $models): bool
+    {
+        // Get the models for ability check
+        [$entityClass, $entityId] = $this->getGateArguments($request, $models);
+
+        // Ensure entity id is provided
+        if ($entityId === null) {
+            return false;
+        }
+
+        // Fetch the entity model or return false if not found
+        $entity = $entityClass::find($entityId);
+
+        if (!$entity) {
+            return false;
+        }
+
+        // Check the ability for the entity for the current user
+        return $request->user()->hasTeamAbility($team, $params, $entity);
     }
 
     /**
@@ -71,11 +82,8 @@ class Teams
     {
         // Method to be called in the middleware return
         $handling = config('teams.middleware.handling');
+        $handler = config('teams.middleware.handlers.' . $handling);
 
-        // Handlers for the unauthorized method
-        $handler = config('teams.middleware.handlers.'.$handling);
-
-        // Abort handler simply returns unauthorized message
         if ($handling === 'abort') {
             abort($handler['code'], $handler['message']);
         }
@@ -84,11 +92,10 @@ class Teams
         $redirect = redirect()->to($handler['url']);
 
         // If flash message key is provided, use it for session message
-        if (! empty($handler['message']['key'])) {
+        if (!empty($handler['message']['key'])) {
             $redirect->with($handler['message']['key'], $handler['message']['content']);
         }
 
-        // Perform redirect or abort based on handling method
         return $redirect;
     }
 
@@ -103,9 +110,7 @@ class Teams
         }
 
         // Filter out invalid model instances and fetch actual model instances
-        return array_map(function ($model) use ($request) {
-            return $model instanceof Model ? $model : $this->getModel($request, $model);
-        }, $models);
+        return array_map(fn($model) => $model instanceof Model ? $model : $this->getModel($request, $model), $models);
     }
 
     /**
@@ -113,10 +118,6 @@ class Teams
      */
     protected function getModel(Request $request, $model): string
     {
-        if (str_contains($model, '\\')) {
-            return trim($model);
-        }
-
-        return $request->route($model, $model);
+        return str_contains($model, '\\') ? trim($model) : $request->route($model, $model);
     }
 }
