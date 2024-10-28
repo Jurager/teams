@@ -64,7 +64,7 @@ trait HasTeams
     public function belongsToTeam(object $team): bool
     {
         // We check whether the user has access to the team by identifier.
-        return $this->ownsTeam($team) || $this->teams()->where('team_id', $team?->id)->exists();
+        return $this->ownsTeam($team) || $this->teams()->where(config('teams.foreign_keys.team_id', 'team_id'), $team?->id)->exists();
     }
 
     /**
@@ -222,7 +222,7 @@ trait HasTeams
     public function teamAbilities(object $team, object $entity, bool $forbidden = false): mixed
     {
         // Start building the query to retrieve permissions
-        $permissions = Teams::$permissionModel::where('team_id', $team->id);
+        $permissions = Teams::$permissionModel::where(config('teams.foreign_keys.team_id', 'team_id'), $team->id);
 
         // If filtering by forbidden permissions, add the condition
         if ($forbidden) {
@@ -250,7 +250,7 @@ trait HasTeams
     private function hasAbility(string $ability): bool
     {
         // Get all global groups
-        $groups = $this->groups->whereNull('team_id');
+        $groups = $this->groups->whereNull(config('teams.foreign_keys.team_id', 'team_id'));
 
         $capabilities = [];
 
@@ -298,7 +298,7 @@ trait HasTeams
 
         // Get an ability
         $ability = Teams::$abilityModel::firstWhere([
-            'team_id' => $team->id,
+            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $entity->id,
             'entity_type' => $entity::class,
             'name' => $ability,
@@ -309,12 +309,12 @@ trait HasTeams
 
             // Get permissions
             $permissions = Teams::$permissionModel::where([
-                'team_id' => $team->id,
+                config('teams.foreign_keys.team_id', 'team_id') => $team->id,
                 'ability_id' => $ability->id,
             ])->get();
 
             $role = $this->teamRole($team);
-            $groups = $this->groups->where('team_id', $team->id);
+            $groups = $this->groups->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id);
 
             // Check permissions for role, group, and user
             $entities_to_check = [$role, ...$groups, $this];
@@ -373,7 +373,7 @@ trait HasTeams
 
         // Get or create the ability model for the specified action
         $ability_model = Teams::$abilityModel::firstOrCreate([
-            'team_id' => $team->id,
+            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $entity->id,
             'entity_type' => $entity::class,
             'name' => $ability,
@@ -387,7 +387,7 @@ trait HasTeams
         // Update or create permission for the user entity to perform the action on the target
         Teams::$permissionModel::updateOrCreate(
             [
-                'team_id' => $team->id,
+                config('teams.foreign_keys.team_id', 'team_id') => $team->id,
                 'ability_id' => $ability_model->id,
                 'entity_id' => $group->id ?? $this->id,
                 'entity_type' => $group::class ?? $this::class,
@@ -416,7 +416,7 @@ trait HasTeams
         // Get an ability to perform an action on specific entity object inside team
         //
         $ability_model = Teams::$abilityModel::firstOrCreate([
-            'team_id' => $team->id,
+            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $entity->id,
             'entity_type' => $entity::class,
             'name' => $ability,
@@ -430,7 +430,7 @@ trait HasTeams
         // Update or create permission for the user entity to perform the action on the target
         Teams::$permissionModel::updateOrCreate(
             [
-                'team_id' => $team->id,
+                config('teams.foreign_keys.team_id', 'team_id') => $team->id,
                 'ability_id' => $ability_model->id,
                 'entity_id' => $group->id ?? $this->id,
                 'entity_type' => $group::class ?? $this::class,
@@ -459,7 +459,7 @@ trait HasTeams
         // Get an ability to perform an action on specific entity object inside team
         //
         $ability_model = Teams::$abilityModel::firstWhere([
-            'team_id' => $team->id,
+            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $entity->id,
             'entity_type' => $entity::class,
             'name' => $ability,
@@ -472,7 +472,7 @@ trait HasTeams
 
         // Find permission for the user entity to perform the action on the target
         $permission = Teams::$permissionModel::firstWhere([
-            'team_id' => $team->id,
+            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'ability_id' => $ability_model->id,
             'entity_id' => $group->id ?? $this->id,
             'entity_type' => $group::class ?? $this::class,
