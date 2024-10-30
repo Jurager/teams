@@ -57,6 +57,10 @@ Run the migrations
 php artisan migrate
 ```
 
+> [!NOTE]
+> If you wish to use custom foreign keys and table names, make changes to config `config/teams.php`  before running migrations.
+
+
 Then, add the `HasTeams` trait to your existing `User` model.
 
 ```php
