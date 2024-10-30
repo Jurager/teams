@@ -71,25 +71,13 @@ class User extends Model {
     use HasTeams;
 }
 ```
-To complete the installation process add the `TeamPolicy` to your existing `AuthServiceProvider`
-
-```php
-<?php 
-
-namespace App\Providers;
-
-class AuthServiceProvider extends ServiceProvider
-{
-    protected $policies = [
-        \Jurager\Teams\Models\Team::class => \App\Policies\TeamPolicy::class,
-    ];
-}
-```
 
 Actions
 -------------------------------------------
 
-Actions are predefined code blocks provided by the package to simplify common tasks in your application. Found in the `app/Actions/Teams` directory, these blocks can be easily invoked when users perform specific actions. They offer a quick way to implement functionality without starting from scratch. You can also customize or extend these actions to fit your needs precisely.
+During installation, actions are published to the `/app/Actions/Teams` directory, where they can be easily accessed and triggered in response to specific user actions.
+
+They offer a quick way to implement functionality without starting from scratch. You can also customize or extend these actions to fit your needs precisely.
 
 Explore the available actions and adapt them as necessary to maintain a clean and efficient codebase, speeding up your development process.
 
@@ -157,6 +145,9 @@ $team->invitations()
 ```
 
 These methods allow you to efficiently manage and interact with teams, including roles, users, permissions, and invitations.
+
+> [!NOTE]
+> By default, the package uses the built-in model. If you want to use your own model, or specify a custom table name in the database, use the settings in the configuration file - `teams.models.team`, `teams.tables.teams`, `teams.foreign_keys.team_id`
 
 Users
 -------------------------------------------

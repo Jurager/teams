@@ -2,6 +2,7 @@
 
 namespace Jurager\Teams\Traits;
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -43,10 +44,6 @@ trait HasTeams
      */
     public function ownsTeam(object $team): bool
     {
-        if ($team === null) {
-            return false;
-        }
-
         return $this->id === $team->{$this->getForeignKey()};
     }
 
@@ -63,7 +60,6 @@ trait HasTeams
      */
     public function belongsToTeam(object $team): bool
     {
-        // We check whether the user has access to the team by identifier.
         return $this->ownsTeam($team) || $this->teams()->where(config('teams.foreign_keys.team_id', 'team_id'), $team?->id)->exists();
     }
 
@@ -151,70 +147,70 @@ trait HasTeams
         $role = $this->teamRole($team);
 
         // Return the role's permissions.
-        return (! $role) ? [] : $role->permissions;
+        return $role ? $role->permissions : [];
     }
 
     /**
      * Determine if the user has the given permission on the given team.
      */
     public function hasTeamPermission(object $team, string|array $permissions = [], bool $require = false): bool
-  {
+    {
 
-    //$require = true  (all permissions in the array are required)
-    //$require = false  (only one or more permissions in the array are required or $permissions var is empty)
+        //$require = true  (all permissions in the array are required)
+        //$require = false  (only one or more permissions in the array are required or $permissions var is empty)
 
-    if ($this->ownsTeam($team)) {
-      return true;
+        if ($this->ownsTeam($team)) {
+            return true;
+        }
+
+        // If the user does not belong to the team, deny access
+        if (!$this->belongsToTeam($team)) {
+            return false;
+        }
+
+        // Convert a string to an array if a single permission is passed.
+        $permissions = (array) $permissions;
+
+        // If the permission array is empty, return true if not required, false otherwise
+        if (empty($permissions) && !$require) {
+            return true;
+        }
+        // Get user's permissions for the team
+        $user_permissions = $this->teamPermissions($team);
+
+        // Check simple permission
+        $check_permission = static function ($permission) use ($user_permissions) {
+
+            // Calculate wildcard permissions
+            $calculated_permissions = [...array_map(static fn ($part) => $part . '.*', explode('.', $permission)), $permission];
+
+            // Check if user has any of the calculated permissions
+            $common_permissions = array_intersect($calculated_permissions, $user_permissions);
+
+            // Return true if the permission is found and not required
+            return !empty($common_permissions);
+        };
+
+        // Check each permission
+        foreach ($permissions as $permission) {
+            $has_permission = $check_permission($permission);
+
+            //$require == false  (only one or more permissions in the array are required or $permissions is empty)
+            //return true after first permission right found
+            if ($has_permission && !$require) {
+                return true;
+            }
+
+            //$require == true  (all permissions in the array are required)
+            //return false after first permission right found
+            if (!$has_permission && $require) {
+                return false;
+            }
+        }
+
+        //return $require var, cause if $require is true all the checks has been made, and if false you dont have the required permissions
+        return $require;
     }
-
-    // If the user does not belong to the team, deny access
-    if (!$this->belongsToTeam($team)) {
-      return false;
-    }
-
-    // Convert a string to an array if a single permission is passed.
-    $permissions = (array) $permissions;
-
-    // If the permission array is empty, return true if not required, false otherwise
-    if (empty($permissions) && !$require) {
-      return true;
-    }
-    // Get user's permissions for the team
-    $user_permissions = $this->teamPermissions($team);
-
-    // Check simple permission
-    $check_permission = static function ($permission) use ($user_permissions) {
-
-      // Calculate wildcard permissions
-      $calculated_permissions = [...array_map(static fn ($part) => $part . '.*', explode('.', $permission)), $permission];
-
-      // Check if user has any of the calculated permissions
-      $common_permissions = array_intersect($calculated_permissions, $user_permissions);
-
-      // Return true if the permission is found and not required
-      return !empty($common_permissions);
-    };
-
-    // Check each permission
-    foreach ($permissions as $permission) {
-      $has_permission = $check_permission($permission);
-
-      //$require == false  (only one or more permissions in the array are required or $permissions is empty) 
-      //return true after first permission right found
-      if ($has_permission && !$require) {
-        return true;
-      }
-
-      //$require == true  (all permissions in the array are required)
-      //return false after first permission right found
-      if (!$has_permission && $require) {
-        return false;
-      }
-    }
-
-    //return $require var, cause if $require is true all the checks has been made, and if false you dont have the required permissions
-    return $require;
-  }
 
     /**
      * Get all abilities to specific entity
@@ -381,7 +377,7 @@ trait HasTeams
 
         // Ensure the ability model is successfully retrieved or created
         if (! $ability_model) {
-            return false;
+            throw new ModelNotFoundException("Ability with name '{$ability}' not found.");
         }
 
         // Update or create permission for the user entity to perform the action on the target
@@ -424,7 +420,7 @@ trait HasTeams
 
         // Ensure the ability model is successfully retrieved or created
         if (! $ability_model) {
-            return false;
+            throw new ModelNotFoundException("Ability with name '{$ability}' not found.");
         }
 
         // Update or create permission for the user entity to perform the action on the target
@@ -467,7 +463,7 @@ trait HasTeams
 
         // Ensure the ability model is successfully retrieved or created
         if (! $ability_model) {
-            return false;
+            throw new ModelNotFoundException("Ability with name '{$ability}' not found.");
         }
 
         // Find permission for the user entity to perform the action on the target

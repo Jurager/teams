@@ -4,44 +4,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Middleware
+    | Middleware Configuration
     |--------------------------------------------------------------------------
-    |
-    | This configuration helps to customize the middleware behavior.
-    |
+    | Customize middleware behavior and handling of unauthorized requests.
     */
     'middleware' => [
 
-        /**
-         * Define if the team middleware are registered automatically in the service provider
-         */
+        // Whether to automatically register team middleware in the service provider.
         'register' => true,
 
-        /**
-         * Method to be called in the middleware return case.
-         * Available: abort|redirect
-         */
+        // Response method upon unauthorized access: abort or redirect.
         'handling' => 'abort',
 
-        /**
-         * Handlers for the unauthorized method in the middlewares.
-         * The name of the handler must be the same as the handling.
-         */
+        // Handlers for unauthorized access, aligned with the handling method.
         'handlers' => [
-            /**
-             * Aborts the execution with a 403 code and allows you to provide the response text
-             */
             'abort' => [
                 'code' => 403,
                 'message' => 'User does not have any of the necessary access rights.',
             ],
-
-            /**
-             * Redirects the user to the given url.
-             * If you want to flash a key to the session,
-             * you can do it by setting the key and the content of the message
-             * If the message content is empty it won't be added to the redirection.
-             */
             'redirect' => [
                 'url' => '/home',
                 'message' => [
@@ -54,11 +34,9 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Models
+    | Model Bindings
     |--------------------------------------------------------------------------
-    |
-    | List of models bound to package entities
-    |
+    | Define the models used for team functionalities and role-based access.
     */
     'models' => [
         'user' => App\Models\User::class,
@@ -74,23 +52,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Tables
+    | Database Tables
     |--------------------------------------------------------------------------
-    |
-    | List of model tables bound to package models
-    |
+    | Specify table names linked to team-related models.
     */
     'tables' => [
+        'teams' => 'teams',
         'team_user' => 'team_user',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Keys
+    | Foreign Keys
     |--------------------------------------------------------------------------
-    |
-    | List of model's keys by package entities
-    |
+    | Foreign keys for table relationships in package models.
     */
     'foreign_keys' => [
         'team_id' => 'team_id',

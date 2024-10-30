@@ -40,20 +40,20 @@ class UpdateTeamMemberRole
     }
 
     /**
-     * Ensure that the currently authenticated user does not own the team.
+     * Ensure that the team member is not the owner of the team.
      *
-     * @param  mixed  $teamMemberId
-     * @param  mixed  $team
+     * @param  int  $teamMemberId The id member being removed
+     * @param  mixed  $team       The team to check ownership against
      * @return void
      *
      * @throws ValidationException
      */
-    protected function ensureUserDoesNotOwnTeam($teamMemberId, $team)
+    protected function ensureMemberIsNotTeamOwner(int $teamMemberId, mixed $team): void
     {
         if ($teamMemberId === $team->owner->id) {
             throw ValidationException::withMessages([
-                'team' => [__('You may not change the role of the owner')],
-            ])->errorBag('updateTeamMemberRole');
+                'team' => [__('You may not remove the team owner.')],
+            ])->errorBag('removeTeamMember');
         }
     }
 }

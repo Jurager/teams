@@ -16,7 +16,13 @@ use Jurager\Teams\Teams;
 class InviteTeamMember implements InvitesTeamMembers
 {
     /**
-     * Invite a new team member to the given team.
+     * Invite a new team member to the specified team.
+     *
+     * @param  mixed  $user  The user initiating the invitation
+     * @param  mixed  $team  The team to invite the new member to
+     * @param  string $email  Email of the invited member
+     * @param  string|null $role  Role assigned to the invited member
+     * @return void
      *
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
@@ -34,49 +40,57 @@ class InviteTeamMember implements InvitesTeamMembers
     }
 
     /**
-     * Validate the invite member operation.
+     * Validate the invite member request.
      *
+     * @param  mixed  $team  The team to invite the new member to
+     * @param  string $email  Email of the invited member
+     * @param  string|null $role  Role assigned to the invited member
      * @return void
      *
      * @throws \Illuminate\Validation\ValidationException
      */
     protected function validate(mixed $team, string $email, ?string $role)
     {
-        Validator::make(compact('email', 'role'), $this->rules($team), [
-            'email.unique' => __('This user has already been invited to the team.'),
-        ])->after(
-            $this->ensureUserIsNotAlreadyOnTeam($team, $email)
+        Validator::make(
+            compact('email', 'role'),
+            $this->inviteValidationRules($team),
+            ['email.unique' => __('This user has already been invited to the team.')]
+        )->after(
+            $this->userNotOnTeam($team, $email)
         )->validateWithBag('addTeamMember');
     }
 
     /**
-     * Get the validation rules for inviting a team member.
+     * Define validation rules for inviting a team member.
+     *
+     * @param  mixed  $team
+     * @return array
      */
     protected function rules(mixed $team): array
     {
         return array_filter([
-            'email' => ['required', 'email', Rule::unique('invitations')->where(function ($query) use ($team) {
-                $query->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id);
-            })],
-            'role' => Teams::hasRoles()
-                ? ['required', 'string', new Role($team)]
-                : null,
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('invitations')->where(fn ($query) => $query->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)),
+            ],
+            'role' => Teams::hasRoles() ? ['required', 'string', new Role($team)] : null,
         ]);
     }
 
     /**
-     * Ensure that the user is not already on the team.
+     * Ensure the user is not already a member of the team.
      *
      * @param  mixed  $team
+     * @param  string $email
+     * @return Closure
      */
-    protected function ensureUserIsNotAlreadyOnTeam($team, string $email): Closure
+    protected function ensureUserIsNotAlreadyOnTeam(mixed $team, string $email): Closure
     {
         return static function ($validator) use ($team, $email) {
-            $validator->errors()->addIf(
-                $team->hasUserWithEmail($email),
-                'email',
-                __('This user already belongs to the team.')
-            );
+            if ($team->hasUserWithEmail($email)) {
+                $validator->errors()->add('email', __('This user already belongs to the team.'));
+            }
         };
     }
 }

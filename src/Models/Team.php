@@ -2,7 +2,6 @@
 
 namespace Jurager\Teams\Models;
 
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,6 +33,19 @@ class Team extends Model
     ];
 
     /**
+     * Create a new Team model instance.
+     *
+     * @param  array  $attributes
+     * @return void
+     */
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->table = config('teams.tables.teams');
+    }
+
+    /**
      * Get the owner of the team.
      *
      * @return BelongsTo
@@ -44,7 +56,7 @@ class Team extends Model
     }
 
     /**
-     * Get all users of the team.
+     * Get all users associated with the team.
      *
      * @return BelongsToMany
      */
@@ -57,7 +69,7 @@ class Team extends Model
     }
 
     /**
-     * Get all the abilities belong to the team.
+     * Get all abilities linked to the team.
      *
      * @return BelongsToMany
      */
@@ -70,7 +82,7 @@ class Team extends Model
     }
 
     /**
-     * Get all roles of the team.
+     * Get all roles associated with the team.
      *
      * @return HasMany
      */
@@ -80,7 +92,7 @@ class Team extends Model
     }
 
     /**
-     * Get all groups of the team.
+     * Get all groups associated with the team.
      *
      * @return HasMany
      */
@@ -90,7 +102,7 @@ class Team extends Model
     }
 
     /**
-     * Get all the pending user invitations for the team.
+     * Get all pending invitations for the team.
      *
      * @return HasMany
      */
@@ -100,7 +112,8 @@ class Team extends Model
     }
 
     /**
-     * Return all users in a team
+     * Retrieve all users in the team, including the owner.
+     *
      * @return Collection
      */
     public function allUsers(): Collection
@@ -109,9 +122,9 @@ class Team extends Model
     }
 
     /**
-     * Checks if team has user
+     * Check if the team includes a given user.
      *
-     * @param object $user
+     * @param  object  $user
      * @return bool
      */
     public function hasUser(object $user): bool
@@ -120,8 +133,9 @@ class Team extends Model
     }
 
     /**
-     * Checks if team has user with given email
-     * @param string $email
+     * Check if the team includes a user with a specific email.
+     *
+     * @param  string  $email
      * @return bool
      */
     public function hasUserWithEmail(string $email): bool
@@ -130,9 +144,9 @@ class Team extends Model
     }
 
     /**
-     * Returns user's role in team
+     * Get the role of a specific user within the team.
      *
-     * @param object $user
+     * @param  object  $user
      * @return object|null
      */
     public function userRole(object $user): object|null
@@ -141,9 +155,11 @@ class Team extends Model
     }
 
     /**
-     * @param object $user
-     * @param string|array $permission
-     * @param bool $require
+     * Check if a user has a specific permission in the team.
+     *
+     * @param  object       $user
+     * @param  string|array $permission
+     * @param  bool         $require
      * @return bool
      */
     public function userHasPermission(object $user, string|array $permission, bool $require = false): bool
@@ -152,6 +168,8 @@ class Team extends Model
     }
 
     /**
+     * Check if the team has any roles.
+     *
      * @return bool
      */
     public function hasRoles(): bool
@@ -160,8 +178,10 @@ class Team extends Model
     }
 
     /**
-     * @param string $name
-     * @param array $capabilities
+     * Add a role to the team with specific capabilities.
+     *
+     * @param  string  $name
+     * @param  array   $capabilities
      * @return object
      */
     public function addRole(string $name, array $capabilities): object
@@ -187,8 +207,10 @@ class Team extends Model
     }
 
     /**
-     * @param string $name
-     * @param array $capabilities
+     * Update an existing role with new capabilities.
+     *
+     * @param  string  $name
+     * @param  array   $capabilities
      * @return object|bool
      */
     public function updateRole(string $name, array $capabilities): object|bool
@@ -214,9 +236,9 @@ class Team extends Model
     }
 
     /**
-     * Deletes the given role from team
+     * Delete a role from the team.
      *
-     * @param string $name
+     * @param  string  $name
      * @return bool
      */
     public function deleteRole(string $name): bool
@@ -234,9 +256,9 @@ class Team extends Model
     }
 
     /**
-     * Find the role with the given id.
+     * Find a role by ID or name.
      *
-     * @param int|string $id
+     * @param  int|string  $id
      * @return object|null
      */
     public function findRole(int|string $id): object|null
@@ -245,10 +267,10 @@ class Team extends Model
     }
 
     /**
-     * Adds a new group to the team
+     * Add a new group to the team.
      *
-     * @param string $code
-     * @param string $name
+     * @param  string  $code
+     * @param  string  $name
      * @return object
      */
     public function addGroup(string $code, string $name): object
@@ -269,9 +291,9 @@ class Team extends Model
     }
 
     /**
-     * Removes a group from a team
+     * Remove a group from the team by code.
      *
-     * @param string $code
+     * @param  string  $code
      * @return bool
      */
     public function deleteGroup(string $code): bool
@@ -289,9 +311,9 @@ class Team extends Model
     }
 
     /**
-     * Get team group by its code
+     * Retrieve a group by its code.
      *
-     * @param string $code
+     * @param  string  $code
      * @return object|null
      */
     public function group(string $code): object|null
@@ -300,7 +322,9 @@ class Team extends Model
     }
 
     /**
-     * @param array $capabilities
+     * Get capability IDs for a list of capabilities.
+     *
+     * @param  array  $capabilities
      * @return array
      */
     protected function getCapabilityIds(array $capabilities): array
@@ -309,9 +333,9 @@ class Team extends Model
     }
 
     /**
-     * Remove the given user from the team.
+     * Remove a user from the team.
      *
-     * @param object $user
+     * @param  object  $user
      * @return void
      */
     public function deleteUser(object $user): void
@@ -323,6 +347,7 @@ class Team extends Model
 
     /**
      * Purge all the team's resources.
+     *
      * @return void
      */
     public function purge(): void
