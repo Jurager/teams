@@ -32,7 +32,7 @@ trait HasTeams
      */
     public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::$teamModel, Teams::$membershipModel)
+        return $this->belongsToMany(Teams::$teamModel, Teams::$membershipModel, config('teams.tables.team_user'), 'user_id', config('teams.foreign_keys.team_id'))
             ->setEagerLoads([])
             ->withPivot('role_id')
             ->withTimestamps()
@@ -386,7 +386,7 @@ trait HasTeams
                 config('teams.foreign_keys.team_id', 'team_id') => $team->id,
                 'ability_id' => $ability_model->id,
                 'entity_id' => $group->id ?? $this->id,
-                'entity_type' => $group::class ?? $this::class,
+                'entity_type' => $group ? $group::class : $this::class,
             ],
             [
                 'forbidden' => false,

@@ -88,7 +88,7 @@ class Team extends Model
      */
     public function roles(): HasMany
     {
-        return $this->hasMany(Teams::$roleModel);
+        return $this->hasMany(Teams::$roleModel, 'id',  config('teams.foreign_keys.team_id'));
     }
 
     /**
@@ -98,7 +98,7 @@ class Team extends Model
      */
     public function groups(): HasMany
     {
-        return $this->hasMany(Teams::$groupModel);
+        return $this->hasMany(Teams::$groupModel, 'id',  config('teams.foreign_keys.team_id'));
     }
 
     /**
@@ -108,7 +108,7 @@ class Team extends Model
      */
     public function invitations(): HasMany
     {
-        return $this->hasMany(Teams::$invitationModel);
+        return $this->hasMany(Teams::$invitationModel, 'id',  config('teams.foreign_keys.team_id'));
     }
 
     /**

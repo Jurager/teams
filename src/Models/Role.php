@@ -14,7 +14,7 @@ class Role extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['team_id', 'name', 'description'];
+    protected $fillable = ['name', 'description'];
 
     /**
      * Indicates if the model should be timestamped.
@@ -49,6 +49,13 @@ class Role extends Model
     protected $hidden = [
         'capabilities',
     ];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->fillable[] = config('teams.foreign_keys.team_id');
+    }
 
     /**
      * Get the team that the role belongs to.

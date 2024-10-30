@@ -13,7 +13,14 @@ class Ability extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['team_id', 'name', 'title', 'entity_id', 'entity_type'];
+    protected $fillable = ['name', 'title', 'entity_id', 'entity_type'];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->fillable[] = config('teams.foreign_keys.team_id');
+    }
 
     /**
      * Get the team that the ability belongs to.

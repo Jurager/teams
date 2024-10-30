@@ -13,7 +13,14 @@ class Invitation extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['email', 'role'];
+    protected $fillable = ['email', 'role_id'];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->fillable[] = config('teams.foreign_keys.team_id');
+    }
 
     /**
      * Get the team that the invitation belongs to.

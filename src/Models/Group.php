@@ -15,7 +15,7 @@ class Group extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['team_id', 'code', 'name'];
+    protected $fillable = ['code', 'name'];
 
     /**
      * Indicates if the model should be timestamped.
@@ -23,6 +23,13 @@ class Group extends Model
      * @var bool
      */
     public $timestamps = false;
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->fillable[] = config('teams.foreign_keys.team_id');
+    }
 
     /**
      * Get the team that the group belongs to.
