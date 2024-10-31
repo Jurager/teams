@@ -14,19 +14,18 @@ class UpdateTeamMemberRole
     /**
      * Update the role for the given team member.
      *
-     * @param  mixed  $user
-     * @param  mixed  $team
-     * @param  int  $teamMemberId
+     * @param object $user
+     * @param object $team
+     * @param int $teamMemberId
+     * @param string $role
      * @return void
      *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     * @throws \Illuminate\Validation\ValidationException
      */
-    public function update($user, $team, $teamMemberId, string $role)
+    public function update(object $user, object $team, int $teamMemberId, string $role): void
     {
         Gate::forUser($user)->authorize('updateTeamMember', $team);
 
-        $this->ensureUserDoesNotOwnTeam($teamMemberId, $team);
+        $this->ensureMemberIsNotTeamOwner($teamMemberId, $team);
 
         Validator::make([
             'role' => $role,
@@ -43,7 +42,7 @@ class UpdateTeamMemberRole
      * Ensure that the team member is not the owner of the team.
      *
      * @param  int  $teamMemberId The id member being removed
-     * @param  mixed  $team       The team to check ownership against
+     * @param  object  $team       The team to check ownership against
      * @return void
      *
      * @throws ValidationException

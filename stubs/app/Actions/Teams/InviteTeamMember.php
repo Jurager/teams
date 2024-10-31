@@ -18,8 +18,8 @@ class InviteTeamMember implements InvitesTeamMembers
     /**
      * Invite a new team member to the specified team.
      *
-     * @param  mixed  $user  The user initiating the invitation
-     * @param  mixed  $team  The team to invite the new member to
+     * @param  object  $user  The user initiating the invitation
+     * @param  object  $team  The team to invite the new member to
      * @param  string $email  Email of the invited member
      * @param  string|null $role  Role assigned to the invited member
      * @return void
@@ -42,14 +42,14 @@ class InviteTeamMember implements InvitesTeamMembers
     /**
      * Validate the invite member request.
      *
-     * @param  mixed  $team  The team to invite the new member to
+     * @param  object  $team  The team to invite the new member to
      * @param  string $email  Email of the invited member
      * @param  string|null $role  Role assigned to the invited member
      * @return void
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    protected function validate(mixed $team, string $email, ?string $role): void
+    protected function validate(object $team, string $email, ?string $role): void
     {
         Validator::make(
             compact('email', 'role'),
@@ -81,11 +81,11 @@ class InviteTeamMember implements InvitesTeamMembers
     /**
      * Ensure the user is not already a member of the team.
      *
-     * @param  mixed  $team
+     * @param  object  $team
      * @param  string $email
      * @return Closure
      */
-    protected function ensureUserIsNotAlreadyOnTeam(mixed $team, string $email): Closure
+    protected function ensureUserIsNotAlreadyOnTeam(object $team, string $email): Closure
     {
         return static function ($validator) use ($team, $email) {
             if ($team->hasUserWithEmail($email)) {

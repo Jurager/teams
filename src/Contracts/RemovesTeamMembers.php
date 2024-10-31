@@ -7,5 +7,5 @@ interface RemovesTeamMembers
     /**
      * Remove the team member from the given team.
      */
-    public function remove(mixed $user, mixed $team, mixed $teamMember): void;
+    public function remove(object $user, object $team, mixed $teamMember): void;
 }

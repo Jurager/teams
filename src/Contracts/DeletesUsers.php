@@ -7,5 +7,5 @@ interface DeletesUsers
     /**
      * Delete the given user.
      */
-    public function delete(mixed $user): void;
+    public function delete(object $user): void;
 }

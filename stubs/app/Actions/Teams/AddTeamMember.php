@@ -16,8 +16,8 @@ class AddTeamMember implements AddsTeamMembers
     /**
      * Add a new team member to the specified team.
      *
-     * @param  mixed  $user  The user initiating the action
-     * @param  mixed  $team  The team to which the member is being added
+     * @param  object  $user  The user initiating the action
+     * @param  object  $team  The team to which the member is being added
      * @param  string $email  Email of the member to be added
      * @param  string|null $role  Role of the member within the team
      * @return void
@@ -25,7 +25,7 @@ class AddTeamMember implements AddsTeamMembers
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws ValidationException
      */
-    public function add(mixed $user, mixed $team, string $email, ?string $role = null): void
+    public function add(object $user, object $team, string $email, ?string $role = null): void
     {
         Gate::forUser($user)->authorize('addTeamMember', $team);
 
@@ -44,14 +44,14 @@ class AddTeamMember implements AddsTeamMembers
     /**
      * Validate the add member operation.
      *
-     * @param  mixed  $team  The team to which the member is being added
+     * @param  object  $team  The team to which the member is being added
      * @param  string $email  Email of the member to be added
      * @param  string|null $role  Role of the member within the team
      * @return void
      *
      * @throws ValidationException
      */
-    protected function validate(mixed $team, string $email, ?string $role)
+    protected function validate(object $team, string $email, ?string $role): void
     {
         Validator::make(
             compact('email', 'role'),
@@ -67,14 +67,14 @@ class AddTeamMember implements AddsTeamMembers
     /**
      * Get the validation rules for adding a team member.
      *
-     * @param  mixed  $team
+     * @param  object  $team
      * @return array
      */
-    protected function rules(mixed $team): array
+    protected function rules(object $team): array
     {
         return array_filter([
             'email' => ['required', 'email', 'exists:users,email'],
-            'role' => Teams::$teamModel::hasRoles() ? ['required', 'string', new Role($team)] : null,
+            'role' => $team->hasRoles() ? ['required', 'string', new Role($team)] : null,
         ]);
     }
 

@@ -7,5 +7,5 @@ interface DeletesTeams
     /**
      * Delete the given team.
      */
-    public function delete(mixed $team): void;
+    public function delete(object $team): void;
 }

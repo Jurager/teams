@@ -14,7 +14,7 @@ class CreateTeam implements CreatesTeams
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function create(mixed $user, array $input): mixed
+    public function create(object $user, array $input): mixed
     {
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],

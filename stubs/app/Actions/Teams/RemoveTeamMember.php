@@ -13,15 +13,15 @@ class RemoveTeamMember implements RemovesTeamMembers
     /**
      * Remove a member from the specified team.
      *
-     * @param  mixed  $user       User initiating the removal
-     * @param  mixed  $team       The team to remove the member from
+     * @param  object  $user       User initiating the removal
+     * @param  object  $team       The team to remove the member from
      * @param  mixed  $teamMember The member to be removed
      * @return void
      *
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function remove(mixed $user, mixed $team, mixed $teamMember): void
+    public function remove(object $user, object $team, mixed $teamMember): void
     {
         $this->authorize($user, $team, $teamMember);
         $this->ensureMemberIsNotTeamOwner($teamMember, $team);
@@ -34,14 +34,14 @@ class RemoveTeamMember implements RemovesTeamMembers
     /**
      * Authorize that the user can remove the specified team member.
      *
-     * @param  mixed  $user       User initiating the removal
-     * @param  mixed  $team       The team from which the member is being removed
-     * @param  mixed  $teamMember The member being removed
+     * @param  object  $user       User initiating the removal
+     * @param  object  $team       The team from which the member is being removed
+     * @param  object  $teamMember The member being removed
      * @return void
      *
      * @throws AuthorizationException
      */
-    protected function authorize(mixed $user, mixed $team, mixed $teamMember): void
+    protected function authorize(mixed $user, mixed $team, object $teamMember): void
     {
         if ($user->id !== $teamMember->id && !Gate::forUser($user)->check('removeTeamMember', $team)) {
             throw new AuthorizationException;
@@ -51,13 +51,13 @@ class RemoveTeamMember implements RemovesTeamMembers
     /**
      * Ensure that the team member is not the owner of the team.
      *
-     * @param  mixed  $teamMember The member being removed
-     * @param  mixed  $team       The team to check ownership against
+     * @param  object  $teamMember The member being removed
+     * @param  object  $team       The team to check ownership against
      * @return void
      *
      * @throws ValidationException
      */
-    protected function ensureMemberIsNotTeamOwner(mixed $teamMember, mixed $team): void
+    protected function ensureMemberIsNotTeamOwner(object $teamMember, object $team): void
     {
         if ($teamMember->id === $team->owner->id) {
             throw ValidationException::withMessages([
