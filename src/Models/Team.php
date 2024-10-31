@@ -52,7 +52,7 @@ class Team extends Model
      */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(Teams::$userModel, 'user_id');
+        return $this->belongsTo(Teams::user(), 'user_id');
     }
 
     /**
@@ -62,7 +62,7 @@ class Team extends Model
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::$userModel, Teams::$membershipModel, config('teams.foreign_keys.team_id'))
+        return $this->belongsToMany(Teams::user(), Teams::membership(), config('teams.foreign_keys.team_id'))
             ->withPivot('role_id')
             ->withTimestamps()
             ->as('membership');
@@ -75,7 +75,7 @@ class Team extends Model
      */
     public function abilities(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::$abilityModel, Teams::$permissionModel)
+        return $this->belongsToMany(Teams::ability(), Teams::permission())
             ->withTimestamps()
             ->withPivot(['entity_type', 'entity_id'])
             ->as('permission');
@@ -88,7 +88,7 @@ class Team extends Model
      */
     public function roles(): HasMany
     {
-        return $this->hasMany(Teams::$roleModel, config('teams.foreign_keys.team_id'),'id');
+        return $this->hasMany(Teams::role(), config('teams.foreign_keys.team_id'),'id');
     }
 
     /**
@@ -98,7 +98,7 @@ class Team extends Model
      */
     public function groups(): HasMany
     {
-        return $this->hasMany(Teams::$groupModel, config('teams.foreign_keys.team_id'),'id');
+        return $this->hasMany(Teams::group(), config('teams.foreign_keys.team_id'),'id');
     }
 
     /**
@@ -108,7 +108,7 @@ class Team extends Model
      */
     public function invitations(): HasMany
     {
-        return $this->hasMany(Teams::$invitationModel, config('teams.foreign_keys.team_id'),'id');
+        return $this->hasMany(Teams::invitation(), config('teams.foreign_keys.team_id'),'id');
     }
 
     /**
@@ -329,7 +329,7 @@ class Team extends Model
      */
     protected function getCapabilityIds(array $capabilities): array
     {
-        return array_map(static fn($capability) => (Teams::$capabilityModel)::firstOrCreate(['code' => $capability])->id, $capabilities);
+        return array_map(static fn($capability) => (Teams::capability())::firstOrCreate(['code' => $capability])->id, $capabilities);
     }
 
     /**

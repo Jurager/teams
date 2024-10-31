@@ -34,7 +34,7 @@ class TeamsServiceProvider extends ServiceProvider
         $this->configureCommands();
         $this->configurePublishing();
         $this->registerMiddlewares();
-        $this->registerModels();
+        $this->registerFacades();
     }
 
     /**
@@ -76,22 +76,11 @@ class TeamsServiceProvider extends ServiceProvider
      *
      * @throws Exception
      */
-    protected function registerModels(): void
+    protected function registerFacades(): void
     {
-        $models = ['user', 'team', 'ability', 'capability', 'group', 'invitation', 'membership', 'permission', 'role'];
-
-        foreach ($models as $model) {
-
-            if (! array_key_exists($model, config('teams.models'))) {
-                throw new Exception('Error, missing '.$model.' model configuration');
-            }
-
-            if (! class_exists(config('teams.models.'.$model))) {
-                throw new Exception('Error, configured model '.config('teams.models.'.$model).' not exists');
-            }
-
-            Teams::setModel($model, config('teams.models.'.$model));
-        }
+        $this->app->singleton('teams', static function () {
+            return new Teams;
+        });
     }
 
     /**

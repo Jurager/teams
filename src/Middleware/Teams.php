@@ -40,7 +40,7 @@ class Teams
         $foreignId = $teamId ?? $request->input($foreignKey) ?? $request->route($foreignKey);
 
         // Get the team model
-        $team = (\Jurager\Teams\Teams::$teamModel)::findOrFail($foreignId);
+        $team = (Teams::team())::findOrFail($foreignId);
 
         // Check the ability
         if ($action === 'hasTeamAbility') {

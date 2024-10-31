@@ -62,7 +62,7 @@ class Role extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::$teamModel);
+        return $this->belongsTo(Teams::team());
     }
 
     /**
@@ -70,7 +70,7 @@ class Role extends Model
      */
     public function capabilities(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::$capabilityModel, 'role_capability');
+        return $this->belongsToMany(Teams::capability(), 'role_capability');
     }
 
     /**

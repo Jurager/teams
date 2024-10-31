@@ -27,6 +27,6 @@ class Invitation extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::$teamModel, config('teams.foreign_keys.team_id'));
+        return $this->belongsTo(Teams::team(), config('teams.foreign_keys.team_id'));
     }
 }

@@ -24,6 +24,6 @@ class Capability extends Model
 
     public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::$teamModel, 'role_capability');
+        return $this->belongsToMany(Teams::team(), 'role_capability');
     }
 }

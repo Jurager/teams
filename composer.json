@@ -32,7 +32,10 @@
         "laravel": {
             "providers": [
                 "Jurager\\Teams\\TeamsServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "Teams":  "Jurager\\Teams\\Facades\\TeamsFacade"
+            }
         }
     }
 }

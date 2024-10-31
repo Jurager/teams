@@ -2,66 +2,35 @@
 
 namespace Jurager\Teams;
 
+use Illuminate\Support\Facades\App;
+
 class Teams
 {
     /**
-     * The user model that should be used by Teams.
+     * Array of models loaded from configuration.
+     *
+     * @var array<string, string>
      */
-    public static mixed $userModel;
+    protected array $models;
 
-    /**
-     * The ability model that should be used by Teams.
-     */
-    public static mixed $abilityModel;
-
-    /**
-     * The capability model that should be used by Teams.
-     */
-    public static mixed $capabilityModel;
-
-    /**
-     * The role model that should be used by Teams.
-     */
-    public static mixed $roleModel;
-
-    /**
-     * The group model that should be used by Teams.
-     */
-    public static mixed $groupModel;
-
-    /**
-     * The permission model that should be used by Teams.
-     */
-    public static mixed $permissionModel;
-
-    /**
-     * The team model that should be used by Teams.
-     */
-    public static mixed $teamModel;
-
-    /**
-     * The membership model that should be used by Teams.
-     */
-    public static mixed $membershipModel;
-
-    /**
-     * The team invitation model that should be used by Teams.
-     */
-    public static mixed $invitationModel;
-
-    /**
-     * Set passed model that will be used by package
-     */
-    public static function setModel(string $model, $namespace): void
+    public function __construct()
     {
-        self::${$model.ucfirst('model')} = $namespace;
+        $this->models = config('teams.models');
     }
 
     /**
-     * Return model that will be used by package
+     * Gets a model instance by name.
+     *
+     * @param string $model
+     * @return object
+     * @throws InvalidArgumentException
      */
-    public static function getModel(string $model): mixed
+    public function getModel(string $model): object
     {
-        return self::${$model.ucfirst('model')};
+        if (array_key_exists($model, $this->models)) {
+            return new $this->models[$model]();
+        }
+
+        throw new \InvalidArgumentException("Model [{$model}] is not defined in the configuration.");
     }
 }

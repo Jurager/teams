@@ -43,6 +43,6 @@ class Membership extends Pivot
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Teams::$roleModel, 'role_id', 'id');
+        return $this->belongsTo(Teams::role(), 'role_id', 'id');
     }
 }

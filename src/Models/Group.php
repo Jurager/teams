@@ -36,7 +36,7 @@ class Group extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::$teamModel);
+        return $this->belongsTo(Teams::team());
     }
 
     /**
@@ -44,7 +44,7 @@ class Group extends Model
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::$userModel, 'user_group', 'group_id', 'user_id');
+        return $this->belongsToMany(Teams::user(), 'user_group', 'group_id', 'user_id');
     }
 
     /**
@@ -52,7 +52,7 @@ class Group extends Model
      */
     public function capabilities(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::$capabilityModel, 'group_capability');
+        return $this->belongsToMany(Teams::capability(), 'group_capability');
     }
 
     /**
@@ -71,7 +71,7 @@ class Group extends Model
         }
 
         // When a single user model is received
-        if ($user::class === Teams::$userModel
+        if ($user::class === Teams::user()
             && $this->team->hasUser($user)
             && count($this->users()->syncWithoutDetaching($user))
         ) {
