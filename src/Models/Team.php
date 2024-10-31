@@ -62,7 +62,7 @@ class Team extends Model
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::$userModel, Teams::$membershipModel)
+        return $this->belongsToMany(Teams::$userModel, Teams::$membershipModel, config('teams.foreign_keys.team_id'))
             ->withPivot('role_id')
             ->withTimestamps()
             ->as('membership');

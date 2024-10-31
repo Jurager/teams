@@ -70,4 +70,12 @@ return [
     'foreign_keys' => [
         'team_id' => 'team_id',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Support
+    |--------------------------------------------------------------------------
+    | Support's field in users table.  Support users has access to all teams
+    */
+    'support_field' => 'is_support'
 ];
