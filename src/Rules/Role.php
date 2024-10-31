@@ -18,7 +18,7 @@ class Role implements ValidationRule
     {
         //@todo: Must check roles based on their codes
         //
-        if (! in_array($value, $this->team->roles->pluck('name')->all(), true)) {
+        if (! $this->team->roles->contains('code', $value)) {
             $fail('The :attribute must be a valid role.');
         }
     }

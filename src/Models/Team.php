@@ -180,21 +180,21 @@ class Team extends Model
     /**
      * Add a role to the team with specific capabilities.
      *
-     * @param  string  $name
+     * @param  string  $code
      * @param  array   $capabilities
      * @return object
      */
-    public function addRole(string $name, array $capabilities): object
+    public function addRole(string $code, array $capabilities): object
     {
-        return \DB::transaction(function () use ($name, $capabilities) {
+        return \DB::transaction(function () use ($code, $capabilities) {
 
-            $role = $this->roles()->firstWhere('name', $name);
+            $role = $this->roles()->firstWhere('code', $code);
 
             if ($role) {
-                throw new RuntimeException("Role with name '{$name}' already exists.");
+                throw new RuntimeException("Role with code '{$code}' already exists.");
             }
 
-            $role = $this->roles()->create(['name' => $name]);
+            $role = $this->roles()->create(['code' => $code]);
 
             $capabilityIds = $this->getCapabilityIds($capabilities);
 
@@ -209,18 +209,18 @@ class Team extends Model
     /**
      * Update an existing role with new capabilities.
      *
-     * @param  string  $name
+     * @param  string  $code
      * @param  array   $capabilities
      * @return object|bool
      */
-    public function updateRole(string $name, array $capabilities): object|bool
+    public function updateRole(string $code, array $capabilities): object|bool
     {
-        return DB::transaction(function () use ($name, $capabilities) {
+        return DB::transaction(function () use ($code, $capabilities) {
 
-            $role = $this->roles()->firstWhere('name', $name);
+            $role = $this->roles()->firstWhere('code', $code);
 
             if (!$role) {
-                throw new ModelNotFoundException("Role with name '{$name}' not found.");
+                throw new ModelNotFoundException("Role with code '{$code}' not found.");
             }
 
             $capability_ids = $this->getCapabilityIds($capabilities);
@@ -238,17 +238,17 @@ class Team extends Model
     /**
      * Delete a role from the team.
      *
-     * @param  string  $name
+     * @param  string  $code
      * @return bool
      */
-    public function deleteRole(string $name): bool
+    public function deleteRole(string $code): bool
     {
-        return DB::transaction(function () use ($name) {
+        return DB::transaction(function () use ($code) {
 
-            $role = $this->roles()->firstWhere('name', $name);
+            $role = $this->roles()->firstWhere('code', $code);
 
             if (!$role) {
-                throw new ModelNotFoundException("Role with name '{$name}' not found.");
+                throw new ModelNotFoundException("Role with code '{$code}' not found.");
             }
 
             return $role->delete();

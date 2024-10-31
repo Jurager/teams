@@ -14,8 +14,11 @@ return new class extends Migration
         Schema::create('roles', static function (Blueprint $table) {
             $table->id();
             $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
+            $table->string('code');
             $table->string('name');
             $table->string('description')->nullable();
+
+            $table->unique([config('teams.foreign_keys.team_id', 'team_id'), 'code']);
         });
     }
 

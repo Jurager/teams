@@ -115,13 +115,13 @@ $team->findRole((int|string) $id)
 $team->userRole((object) $user)
 
 // Add new role to the team
-$team->addRole((string) $name, (array) $capabilities)
+$team->addRole((string) $code, (array) $capabilities)
 
 // Update the role in the team
-$team->updateRole((string) $name, (array) $capabilities)
+$team->updateRole((string) $code, (array) $capabilities)
 
 // Deletes the given role from team
-$team->deleteRole((string) $name)
+$team->deleteRole((string) $code)
 
 // Get all groups of the team.
 $team->groups()
@@ -281,7 +281,6 @@ Example: Creating a New Team with Roles and Permissions
 $team = new Team();
 
 $team->name = 'Example Team';
-$team->code = 'example_team';
 
 if ($team->save()) {
 

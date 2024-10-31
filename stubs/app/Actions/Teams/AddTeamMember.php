@@ -61,7 +61,7 @@ class AddTeamMember implements AddsTeamMembers
             ]
         )->after(
             $this->ensureUserIsNotAlreadyOnTeam($team, $email)
-        )->validateWithBag('addTeamMember');
+        )->validate();
     }
 
     /**

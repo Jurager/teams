@@ -12,6 +12,11 @@ class Owner implements JsonSerializable
     public string|int $id;
 
     /**
+     * The code of the role.
+     */
+    public string $code;
+
+    /**
      * The name of the role.
      */
     public string $name;
@@ -32,7 +37,8 @@ class Owner implements JsonSerializable
     public function __construct()
     {
         $this->id = 1;
-        $this->name = 'owner';
+        $this->code = 'owner';
+        $this->name = 'Owner';
         $this->permissions = ['*'];
     }
 

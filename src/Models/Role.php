@@ -14,7 +14,7 @@ class Role extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['name', 'description'];
+    protected $fillable = ['code', 'name', 'description'];
 
     /**
      * Indicates if the model should be timestamped.

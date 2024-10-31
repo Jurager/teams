@@ -115,12 +115,12 @@ trait HasTeams
             $user_role = $team->findRole($team->users->where('id', $this->id)->first()->membership->role->id);
 
             // If the user has at least one of the roles and $require is false, then we return true.
-            if ($user_role && $user_role->name === $role && ! $require) {
+            if ($user_role && $user_role->code === $role && ! $require) {
                 return true;
             }
 
             // If the user does not have at least one of the roles and $require is true, then we return false.
-            if (! $user_role || ($user_role->name !== $role && $require)) {
+            if (! $user_role || ($user_role->code !== $role && $require)) {
                 return false;
             }
         }

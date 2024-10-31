@@ -57,7 +57,7 @@ class InviteTeamMember implements InvitesTeamMembers
             ['email.unique' => __('This user has already been invited to the team.')]
         )->after(
             $this->ensureUserIsNotAlreadyOnTeam($team, $email)
-        )->validateWithBag('addTeamMember');
+        )->validate();
     }
 
     /**
