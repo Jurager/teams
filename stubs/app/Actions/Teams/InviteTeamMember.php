@@ -26,7 +26,7 @@ class InviteTeamMember implements InvitesTeamMembers
      *
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function invite(mixed $user, mixed $team, string $email, ?string $role = null): void
+    public function invite(object $user, object $team, string $email, ?string $role = null): void
     {
         Gate::forUser($user)->authorize('addTeamMember', $team);
 
@@ -49,14 +49,14 @@ class InviteTeamMember implements InvitesTeamMembers
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    protected function validate(mixed $team, string $email, ?string $role)
+    protected function validate(mixed $team, string $email, ?string $role): void
     {
         Validator::make(
             compact('email', 'role'),
-            $this->inviteValidationRules($team),
+            $this->rules($team),
             ['email.unique' => __('This user has already been invited to the team.')]
         )->after(
-            $this->userNotOnTeam($team, $email)
+            $this->ensureUserIsNotAlreadyOnTeam($team, $email)
         )->validateWithBag('addTeamMember');
     }
 
@@ -66,7 +66,7 @@ class InviteTeamMember implements InvitesTeamMembers
      * @param  mixed  $team
      * @return array
      */
-    protected function rules(mixed $team): array
+    protected function rules(object $team): array
     {
         return array_filter([
             'email' => [
@@ -74,7 +74,7 @@ class InviteTeamMember implements InvitesTeamMembers
                 'email',
                 Rule::unique('invitations')->where(fn ($query) => $query->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)),
             ],
-            'role' => Teams::hasRoles() ? ['required', 'string', new Role($team)] : null,
+            'role' => $team->hasRoles() ? ['required', 'string', new Role($team)] : null,
         ]);
     }
 

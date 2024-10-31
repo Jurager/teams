@@ -2,8 +2,6 @@
 
 namespace App\Policies;
 
-use App\Models\Team;
-use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class TeamPolicy
@@ -12,10 +10,9 @@ class TeamPolicy
 
     /**
      * Determine whether the user can view any models.
-     *
      * @return mixed
      */
-    public function viewAny(User $user)
+    public function viewAny(): mixed
     {
         return true;
     }
@@ -23,9 +20,11 @@ class TeamPolicy
     /**
      * Determine whether the user can view the model.
      *
+     * @param object $user
+     * @param object $team
      * @return mixed
      */
-    public function view(User $user, Team $team)
+    public function view(object $user, object $team): mixed
     {
         return $user->belongsToTeam($team);
     }
@@ -33,7 +32,7 @@ class TeamPolicy
     /**
      * Determine whether the user can create models.
      */
-    public function create(User $user): bool
+    public function create(object $user): bool
     {
         return true;
     }
@@ -41,9 +40,11 @@ class TeamPolicy
     /**
      * Determine whether the user can update the model.
      *
+     * @param object $user
+     * @param object $team
      * @return mixed
      */
-    public function update(User $user, Team $team)
+    public function update(object $user, object $team): mixed
     {
         return $user->ownsTeam($team);
     }
@@ -51,9 +52,11 @@ class TeamPolicy
     /**
      * Determine whether the user can add team members.
      *
+     * @param object $user
+     * @param object $team
      * @return mixed
      */
-    public function addTeamMember(User $user, Team $team)
+    public function addTeamMember(object $user, object $team): mixed
     {
         return $user->ownsTeam($team);
     }
@@ -61,9 +64,11 @@ class TeamPolicy
     /**
      * Determine whether the user can update team member permissions.
      *
+     * @param object $user
+     * @param object $team
      * @return mixed
      */
-    public function updateTeamMember(User $user, Team $team)
+    public function updateTeamMember(object $user, object $team): mixed
     {
         return $user->ownsTeam($team);
     }
@@ -71,9 +76,11 @@ class TeamPolicy
     /**
      * Determine whether the user can remove team members.
      *
+     * @param object $user
+     * @param object $team
      * @return mixed
      */
-    public function removeTeamMember(User $user, Team $team)
+    public function removeTeamMember(object $user, object $team): mixed
     {
         return $user->ownsTeam($team);
     }
@@ -81,9 +88,11 @@ class TeamPolicy
     /**
      * Determine whether the user can delete the model.
      *
+     * @param object $user
+     * @param object $team
      * @return mixed
      */
-    public function delete(User $user, Team $team)
+    public function delete(object $user, object $team): mixed
     {
         return $user->ownsTeam($team);
     }

@@ -55,7 +55,7 @@ class AddTeamMember implements AddsTeamMembers
     {
         Validator::make(
             compact('email', 'role'),
-            $this->validationRules($team),
+            $this->rules($team),
             [
                 'email.exists' => __('We were unable to find a registered user with this email address.'),
             ]
@@ -74,7 +74,7 @@ class AddTeamMember implements AddsTeamMembers
     {
         return array_filter([
             'email' => ['required', 'email', 'exists:users,email'],
-            'role' => Teams::hasRoles() ? ['required', 'string', new Role($team)] : null,
+            'role' => Teams::$teamModel::hasRoles() ? ['required', 'string', new Role($team)] : null,
         ]);
     }
 
