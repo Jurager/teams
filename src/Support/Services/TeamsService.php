@@ -17,6 +17,32 @@ class TeamsService
     }
 
     /**
+     * Returns object instance based on name.
+     *
+     * @param string $model
+     * @return object
+     * @throws \Exception
+     */
+    public function instance(string $model): object
+    {
+        // Use a service object to obtain a model
+        return $this->getModel($model, true);
+    }
+
+    /**
+     * Returns the model class based on name.
+     *
+     * @param string $model
+     * @return string
+     * @throws \Exception
+     */
+    public function model(string $model): string
+    {
+        // Use a service object to obtain a model
+        return $this->getModel($model);
+    }
+
+    /**
      * Gets a model instance by name.
      *
      * @param string $key
@@ -24,7 +50,7 @@ class TeamsService
      * @return string|object
      * @throws \Exception
      */
-    public function getModel(string $key, bool $instance = false): string|object
+    private function getModel(string $key, bool $instance = false): string|object
     {
         $modelClass = $this->models[$key] ?? null;
 

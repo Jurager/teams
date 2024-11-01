@@ -3,6 +3,15 @@
 namespace Jurager\Teams\Support\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use Jurager\Teams\Support\Services\TeamsService;
+
+
+/**
+ * @method static string model(string $model)
+ * @method static object instance(string $model)
+ *
+ * @see \Jurager\Teams\Support\Services\TeamsService
+ */
 class Teams extends Facade
 {
     /**
@@ -12,30 +21,7 @@ class Teams extends Facade
      */
     protected static function getFacadeAccessor(): string
     {
-        return 'teams';
+        return TeamsService::class;
     }
 
-    /**
-     * Returns object instance based on name.
-     *
-     * @param string $model
-     * @return object
-     */
-    public static function instance(string $model): object
-    {
-        // Use a service object to obtain a model
-        return app('teams')->getModel($model, true);
-    }
-
-    /**
-     * Returns the model class based on name.
-     *
-     * @param string $model
-     * @return string
-     */
-    public static function model(string $model): string
-    {
-        // Use a service object to obtain a model
-        return app('teams')->getModel($model);
-    }
 }
