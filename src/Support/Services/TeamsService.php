@@ -25,7 +25,6 @@ class TeamsService
      */
     public function instance(string $model): object
     {
-        // Use a service object to obtain a model
         return $this->getModel($model, true);
     }
 
@@ -38,7 +37,6 @@ class TeamsService
      */
     public function model(string $model): string
     {
-        // Use a service object to obtain a model
         return $this->getModel($model);
     }
 
