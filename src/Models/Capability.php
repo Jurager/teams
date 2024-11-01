@@ -4,7 +4,7 @@ namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Jurager\Teams\Teams;
+use Jurager\Teams\Support\Facades\Teams;
 
 class Capability extends Model
 {
@@ -24,6 +24,6 @@ class Capability extends Model
 
     public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::team(), 'role_capability');
+        return $this->belongsToMany(Teams::model('team'), 'role_capability');
     }
 }

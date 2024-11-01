@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Jurager\Teams\Teams;
+use Jurager\Teams\Support\Facades\Teams;
 
 class Group extends Model
 {
@@ -36,7 +36,7 @@ class Group extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::team());
+        return $this->belongsTo(Teams::model('team'));
     }
 
     /**
@@ -44,7 +44,7 @@ class Group extends Model
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::user(), 'user_group', 'group_id', 'user_id');
+        return $this->belongsToMany(Teams::model('user'), 'user_group', 'group_id', 'user_id');
     }
 
     /**
@@ -52,7 +52,7 @@ class Group extends Model
      */
     public function capabilities(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::capability(), 'group_capability');
+        return $this->belongsToMany(Teams::model('capability'), 'group_capability');
     }
 
     /**
@@ -71,7 +71,7 @@ class Group extends Model
         }
 
         // When a single user model is received
-        if ($user::class === Teams::user()
+        if ($user::class === Teams::model('user')
             && $this->team->hasUser($user)
             && count($this->users()->syncWithoutDetaching($user))
         ) {

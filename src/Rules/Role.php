@@ -16,8 +16,6 @@ class Role implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        //@todo: Must check roles based on their codes
-        //
         if (! $this->team->roles->contains('code', $value)) {
             $fail('The :attribute must be a valid role.');
         }

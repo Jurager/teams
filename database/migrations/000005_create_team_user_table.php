@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create(config('teams.tables.team_user', 'team_user'), static function (Blueprint $table) {
             $table->id();
-            $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'));
-            $table->foreignId('user_id');
+            $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained(config('teams.tables.teams'))->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('role_id')->constrained('roles')->cascadeOnUpdate()->restrictOnDelete();
             $table->timestamps();
 

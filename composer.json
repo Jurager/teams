@@ -34,7 +34,7 @@
                 "Jurager\\Teams\\TeamsServiceProvider"
             ],
             "aliases": {
-                "Teams":  "Jurager\\Teams\\Facades\\TeamsFacade"
+                "Teams": "Jurager\\Teams\\Support\\Facades\\Teams"
             }
         }
     }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Jurager\Teams\Support\Facades\Teams as TeamFacade;
 use InvalidArgumentException;
 
 class Teams
@@ -40,7 +41,7 @@ class Teams
         $foreignId = $teamId ?? $request->input($foreignKey) ?? $request->route($foreignKey);
 
         // Get the team model
-        $team = (Teams::team())::findOrFail($foreignId);
+        $team = TeamFacade::instance('team')->findOrFail($foreignId);
 
         // Check the ability
         if ($action === 'hasTeamAbility') {

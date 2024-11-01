@@ -4,6 +4,7 @@ namespace Jurager\Teams;
 
 use Exception;
 use Illuminate\Support\ServiceProvider;
+use Jurager\Teams\Support\Services\TeamsService;
 use Jurager\Teams\Middleware\Ability as AbilityMiddleware;
 use Jurager\Teams\Middleware\Permission as PermissionMiddleware;
 use Jurager\Teams\Middleware\Role as RoleMiddleware;
@@ -79,7 +80,7 @@ class TeamsServiceProvider extends ServiceProvider
     protected function registerFacades(): void
     {
         $this->app->singleton('teams', static function () {
-            return new Teams;
+            return new TeamsService;
         });
     }
 

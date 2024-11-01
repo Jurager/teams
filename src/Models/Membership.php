@@ -4,7 +4,7 @@ namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use Jurager\Teams\Teams;
+use Jurager\Teams\Support\Facades\Teams;
 
 class Membership extends Pivot
 {
@@ -43,6 +43,6 @@ class Membership extends Pivot
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Teams::role(), 'role_id', 'id');
+        return $this->belongsTo(Teams::model('role'), 'role_id', 'id');
     }
 }
