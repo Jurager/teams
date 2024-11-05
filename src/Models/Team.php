@@ -198,7 +198,7 @@ class Team extends Model
      * @param string|null $description Optional description for the role to provide additional context.
      * @return object
      */
-    public function addRole(string $code, array $capabilities, string|null $name, string|null $description): object
+    public function addRole(string $code, array $capabilities, string|null $name = null, string|null $description = null): object
     {
         if ($this->roles()->where('code', $code)->exists()) {
             throw new RuntimeException("Role with code '$code' already exists.");
