@@ -9,7 +9,7 @@ use Jurager\Teams\Contracts\AddsTeamMembers;
 use Jurager\Teams\Events\AddingTeamMember;
 use Jurager\Teams\Events\TeamMemberAdded;
 use Jurager\Teams\Rules\Role;
-use Jurager\Teams\Teams;
+use Jurager\Teams\Support\Facades\Teams;
 
 class AddTeamMember implements AddsTeamMembers
 {
@@ -31,7 +31,7 @@ class AddTeamMember implements AddsTeamMembers
 
         $this->validate($team, $email, $role);
 
-        $member = Teams::findUserByEmailOrFail($email);
+        $member = Teams::model('team')->findUserByEmailOrFail($email);
 
         AddingTeamMember::dispatch($team, $member);
 

@@ -11,7 +11,6 @@ use Jurager\Teams\Contracts\InvitesTeamMembers;
 use Jurager\Teams\Events\InvitingTeamMember;
 use Jurager\Teams\Mail\Invitation;
 use Jurager\Teams\Rules\Role;
-use Jurager\Teams\Teams;
 
 class InviteTeamMember implements InvitesTeamMembers
 {

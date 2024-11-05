@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Jurager\Teams\Events\TeamMemberUpdated;
 use Jurager\Teams\Rules\Role;
-use Jurager\Teams\Teams;
+use Jurager\Teams\Support\Facades\Teams;
 
 class UpdateTeamMemberRole
 {
@@ -35,7 +35,7 @@ class UpdateTeamMemberRole
 
         $team->users()->updateExistingPivot($teamMemberId, ['role' => $role]);
 
-        TeamMemberUpdated::dispatch($team->fresh(), Teams::findUserByIdOrFail($teamMemberId));
+        TeamMemberUpdated::dispatch($team->fresh(), Teams::model('team')->findUserByIdOrFail($teamMemberId));
     }
 
     /**
