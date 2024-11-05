@@ -29,4 +29,14 @@ class Invitation extends Model
     {
         return $this->belongsTo(Teams::model('team'), config('teams.foreign_keys.team_id'));
     }
+
+    /**
+     * Accept the invitation to the team
+     */
+    public function accept()
+    {
+        // @todo: accept invitation
+        // $this->team()->users()->attach($user, ['role' => $role]);
+        // $invite->delete();
+   }
 }

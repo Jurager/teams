@@ -7,12 +7,15 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Jurager\Teams\Owner;
+use Illuminate\Support\Str;
+use Jurager\Teams\Models\Owner;
 
 trait HasTeams
 {
     /**
      * Get all the teams the user owns or belongs to.
+     *
+     * @return Collection
      */
     public function allTeams(): Collection
     {
@@ -21,6 +24,8 @@ trait HasTeams
 
     /**
      * Get all the teams the user owns.
+     *
+     * @return HasMany
      */
     public function ownedTeams(): HasMany
     {
@@ -29,6 +34,8 @@ trait HasTeams
 
     /**
      * Get all the teams the user belongs to.
+     *
+     * @return BelongsToMany
      */
     public function teams(): BelongsToMany
     {
@@ -41,6 +48,9 @@ trait HasTeams
 
     /**
      * Determine if the user owns the given team.
+     *
+     * @param object $team
+     * @return bool
      */
     public function ownsTeam(object $team): bool
     {
@@ -49,6 +59,8 @@ trait HasTeams
 
     /**
      * Get all the groups the user belongs to.
+     *
+     * @return BelongsToMany
      */
     public function groups(): BelongsToMany
     {
@@ -57,6 +69,9 @@ trait HasTeams
 
     /**
      * Determine if the user belongs to the given team.
+     *
+     * @param object $team
+     * @return bool
      */
     public function belongsToTeam(object $team): bool
     {
@@ -65,6 +80,9 @@ trait HasTeams
 
     /**
      * Get the role that the user has on the team.
+     *
+     * @param object $team
+     * @return mixed
      */
     public function teamRole(object $team): mixed
     {
@@ -79,23 +97,24 @@ trait HasTeams
         }
 
         // Get the user's role in the team.
-        $role = $team->users->where('id', $this->id)->first()->membership->role;
-
-        // If the user has a role, return the role object, otherwise return null.
-        return $role ? $team->findRole($role->id) : null;
+        return $team->getRole($team->users->firstWhere('id', $this->id)->membership->role->id ?? null);
     }
+
 
     /**
      * Determine if the user has the given role on the given team.
+     *
+     * @param object $team
+     * @param string|array $roles
+     * @param bool $require
+     * @return bool
      */
     public function hasTeamRole(object $team, string|array $roles, bool $require = false): bool
     {
-        // If the user owns the team, he has all the roles.
         if ($this->ownsTeam($team)) {
             return true;
         }
 
-        // If the user does not belong to the team, return false.
         if (! $this->belongsToTeam($team)) {
             return false;
         }
@@ -108,28 +127,26 @@ trait HasTeams
             return $require;
         }
 
-        // Checking roles.
-        foreach ($roles as $role) {
+        $userRole = $team->users->firstWhere('id', $this->id)->membership->role->code ?? null;
 
-            // Obtain the user's role in the team.
-            $user_role = $team->findRole($team->users->where('id', $this->id)->first()->membership->role->id);
-
-            // If the user has at least one of the roles and $require is false, then we return true.
-            if ($user_role && $user_role->code === $role && ! $require) {
-                return true;
-            }
-
-            // If the user does not have at least one of the roles and $require is true, then we return false.
-            if (! $user_role || ($user_role->code !== $role && $require)) {
-                return false;
-            }
+        if (!$userRole) {
+            return false;
         }
 
-        return $require;
+        // For require=true, check that the user role matches all passed roles.
+        if ($require) {
+            return empty(array_diff($roles, [$userRole]));
+        }
+
+        // For require=false, return true if at least one of the roles matches the user's role.
+        return in_array($userRole, $roles, true);
     }
 
     /**
      * Get the user's permissions for the given team.
+     *
+     * @param object $team
+     * @return array|string[]
      */
     public function teamPermissions(object $team): array
     {
@@ -152,6 +169,11 @@ trait HasTeams
 
     /**
      * Determine if the user has the given permission on the given team.
+     *
+     * @param object $team
+     * @param string|array $permissions
+     * @param bool $require
+     * @return bool
      */
     public function hasTeamPermission(object $team, string|array $permissions = [], bool $require = false): bool
     {
@@ -214,6 +236,11 @@ trait HasTeams
 
     /**
      * Get all abilities to specific entity
+     *
+     * @param object $team
+     * @param object $entity
+     * @param bool $forbidden
+     * @return mixed
      */
     public function teamAbilities(object $team, object $entity, bool $forbidden = false): mixed
     {
@@ -237,11 +264,14 @@ trait HasTeams
     /**
      * Determinate if user has ability outside team
      *
-     * This function is employed to verify abilities within a universal group,
+     * This function is to verify abilities within a universal group,
      * especially in cases where a team requires a group enabling user additions
      * and removals without direct affiliation with the team
      *
      * Example: Each team should have a global group of moderators.
+     *
+     * @param string $ability
+     * @return bool
      */
     private function hasAbility(string $ability): bool
     {
@@ -271,6 +301,11 @@ trait HasTeams
 
     /**
      * Determinate if user can perform an action
+     *
+     * @param object $team
+     * @param string $ability
+     * @param object $entity
+     * @return bool
      */
     public function hasTeamAbility(object $team, string $ability, object $entity): bool
     {
@@ -356,14 +391,20 @@ trait HasTeams
 
     /**
      * Allow user to perform an ability
+     *
+     * @param object $team
+     * @param string $ability
+     * @param object $entity
+     * @param object|null $group
+     * @return bool
      */
     public function allowTeamAbility(object $team, string $ability, object $entity, ?object $group = null): bool
     {
         // Determine the ability required to edit the entity
-        $ability_to_edit = lcfirst(class_basename($entity)).'s.edit';
+        $requiredAbility = $this->generateAbilityName($entity, 'edit');
 
         // Check if the user has the required ability to edit the entity
-        if (! $this->hasTeamAbility($team, $ability_to_edit, $entity)) {
+        if (! $this->hasTeamAbility($team, $requiredAbility, $entity)) {
             return false;
         }
 
@@ -398,14 +439,20 @@ trait HasTeams
 
     /**
      * Forbid user to perform an ability
+     *
+     * @param object $team
+     * @param string $ability
+     * @param object $entity
+     * @param object|null $group
+     * @return bool
      */
     public function forbidTeamAbility(object $team, string $ability, object $entity, ?object $group): bool
     {
         // Determine the ability required to edit the entity
-        $ability_to_edit = lcfirst(class_basename($entity)).'s.edit';
+        $requiredAbility = $this->generateAbilityName($entity, 'edit');
 
         // Check if the user has the required ability to edit the entity
-        if (! $this->hasTeamAbility($team, $ability_to_edit, $entity)) {
+        if (! $this->hasTeamAbility($team, $requiredAbility, $entity)) {
             return false;
         }
 
@@ -441,14 +488,20 @@ trait HasTeams
 
     /**
      * Delete user ability
+     *
+     * @param object $team
+     * @param string $ability
+     * @param object $entity
+     * @param object|null $group
+     * @return bool
      */
     public function deleteTeamAbility(object $team, string $ability, object $entity, ?object $group): bool
     {
         // Determine the ability required to edit the entity
-        $ability_to_edit = lcfirst(class_basename($entity)).'s.edit';
+        $requiredAbility = $this->generateAbilityName($entity, 'edit');
 
         // Check if the user has the required ability to edit the entity
-        if (! $this->hasTeamAbility($team, $ability_to_edit, $entity)) {
+        if (! $this->hasTeamAbility($team, $requiredAbility, $entity)) {
             return false;
         }
 
@@ -479,5 +532,17 @@ trait HasTeams
         }
 
         return false;
+    }
+
+    /**
+     * Helper method for generating ability name
+     *
+     * @param object $entity
+     * @param string $action
+     * @return string
+     */
+    protected function generateAbilityName(object $entity, string $action): string
+    {
+        Str::snake(Str::plural(class_basename($entity))) . '.' . $action;
     }
 }

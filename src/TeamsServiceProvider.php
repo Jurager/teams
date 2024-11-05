@@ -3,6 +3,7 @@
 namespace Jurager\Teams;
 
 use Exception;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Jurager\Teams\Support\Services\TeamsService;
 use Jurager\Teams\Middleware\Ability as AbilityMiddleware;
@@ -34,8 +35,12 @@ class TeamsServiceProvider extends ServiceProvider
 
         $this->configureCommands();
         $this->configurePublishing();
-        $this->registerMiddlewares();
         $this->registerFacades();
+        $this->registerMiddlewares();
+
+        if(config('teams.invitations.enabled') && config('teams.invitations.routes.register')) {
+            $this->registerRoutes();
+        }
     }
 
     /**
@@ -47,16 +52,32 @@ class TeamsServiceProvider extends ServiceProvider
             return;
         }
 
+        $migrations = [
+            __DIR__ . '/../database/migrations/create_teams_table.php' => database_path('migrations/2019_12_14_000001_create_teams_table.php'),
+            __DIR__ . '/../database/migrations/create_capabilities_table.php' => database_path('migrations/2019_12_14_000002_create_capabilities_table.php'),
+            __DIR__ . '/../database/migrations/create_roles_table.php' => database_path('migrations/2019_12_14_000003_create_roles_table.php'),
+            __DIR__ . '/../database/migrations/create_role_capability_table.php' => database_path('migrations/2019_12_14_000004_create_role_capability_table.php'),
+            __DIR__ . '/../database/migrations/create_team_user_table.php' => database_path('migrations/2019_12_14_000005_create_team_user_table.php'),
+            __DIR__ . '/../database/migrations/create_abilities_table.php' => database_path('migrations/2019_12_14_000006_create_abilities_table.php'),
+            __DIR__ . '/../database/migrations/create_permissions_table.php' => database_path('migrations/2019_12_14_000007_create_permissions_table.php'),
+            __DIR__ . '/../database/migrations/create_groups_table.php' => database_path('migrations/2019_12_14_000008_create_groups_table.php'),
+            __DIR__ . '/../database/migrations/create_user_group_table.php' => database_path('migrations/2019_12_14_000009_create_user_group_table.php'),
+            __DIR__ . '/../database/migrations/create_group_capability_table.php' => database_path('migrations/2019_12_14_000010_create_group_capability_table.php'),
+            __DIR__ . '/../database/migrations/add_fields_to_users_table.php' => database_path('migrations/2019_12_14_000011_add_fields_to_users_table.php'),
+        ];
+
+        if(config('teams.invitations.enabled')) {
+            $migrations[__DIR__ . '/../database/migrations/create_invitations_table.php'] = database_path('migrations/2019_12_14_000012_create_invitations_table.php');
+        }
+
         $this->publishes([
-            __DIR__.'/../config/teams.php' => config_path('teams.php'),
+            __DIR__.'/../config/teams.php' => config_path('teams.php')
         ], 'teams-config');
 
-        $this->publishes([
-            __DIR__.'/../database/migrations/' => database_path('/migrations'),
-        ], 'teams-migrations');
+        $this->publishes($migrations, 'teams-migrations');
 
         $this->publishes([
-            __DIR__.'/../resources/views' => resource_path('views/vendor/teams'),
+            __DIR__.'/../resources/views' => resource_path('views/vendor/teams')
         ], 'teams-views');
     }
 
@@ -81,6 +102,19 @@ class TeamsServiceProvider extends ServiceProvider
     {
         $this->app->singleton('teams', static function () {
             return new TeamsService;
+        });
+    }
+
+    /**
+     * @return void
+     */
+    protected function registerRoutes(): void
+    {
+        Route::group([
+            'prefix' => config('teams.routes.prefix', '/'),
+            'middleware' => config('teams.routes.middleware', 'web'),
+        ], function () {
+            $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
         });
     }
 

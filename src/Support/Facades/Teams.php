@@ -5,7 +5,6 @@ namespace Jurager\Teams\Support\Facades;
 use Illuminate\Support\Facades\Facade;
 use Jurager\Teams\Support\Services\TeamsService;
 
-
 /**
  * @method static string model(string $model)
  * @method static object instance(string $model)
@@ -23,5 +22,4 @@ class Teams extends Facade
     {
         return TeamsService::class;
     }
-
 }

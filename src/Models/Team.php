@@ -8,8 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
-use Jurager\Teams\Owner;
 use Jurager\Teams\Support\Facades\Teams;
 use RuntimeException;
 
@@ -151,7 +149,7 @@ class Team extends Model
      */
     public function userRole(object $user): object|null
     {
-        return $this->owner === $user ? new Owner : $this->findRole($this->users->where('id', $user->id)->first()->membership->role->id ?? null);
+        return $this->owner === $user ? new Owner : $this->getRole($this->users->firstWhere('id', $user->id)->membership->role->id ?? null);
     }
 
     /**
@@ -178,171 +176,148 @@ class Team extends Model
     }
 
     /**
+     * Retrieves a role by its ID or code.
+     *
+     * @param int|string|null $keyword The ID or code of the role to search for.
+     * @return object|null
+     */
+    public function getRole(int|string|null $keyword): object|null
+    {
+        return $this->roles()->firstWhere(function ($query) use ($keyword) {
+            $query->where('id',  $keyword)
+                ->orWhere('code', $keyword);
+        });
+    }
+
+    /**
      * Add a role to the team with specific capabilities.
      *
-     * @param  string  $code
-     * @param  array   $capabilities
+     * @param string $code Unique identifier for the role, used for retrieval and management.
+     * @param array $capabilities List of capability codes to associate with this role.
+     * @param string|null $name Optional name for the role. Defaults to a formatted version of `$code` if not provided.
+     * @param string|null $description Optional description for the role to provide additional context.
      * @return object
      */
-    public function addRole(string $code, array $capabilities): object
+    public function addRole(string $code, array $capabilities, string|null $name, string|null $description): object
     {
-        return \DB::transaction(function () use ($code, $capabilities) {
+        if ($this->roles()->where('code', $code)->exists()) {
+            throw new RuntimeException("Role with code '$code' already exists.");
+        }
 
-            $role = $this->roles()->firstWhere('code', $code);
+        $role = $this->roles()->create([
+            'code' => $code,
+            'name' => $name ?? Str::studly($code),
+            'description' => $description
+        ]);
 
-            if ($role) {
-                throw new RuntimeException("Role with code '{$code}' already exists.");
-            }
+        $capabilityIds = $this->getCapabilityIds($capabilities);
 
-            $role = $this->roles()->create(['code' => $code]);
+        if (!empty($capabilityIds)) {
+            $role->capabilities()->sync($capabilityIds);
+        }
 
-            $capabilityIds = $this->getCapabilityIds($capabilities);
-
-            if (!empty($capabilityIds)) {
-                $role->capabilities()->sync($capabilityIds);
-            }
-
-            return $role;
-        });
+        return $role;
     }
 
     /**
      * Update an existing role with new capabilities.
      *
-     * @param  string  $code
-     * @param  array   $capabilities
+     * @param  string  $code The unique code of the role to update.
+     * @param  array   $capabilities An array of capability codes to assign to the role.
      * @return object|bool
      */
     public function updateRole(string $code, array $capabilities): object|bool
     {
-        return DB::transaction(function () use ($code, $capabilities) {
+        $role = $this->roles()->firstWhere('code', $code);
 
-            $role = $this->roles()->firstWhere('code', $code);
+        if (!$role) {
+            throw new ModelNotFoundException("Role with code '$code' not found.");
+        }
 
-            if (!$role) {
-                throw new ModelNotFoundException("Role with code '{$code}' not found.");
-            }
+        $capability_ids = $this->getCapabilityIds($capabilities);
 
-            $capability_ids = $this->getCapabilityIds($capabilities);
+        if (!empty($capability_ids)) {
+            $role->capabilities()->sync($capability_ids);
+        } else {
+            $role->capabilities()->detach();
+        }
 
-            if (!empty($capability_ids)) {
-                $role->capabilities()->sync($capability_ids);
-            } else {
-                $role->capabilities()->detach();
-            }
-
-            return $role;
-        });
+        return $role;
     }
 
     /**
      * Delete a role from the team.
      *
-     * @param  string  $code
+     * @param  string $code The unique code of the role to delete
      * @return bool
      */
     public function deleteRole(string $code): bool
     {
-        return DB::transaction(function () use ($code) {
+        $role = $this->roles()->firstWhere('code', $code);
 
-            $role = $this->roles()->firstWhere('code', $code);
+        if (!$role) {
+            throw new ModelNotFoundException("Role with code '$code' not found.");
+        }
 
-            if (!$role) {
-                throw new ModelNotFoundException("Role with code '{$code}' not found.");
-            }
-
-            return $role->delete();
-        });
+        return $role->delete();
     }
 
     /**
-     * Find a role by ID or name.
+     * Get a group by id or code.
      *
-     * @param  int|string  $id
+     * @param int|string $keyword The ID or code of the role to search for.
      * @return object|null
      */
-    public function findRole(int|string $id): object|null
+    public function getGroup(int|string $keyword): object|null
     {
-        return $this->roles()->where('id', $id)->orWhere('name', $id)->first();
+        return $this->groups()->firstWhere(function ($query) use ($keyword) {
+            $query->where('id',  $keyword)
+                ->orWhere('code', $keyword);
+        });
     }
 
     /**
      * Add a new group to the team.
      *
-     * @param  string  $code
+     * @param  string  $code The unique code of the group.
      * @param  string  $name
      * @return object
      */
     public function addGroup(string $code, string $name): object
     {
-        return DB::transaction(function () use ($code, $name) {
+        if ($this->groups()->where('code', $code)->exists()) {
+            throw new RuntimeException("Group with code '$code' already exists.");
+        }
 
-            $group = $this->groups()->firstWhere('code', $code);
-
-            if ($group) {
-                throw new RuntimeException("Group with code '{$code}' already exists.");
-            }
-
-            return $this->groups()->create([
-                'code' => $code,
-                'name' => $name,
-            ]);
-        });
+        return $this->groups()->create(compact('code', 'name'));
     }
 
     /**
      * Remove a group from the team by code.
      *
-     * @param  string  $code
+     * @param  string  $code The unique code of the group to delete.
      * @return bool
      */
     public function deleteGroup(string $code): bool
     {
-        return DB::transaction(function () use ($code) {
+        $group = $this->groups()->firstWhere('code', $code);
 
-            $group = $this->groups()->firstWhere('code', $code);
+        if (!$group) {
+            throw new ModelNotFoundException("Group with code '$code' not found.");
+        }
 
-            if (!$group) {
-                throw new ModelNotFoundException("Group with code '{$code}' not found.");
-            }
-
-            return $group->delete();
-        });
-    }
-
-    /**
-     * Retrieve a group by its code.
-     *
-     * @param  string  $code
-     * @return object|null
-     */
-    public function group(string $code): object|null
-    {
-        return $this->groups()->where('code', $code)->first();
-    }
-
-    /**
-     * Get capability IDs for a list of capabilities.
-     *
-     * @param  array  $capabilities
-     * @return array
-     */
-    protected function getCapabilityIds(array $capabilities): array
-    {
-        return array_map(static fn($capability) => Teams::instance('capability')->firstOrCreate(['code' => $capability])->id, $capabilities);
+        return $group->delete();
     }
 
     /**
      * Remove a user from the team.
      *
-     * @param  object  $user
+     * @param  object  $user The user object to remove, typically an instance.
      * @return void
      */
     public function deleteUser(object $user): void
     {
-        DB::transaction(function () use ($user) {
-            $this->users()->detach($user);
-        });
+        $this->users()->detach($user);
     }
 
     /**
@@ -352,9 +327,39 @@ class Team extends Model
      */
     public function purge(): void
     {
-        DB::transaction(function () {
-            $this->users()->detach();
-            $this->delete();
-        });
+        $this->users()->detach();
+        $this->delete();
+    }
+
+    /**
+     * Get capability IDs for a list of capabilities.
+     *
+     * @param  array  $codes An array of capability codes to retrieve or create IDs for.
+     * @return array
+     */
+    protected function getCapabilityIds(array $codes): array
+    {
+        $capabilities = Teams::model('capability')
+            ->whereIn('code', $codes)
+            ->pluck('id', 'code')
+            ->all();
+
+        $diff = array_diff($codes, array_keys($capabilities));
+
+        if (!empty($diff)) {
+
+            $items = array_map(static fn($code) => ['code' => $code], $diff);
+
+            Teams::model('capability')->insert($items);
+
+            $inserted = Teams::model('capability')
+                ->whereIn('code', $diff)
+                ->pluck('id', 'code')
+                ->all();
+
+            return array_merge($capabilities, $inserted);
+        }
+
+        return [];
     }
 }

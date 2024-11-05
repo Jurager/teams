@@ -10,9 +10,9 @@ class TeamPolicy
 
     /**
      * Determine whether the user can view any models.
-     * @return mixed
+     * @return bool
      */
-    public function viewAny(): mixed
+    public function viewAny(): bool
     {
         return true;
     }
@@ -22,9 +22,9 @@ class TeamPolicy
      *
      * @param object $user
      * @param object $team
-     * @return mixed
+     * @return bool
      */
-    public function view(object $user, object $team): mixed
+    public function view(object $user, object $team): bool
     {
         return $user->belongsToTeam($team);
     }
@@ -42,9 +42,9 @@ class TeamPolicy
      *
      * @param object $user
      * @param object $team
-     * @return mixed
+     * @return bool
      */
-    public function update(object $user, object $team): mixed
+    public function update(object $user, object $team): bool
     {
         return $user->ownsTeam($team);
     }
@@ -54,9 +54,9 @@ class TeamPolicy
      *
      * @param object $user
      * @param object $team
-     * @return mixed
+     * @return bool
      */
-    public function addTeamMember(object $user, object $team): mixed
+    public function addTeamMember(object $user, object $team): bool
     {
         return $user->ownsTeam($team);
     }
@@ -66,9 +66,9 @@ class TeamPolicy
      *
      * @param object $user
      * @param object $team
-     * @return mixed
+     * @return bool
      */
-    public function updateTeamMember(object $user, object $team): mixed
+    public function updateTeamMember(object $user, object $team): bool
     {
         return $user->ownsTeam($team);
     }
@@ -78,9 +78,9 @@ class TeamPolicy
      *
      * @param object $user
      * @param object $team
-     * @return mixed
+     * @return bool
      */
-    public function removeTeamMember(object $user, object $team): mixed
+    public function removeTeamMember(object $user, object $team): bool
     {
         return $user->ownsTeam($team);
     }
@@ -90,9 +90,9 @@ class TeamPolicy
      *
      * @param object $user
      * @param object $team
-     * @return mixed
+     * @return bool
      */
-    public function delete(object $user, object $team): mixed
+    public function delete(object $user, object $team): bool
     {
         return $user->ownsTeam($team);
     }

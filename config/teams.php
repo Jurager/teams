@@ -73,6 +73,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Invitations
+    |--------------------------------------------------------------------------
+    | Configures the team invitation feature, allowing users to be invited to join teams.
+    */
+    'invitations' => [
+
+        'enabled' => true,
+
+        'routes' => [
+            'register' => true,
+            'url' => '/invitation/accept',
+            'middleware' => 'web'
+        ]
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Support
     |--------------------------------------------------------------------------
     | Support's field in users table.  Support users has access to all teams

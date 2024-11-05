@@ -1,6 +1,6 @@
 <?php
 
-namespace Jurager\Teams;
+namespace Jurager\Teams\Models;
 
 use JsonSerializable;
 
@@ -9,38 +9,27 @@ class Owner implements JsonSerializable
     /**
      * The key identifier for the role.
      */
-    public string|int $id;
+    public string|int $id = 1;
 
     /**
      * The code of the role.
      */
-    public string $code;
+    public string $code = 'owner';
 
     /**
      * The name of the role.
      */
-    public string $name;
+    public string $name = 'Owner';
 
     /**
      * The role's permissions.
      */
-    public array $permissions;
+    public array $permissions = ['*'];
 
     /**
      * The role's description.
      */
     public string $description;
-
-    /**
-     * Create a new role instance.
-     */
-    public function __construct()
-    {
-        $this->id = 1;
-        $this->code = 'owner';
-        $this->name = 'Owner';
-        $this->permissions = ['*'];
-    }
 
     /**
      * Describe the role.

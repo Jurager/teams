@@ -9,6 +9,13 @@ class Role extends Teams
 {
     /**
      * Handle incoming request.
+     *
+     * @param Request $request
+     * @param Closure $next
+     * @param string|array $roles
+     * @param string|null $teamId
+     * @param bool $options
+     * @return mixed
      */
     public function handle(Request $request, Closure $next, string|array $roles, ?string $teamId = null, bool $options = false): mixed
     {

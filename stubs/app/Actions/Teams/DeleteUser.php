@@ -2,7 +2,6 @@
 
 namespace App\Actions\Teams;
 
-use Illuminate\Support\Facades\DB;
 use Jurager\Teams\Contracts\DeletesTeams;
 use Jurager\Teams\Contracts\DeletesUsers;
 
@@ -28,10 +27,8 @@ class DeleteUser implements DeletesUsers
      */
     public function delete(object $user): void
     {
-        DB::transaction(function () use ($user) {
-            $this->deleteTeams($user);
-            $user->delete();
-        });
+        $this->deleteTeams($user);
+        $user->delete();
     }
 
     /**

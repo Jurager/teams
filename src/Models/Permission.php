@@ -30,6 +30,8 @@ class Permission extends Model
 
     /**
      * Get the team that the permission belongs to.
+     *
+     * @return BelongsTo
      */
     public function team(): BelongsTo
     {
@@ -38,6 +40,8 @@ class Permission extends Model
 
     /**
      * Get the ability that the permission belongs to.
+     *
+     * @return BelongsTo
      */
     public function ability(): BelongsTo
     {

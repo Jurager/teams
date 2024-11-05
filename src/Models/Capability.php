@@ -22,6 +22,11 @@ class Capability extends Model
      */
     public $timestamps = false;
 
+    /**
+     * Get the team that the capability belongs to.
+     *
+     * @return BelongsToMany
+     */
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Teams::model('team'), 'role_capability');

@@ -14,6 +14,7 @@ You can add a user to a global group to grant them access to all teams with the 
 > The documentation for this package is currently being written. For now, please refer to this readme for information on the functionality and usage of the package.
 
 - [Requirements](#requirements)
+- [Schema](#schema)
 - [Installation](#installation)
 - [Actions](#actions)
 - [Teams](#teams)
@@ -38,6 +39,10 @@ You can add a user to a global group to grant them access to all teams with the 
 Requirements
 -------------------------------------------
 `PHP >= 8.1` and `Laravel 8.x or higher`
+
+Schema
+-------------------------------------------
+![Schema](schema.png "Title")
 
 Installation
 -------------------------------------------
@@ -100,7 +105,7 @@ $team->users()
 $team->allUsers()
 
 // Determine if the given user is a team member...
-$team->hasUser((object) $user)
+$team->hasUser(object $user)
 
 // Get all the abilities belong to the team.
 $team->abilities()
@@ -108,41 +113,41 @@ $team->abilities()
 // Get all the team's roles.
 $team->roles()
 
-// Get the role from the team by role id or name 
-$team->findRole((int|string) $id)
-
 // Return the user role object from the team
-$team->userRole((object) $user)
+$team->userRole(object $user)
+
+// Get the role from the team by role id or code 
+$team->getRole(int|string $keyword)
 
 // Add new role to the team
-$team->addRole((string) $code, (array) $capabilities)
+$team->addRole(string $code, array $capabilities)
 
 // Update the role in the team
-$team->updateRole((string) $code, (array) $capabilities)
+$team->updateRole(string $code, array $capabilities)
 
 // Deletes the given role from team
-$team->deleteRole((string) $code)
+$team->deleteRole(string $code)
 
 // Get all groups of the team.
 $team->groups()
 
-// Get team group by its code
-$team->group((string) $code)
+// Get team group by its id or code
+$team->getGroup(int|string $keyword)
 
 // Add new group to the team
-$team->addGroup((string) $code, (string) $name)
+$team->addGroup(string $code, string $name)
 
 // Delete group from the team
-$team->deleteGroup((string) $code)
+$team->deleteGroup(string $code)
 
 // Determine if the team has a member with the given email address...
-$team->hasUserWithEmail((array) $emailAddress)
+$team->hasUserWithEmail(array $email)
 
 // Determine if the given user is a team member with the given permission...
-$team->userHasPermission((object) $user, (string|array) $permission, (bool) $require = false)
+$team->userHasPermission(object $user, string|array $permission, bool $require = false)
 
 // Remove the given user from the team.
-$team->deleteUser((object) $user);
+$team->deleteUser(object $user);
 
 // Determine if the team has a member with the given email address...
 $team->invitations()
@@ -169,34 +174,34 @@ $user->ownedTeams : Illuminate\Database\Eloquent\Collection
 $user->allTeams() : Illuminate\Database\Eloquent\Collection
 
 // Determine if a user owns a given team...
-$user->ownsTeam((object) $team) : bool
+$user->ownsTeam(object $team) : bool
 
 // Determine if a user belongs to a given team...
-$user->belongsToTeam((object) $team) : bool
+$user->belongsToTeam(object $team) : bool
 
 // Get the role that the user is assigned on the team...
-$user->teamRole((object) $team) : \Jurager\Teams\Role
+$user->teamRole(object $team) : \Jurager\Teams\Role
 
 // Determine if the user has the given role on the given team...
-$user->hasTeamRole((object) $team, (string|array) 'admin', (bool) $require = false) : bool
+$user->hasTeamRole(object $team, string|array 'admin', bool $require = false) : bool
 
 // Access an array of all permissions a user has for a given team...
-$user->teamPermissions((object) $team) : array
+$user->teamPermissions(object $team) : array
 
 // Determine if a user has a given team permission...
-$user->hasTeamPermission((object) $team, (string|array) 'server:create', (bool) $require = false) : bool
+$user->hasTeamPermission(object $team, string|array 'server:create', bool $require = false) : bool
 
 // Get list of abilities or forbidden abilities for users on certain model
-$user->teamAbilities((object) $team, (object) $server) : mixed
+$user->teamAbilities(object $team, object $server) : mixed
 
 // Determine if a user has a given ability on certain model...
-$user->hasTeamAbility((object) $team, (string) 'server:edit', (object) $server) : bool
+$user->hasTeamAbility(object $team, string 'server:edit', object $server) : bool
 
 // Add an ability for user to action on certain model, if permission is not found, will create a new one
-$user->allowTeamAbility((object) $team, (string) 'server:edit', (object) $server) : bool
+$user->allowTeamAbility(object $team, string 'server:edit', object $server) : bool
 
 // Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
-$user->forbidTeamAbility((object) $team, (string) 'server:edit', (object) $server) : bool
+$user->forbidTeamAbility(object $team, string 'server:edit', object $server) : bool
 ```
 
 These methods enable you to efficiently manage and inspect a user's teams, roles, permissions, and abilities within your application.
@@ -221,25 +226,25 @@ The `Jurager\Teams\Traits\HasTeams` trait provides methods to inspect a user's t
 
 ```php
 // Add new group to the team
-$team->addGroup((string) $code, (string) $name)
+$team->addGroup(string $code, string $name)
 
 // Delete group from the team
-$team->deleteGroup((string) $code)
+$team->deleteGroup(string $code)
 
 // Get all groups of the team.
 $team->groups();
 
 // Get team group by its code
-$team->group((string) $code);
+$team->getGroup(int|string $keyword);
 
 // Get all group users
-$team->group((string) $code)->users();
+$team->getGroup(int|string $keyword)->users();
 
 // Attach users or user to a group
-$team->group((string) $code)->attachUser((Collection|Model) $user);
+$team->getGroup(int|string $keyword)->attachUser(Collection|Model $user);
 
 // Detach users or user from group
-$team->group((string) $code)->detachUser((Collection|Model) $user);
+$team->getGroup(int|string $keyword)->detachUser(Collection|Model $user);
 ```
 
 ### Groups Permissions
@@ -248,20 +253,20 @@ You can manage permissions within a group using the following methods:
 
 ```php
 // Add an ability for user to action on certain model within team group, if permission is not found, will create a new one
-$user->allowTeamAbility((object) $team, (string) 'server:edit', (object) $server, (object|null) $group));
+$user->allowTeamAbility(object $team, string 'server:edit', object $server, object|null $group));
 
 // Forbid an ability for user to action on certain model within team group
-$user->forbidTeamAbility((object) $team, (string) 'server:edit', (object) $server, (object|null) $group);
+$user->forbidTeamAbility(object $team, string 'server:edit', object $server, object|null $group);
 
 // Delete user ability to action on certain model within team group
-$user->deleteTeamAbility((object) $team, (string) 'server:edit', (object) $server, (object|null) $group);
+$user->deleteTeamAbility(object $team, string 'server:edit', object $server, object|null $group);
 ```
 > [!NOTE]
 > Team groups work together with abilities, so you should use ability checking methods to determine if users have specific access rights within groups.
 
 ```php
 // Determinate if user can perform an action
-$user->hasTeamAbility((object) $team, (string) 'server:edit', (object) $server)
+$user->hasTeamAbility(object $team, string 'server:edit', object $server)
 ```
 
 Middleware `ability` is used to check the user's rights within the team group during requests to your application
@@ -322,7 +327,7 @@ To ensure that incoming requests initiated by a team member can be executed by t
 > In most cases, it's unnecessary to check a user's role directly. Instead, focus on verifying specific granular permissions. Roles primarily serve as a way to group granular permissions for organizational purposes. Typically, you'll execute calls to this method within your application's [authorization policies](https://laravel.com/docs/authorization#creating-policies).
 
 ```php
-return $user->hasTeamPermission((string) $server->team, (string) 'server:update');
+return $user->hasTeamPermission(string $server->team, string 'server:update');
 ```
 
 This example demonstrates how to check if a user within a team has permission to update a server. Adjust the parameters according to your application's specific requirements and use cases.
@@ -340,7 +345,7 @@ Simply pass the name of the ability, and the package will create it if it's not 
 To add the ability to edit an article within a team for a specific user, you need to provide the entity, such as the article object, and the team object:
 
 ```php
-User::allowTeamAbility((object) $team, string 'edit', (object) $article, (object|null) $group);
+User::allowTeamAbility(object $team, string 'edit', object $article, object|null $group);
 ```
 
 ### Checking an Ability
@@ -348,7 +353,7 @@ User::allowTeamAbility((object) $team, string 'edit', (object) $article, (object
 To check if a user has a specific ability in a team, you can use the following method:
     
 ```php
-User::hasTeamAbility((object) $team, string 'edit', (object) $article);
+User::hasTeamAbility(object $team, string 'edit', object $article);
 ```
 
 ### Forbidding an Ability
@@ -356,7 +361,7 @@ User::hasTeamAbility((object) $team, string 'edit', (object) $article);
 If you need to forbid a user from having a certain ability for instance, if the role abilities allow this ability, you can do so using the following method:
 
 ```php
-User::forbidTeamAbility((object) $team, (string) 'edit', (object) $article, (object|null) $group);
+User::forbidTeamAbility(object $team, string 'edit', object $article, object|null $group);
 ```
 
 ### Creating Abilities

@@ -13,7 +13,7 @@ class Ability extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['name', 'title', 'entity_id', 'entity_type'];
+    protected $fillable = ['name', 'title', 'entity_id', 'entity_type', 'only_owned', 'options'];
 
     public function __construct(array $attributes = [])
     {
@@ -24,6 +24,8 @@ class Ability extends Model
 
     /**
      * Get the team that the ability belongs to.
+     *
+     * @return BelongsTo
      */
     public function team(): BelongsTo
     {

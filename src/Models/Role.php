@@ -59,14 +59,19 @@ class Role extends Model
 
     /**
      * Get the team that the role belongs to.
+     *
+     * @return BelongsTo
      */
     public function team(): BelongsTo
     {
         return $this->belongsTo(Teams::model('team'));
     }
 
+
     /**
      * Get the capabilities that belongs to team.
+     *
+     * @return BelongsToMany
      */
     public function capabilities(): BelongsToMany
     {
@@ -75,6 +80,8 @@ class Role extends Model
 
     /**
      * Get the permissions of all team capabilities.
+     *
+     * @return array
      */
     public function getPermissionsAttribute(): array
     {

@@ -11,8 +11,17 @@ use InvalidArgumentException;
 
 class Teams
 {
+
     /**
      * Check if the request has authorization to continue.
+     *
+     * @param Request $request
+     * @param string $method
+     * @param string|array $params
+     * @param string|null $teamId
+     * @param array|null $models
+     * @param bool $require
+     * @return bool
      */
     protected function authorization(Request $request, string $method, string|array $params, ?string $teamId, ?array $models, bool $require = false): bool
     {
@@ -93,7 +102,7 @@ class Teams
         $redirect = redirect()->to($handler['url']);
 
         // If flash message key is provided, use it for session message
-        if (!empty($handler['message']['key'])) {
+        if (!empty($handler['message']['key']) && !empty($handler['message']['content'])) {
             $redirect->with($handler['message']['key'], $handler['message']['content']);
         }
 
@@ -116,9 +125,22 @@ class Teams
 
     /**
      * Get the model to authorize.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param string $model
+     * @return string
      */
     protected function getModel(Request $request, $model): string
     {
-        return str_contains($model, '\\') ? trim($model) : $request->route($model, $model);
+        // Trim the model name and ensure it is a fully qualified class name if not already
+        $trimmedModel = trim($model);
+
+        // Return the model directly if it is a fully qualified class name
+        if (class_exists($trimmedModel)) {
+            return $trimmedModel;
+        }
+
+        // Otherwise, retrieve the model from the request route, falling back to the original model name
+        return $request->route($trimmedModel) ?: $trimmedModel;
     }
 }

@@ -46,6 +46,9 @@ class InstallCommand extends Command
         // Policies...
         (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/app/Policies', app_path('Policies'));
 
+        // Controllers...
+        (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/app/Controllers', app_path('Http/Controllers/'));
+
         $this->info('All done. Have a nice journey.');
     }
 }

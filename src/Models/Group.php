@@ -33,6 +33,8 @@ class Group extends Model
 
     /**
      * Get the team that the group belongs to.
+     *
+     * @return BelongsTo
      */
     public function team(): BelongsTo
     {
@@ -41,6 +43,8 @@ class Group extends Model
 
     /**
      * Get all group users
+     *
+     * @return BelongsToMany
      */
     public function users(): BelongsToMany
     {
@@ -49,6 +53,8 @@ class Group extends Model
 
     /**
      * Get the capabilities that belongs to team.
+     *
+     * @return BelongsToMany
      */
     public function capabilities(): BelongsToMany
     {
@@ -57,25 +63,20 @@ class Group extends Model
 
     /**
      * Attach user or users to a group
+     *
+     * @param Collection|Model $user
+     * @return bool
      */
     public function attachUser(Collection|Model $user): bool
     {
-        // When a collection of users is received.
         if ($user instanceof Collection) {
+            $users = $user->filter(fn($item) => $this->team->hasUser($item));
 
-            // Reject users not in the current team.
-            $user = $user->reject(fn ($item) => ! $this->team->hasUser($item));
-
-            // After sorting, ensure that there are no empty elements.
-            return $user->isNotEmpty() && count($this->users()->sync($user, false));
+            return $users->isNotEmpty() && count($this->users()->sync($users, false));
         }
 
-        // When a single user model is received
-        if ($user::class === Teams::model('user')
-            && $this->team->hasUser($user)
-            && count($this->users()->syncWithoutDetaching($user))
-        ) {
-            return true;
+        if ($user instanceof Model && $this->team->hasUser($user)) {
+            return count($this->users()->syncWithoutDetaching($user));
         }
 
         return false;
@@ -86,18 +87,15 @@ class Group extends Model
      */
     public function detachUser(Collection|Model $user): bool
     {
-        // When a collection of users is received.
         if ($user instanceof Collection) {
-            // Filter out users not in the current team.
-            $users_to_remove = $user->filter(fn ($item) => $this->team->hasUser($item));
 
-            // Detach only if there are users to remove.
-            return $users_to_remove->isNotEmpty() && $this->users()->detach($users_to_remove->pluck('id')->all());
+            $users = $user->filter(fn ($item) => $this->team->hasUser($item));
+
+            return $users->isNotEmpty() && count($this->users()->detach($users->pluck('id')->all()));
         }
 
-        // When a single user model is received
         if ($this->team->hasUser($user)) {
-            return $this->users()->detach($user->id);
+            return count($this->users()->detach($user->id));
         }
 
         return false;
