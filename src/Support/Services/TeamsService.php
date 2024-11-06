@@ -47,6 +47,8 @@ class TeamsService
      * @param bool $instance
      * @return string|object
      * @throws \Exception
+     *
+     * @template T of \Illuminate\Database\Eloquent\Model
      */
     private function getModel(string $key, bool $instance = false): string|object
     {

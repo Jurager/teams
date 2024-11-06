@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('group_capability', static function (Blueprint $table) {
             $table->id();
-            $table->foreignId('role_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('group_id')->constrained()->cascadeOnDelete();
             $table->foreignId('capability_id')->constrained()->cascadeOnDelete();
         });
     }
