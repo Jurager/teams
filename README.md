@@ -104,6 +104,9 @@ $team->users()
 // Adds a user to the team with a specified role.
 $team->addUser(object $user, string $role_code)
 
+// Update the role of a specific user within the team.
+$team->updateUser(object $user, string $role_code)
+
 // Remove the given user from the team.
 $team->deleteUser(object $user);
 

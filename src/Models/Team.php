@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 use Jurager\Teams\Events\AddingTeamMember;
 use Jurager\Teams\Events\TeamMemberAdded;
 use Jurager\Teams\Events\TeamMemberRemoved;
+use Jurager\Teams\Events\TeamMemberUpdated;
 use Jurager\Teams\Rules\Role;
 use Jurager\Teams\Support\Facades\Teams;
 use RuntimeException;
@@ -165,7 +166,35 @@ class Team extends Model
         $this->users()->attach($user, ['role_id' => $role->id]);
 
         // Dispatch an event after user is added to the team
-        TeamMemberAdded::dispatch($this, $user);
+        TeamMemberAdded::dispatch($this->fresh(), $user);
+    }
+
+    /**
+     * Update the role of a specific user within the team.
+     *
+     * @param object $user
+     * @param string $role_code
+     * @return void
+     */
+    public function updateUser(object $user, string $role_code): void
+    {
+        if ($user->id === $this->owner->id) {
+            throw new RuntimeException(
+                __('You may not change role of the team owner.')
+            );
+        }
+
+        if (! $role = $this->getRole($role_code)) {
+            throw new RuntimeException(
+                __('We were unable to find a role :role within team.', ['role' => $role])
+            );
+        }
+
+        // Update the user role for the team
+        $this->users()->updateExistingPivot($user->id, ['role_id' => $role->id]);
+
+        // Dispatch event after updating the user role
+        TeamMemberUpdated::dispatch($this->fresh(), $user->fresh());
     }
 
     /**
@@ -187,7 +216,7 @@ class Team extends Model
         $this->users()->detach($user->id);
 
         // Dispatch event after removing the user
-        TeamMemberRemoved::dispatch($this, $user);
+        TeamMemberRemoved::dispatch($this->fresh(), $user);
     }
 
     /**
