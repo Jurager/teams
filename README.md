@@ -21,7 +21,7 @@ You can add a user to a global group to grant them access to all teams with the 
 - [Groups](#groups)
     - [Scope of Use](#scope-of-use)
     - [Groups Managing](#groups-managing)
-    - [Groups Permissions](#groups-permissions)
+    - [Groups Abilities](#groups-permissions)
 - [Roles & Permissions](#roles--permissions)
     - [Authorization](#authorization)
 - [Abilities](#abilities)
@@ -196,7 +196,7 @@ $user->teamAbilities(object $team, object $server) : mixed
 // Determine if a user has a given ability on certain model...
 $user->hasTeamAbility(object $team, string 'server:edit', object $server) : bool
 
-// Add an ability for user to action on certain model, if permission is not found, will create a new one
+// Add an ability for user to action on certain model, if not found, will create a new one
 $user->allowTeamAbility(object $team, string 'server:edit', object $server) : bool
 
 // Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
@@ -249,12 +249,12 @@ $team->getGroup(int|string $keyword)->attachUser(Collection|Model $user);
 $team->getGroup(int|string $keyword)->detachUser(Collection|Model $user);
 ```
 
-### Groups Permissions
+### Groups Abilities
 
-You can manage permissions within a group using the following methods:
+You can manage abilities within a group using the following methods:
 
 ```php
-// Add an ability for user to action on certain model within team group, if permission is not found, will create a new one
+// Add an ability for user to action on certain model within team group, if not found, will create a new one
 $user->allowTeamAbility(object $team, string 'server:edit', object $server, object|null $group));
 
 // Forbid an ability for user to action on certain model within team group
