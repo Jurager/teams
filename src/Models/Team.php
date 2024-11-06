@@ -307,7 +307,7 @@ class Team extends Model
             'description' => $description
         ]);
 
-        $capabilityIds = $this->getCapabilityIds($capabilities);
+        $capabilityIds = $this->getCapabilityIds($capabilities, $role);
 
         if (!empty($capabilityIds)) {
             $role->capabilities()->sync($capabilityIds);
@@ -331,7 +331,7 @@ class Team extends Model
             throw new ModelNotFoundException("Role with code '$code' not found.");
         }
 
-        $capability_ids = $this->getCapabilityIds($capabilities);
+        $capability_ids = $this->getCapabilityIds($capabilities, $role);
 
         if (!empty($capability_ids)) {
             $role->capabilities()->sync($capability_ids);
@@ -423,9 +423,11 @@ class Team extends Model
      * @param  array  $codes An array of capability codes to retrieve or create IDs for.
      * @return array
      */
-    protected function getCapabilityIds(array $codes): array
+    protected function getCapabilityIds(array $codes, $role): array
     {
         $capabilities = Teams::model('capability')::query()
+            ->where('team_id', $this->id)
+            ->where('role_id', $role->id)
             ->whereIn('code', $codes)
             ->pluck('id', 'code')
             ->all();
@@ -434,12 +436,14 @@ class Team extends Model
 
         if (!empty($diff)) {
 
-            $items = array_map(static fn($code) => ['code' => $code], $diff);
+            $items = array_map(static fn($code) => ['code' => $code, 'team_id' => $this->id, 'role_id' => $role->id], $diff);
 
             Teams::model('capability')::query()
                 ->insert($items);
 
             $inserted = Teams::model('capability')::query()
+                ->where('team_id', $this->id)
+                ->where('role_id', $role->id)
                 ->whereIn('code', $diff)
                 ->pluck('id', 'code')
                 ->all();
