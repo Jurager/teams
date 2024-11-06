@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Jurager\Teams\Events\AddingTeamMember;
 use Jurager\Teams\Events\TeamMemberAdded;
+use Jurager\Teams\Events\TeamMemberRemoved;
 use Jurager\Teams\Rules\Role;
 use Jurager\Teams\Support\Facades\Teams;
 use RuntimeException;
@@ -138,10 +140,11 @@ class Team extends Model
      * Adds a user to the team with a specified role.
      *
      * @param object $user The user model instance to be added to the team.
-     * @param string $role The role code that will be assigned to the user within the team.
-     * @return bool Returns true if the user was successfully added to the team.
+     * @param string $role_code The role object that will be assigned to the user within the team.
+     *
+     * @return void
      */
-    public function addUser(object $user, string $role): bool
+    public function addUser(object $user, string $role_code): void
     {
         if ($this->hasUser($user)) {
             throw new RuntimeException(
@@ -149,7 +152,7 @@ class Team extends Model
             );
         }
 
-        if (!$this->hasRole($role)) {
+        if (! $role = $this->getRole($role_code)) {
             throw new RuntimeException(
                 __('We were unable to find a role :role within team.', ['role' => $role])
             );
@@ -158,12 +161,33 @@ class Team extends Model
         // Dispatch an event before attaching the user
         AddingTeamMember::dispatch($this, $user);
 
-        $this->users()->attach($user, ['role' => $role]);
+        // Attach the user to the team
+        $this->users()->attach($user, ['role_id' => $role->id]);
 
         // Dispatch an event after user is added to the team
         TeamMemberAdded::dispatch($this, $user);
+    }
 
-        return true;
+    /**
+     * Remove a user from the team.
+     *
+     * @param object $user The user instance to remove from the team.
+     *
+     * @return void
+     */
+    public function deleteUser(object $user): void
+    {
+        if ($user->id === $this->owner->id) {
+            throw new RuntimeException(
+                __('You may not remove the team owner.')
+            );
+        }
+
+        // Detach the user from the team
+        $this->users()->detach($user->id);
+
+        // Dispatch event after removing the user
+        TeamMemberRemoved::dispatch($this, $user);
     }
 
     /**
@@ -350,17 +374,6 @@ class Team extends Model
         }
 
         return $group->delete();
-    }
-
-    /**
-     * Remove a user from the team.
-     *
-     * @param  object  $user The user object to remove, typically an instance.
-     * @return void
-     */
-    public function deleteUser(object $user): void
-    {
-        $this->users()->detach($user);
     }
 
     /**

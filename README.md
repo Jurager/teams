@@ -102,7 +102,10 @@ $team->owner
 $team->users()
 
 // Adds a user to the team with a specified role.
-$team->addUser(object $user, string $role)
+$team->addUser(object $user, string $role_code)
+
+// Remove the given user from the team.
+$team->deleteUser(object $user);
 
 // Get all the team's users, including the owner...
 $team->allUsers()
@@ -151,9 +154,6 @@ $team->hasUserWithEmail(array $email)
 
 // Determine if the given user is a team member with the given permission...
 $team->userHasPermission(object $user, string|array $permission, bool $require = false)
-
-// Remove the given user from the team.
-$team->deleteUser(object $user);
 
 // Returns all team invitations
 $team->invitations()
