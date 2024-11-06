@@ -199,7 +199,7 @@ $user->hasTeamAbility(object $team, string 'server:edit', object $server) : bool
 // Add an ability for user to action on certain model, if not found, will create a new one
 $user->allowTeamAbility(object $team, string 'server:edit', object $server) : bool
 
-// Forbid an ability for user to action on certain model, used in case if global permission or role allowing this action
+// Forbid an ability for user to action on certain model, used in case if global ability or role allowing this action
 $user->forbidTeamAbility(object $team, string 'server:edit', object $server) : bool
 ```
 
