@@ -147,16 +147,12 @@ class Team extends Model
      */
     public function addUser(object $user, string $role_keyword): void
     {
-        if ($this->hasUser($user)) {
-            throw new RuntimeException(
-                __('User already belongs to the team.')
-            );
-        }
+        $this->validateUserExists($user);
 
-        if (! $role = $this->getRole($role_keyword)) {
-            throw new RuntimeException(
-                __('We were unable to find a role :role within team.', ['role' => $role])
-            );
+        $role = $this->getRole($role_keyword);
+
+        if (!$role) {
+            throw new RuntimeException(__('Unable to find a role :role within team.', ['role' => $role_keyword]));
         }
 
         // Dispatch an event before attaching the user
@@ -178,16 +174,14 @@ class Team extends Model
      */
     public function updateUser(object $user, string $role_keyword): void
     {
-        if ($user->id === $this->owner->id) {
-            throw new RuntimeException(
-                __('You may not change role of the team owner.')
-            );
-        }
+        $this->validateUserNotOwner($user);
 
-        if (! $role = $this->getRole($role_keyword)) {
-            throw new RuntimeException(
-                __('We were unable to find a role :role within team.', ['role' => $role])
-            );
+        $this->validateUserExists($user);
+
+        $role = $this->getRole($role_keyword);
+
+        if (!$role) {
+            throw new RuntimeException(__('Unable to find a role :role within team.', ['role' => $role_keyword]));
         }
 
         // Update the user role for the team
@@ -206,11 +200,9 @@ class Team extends Model
      */
     public function deleteUser(object $user): void
     {
-        if ($user->id === $this->owner->id) {
-            throw new RuntimeException(
-                __('You may not remove the team owner.')
-            );
-        }
+        $this->validateUserNotOwner($user);
+
+        $this->validateUserExists($user);
 
         // Detach the user from the team
         $this->users()->detach($user->id);
@@ -297,7 +289,7 @@ class Team extends Model
      */
     public function addRole(string $code, array $capabilities, string|null $name = null, string|null $description = null): object
     {
-        if ($this->roles()->where('code', $code)->exists()) {
+        if ($this->hasRole($code)) {
             throw new RuntimeException("Role with code '$code' already exists.");
         }
 
@@ -325,10 +317,7 @@ class Team extends Model
      */
     public function updateRole(int|string $keyword, array $capabilities): object|bool
     {
-        $role = $this->roles()->firstWhere(function ($query) use ($keyword) {
-            $query->where('id',  $keyword)
-                ->orWhere('code', $keyword);
-        });
+        $role = $this->getRole($keyword);
 
         if (!$role) {
             throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
@@ -353,16 +342,31 @@ class Team extends Model
      */
     public function deleteRole(int|string $keyword): bool
     {
-        $role = $this->roles()->firstWhere(function ($query) use ($keyword) {
-            $query->where('id',  $keyword)
-                ->orWhere('code', $keyword);
-        });
+        $role = $this->getRole($keyword);
 
         if (!$role) {
             throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
         }
 
         return $role->delete();
+    }
+
+    /**
+     * Check if the team has a specific group by ID or code or any groups at all
+     *
+     * @param string|null $keyword The role ID or code to check for. If null, checks for any groups.
+     * @return bool
+     */
+    public function hasGroup(string|null $keyword = null): bool
+    {
+        $groups = $this->groups();
+
+        if ($keyword !== null) {
+            $groups->where('id', $keyword)
+                ->orWhere('code', $keyword);
+        }
+
+        return $groups->exists();
     }
 
     /**
@@ -388,7 +392,7 @@ class Team extends Model
      */
     public function addGroup(string $code, string $name): object
     {
-        if ($this->groups()->where('code', $code)->exists()) {
+        if ($this->hasGroup($code)) {
             throw new RuntimeException("Group with code '$code' already exists.");
         }
 
@@ -403,10 +407,7 @@ class Team extends Model
      */
     public function deleteGroup(int|string $keyword): bool
     {
-        $group = $this->groups()->firstWhere(function ($query) use ($keyword) {
-            $query->where('id',  $keyword)
-                ->orWhere('code', $keyword);
-        });
+        $group = $this->getGroup($keyword);
 
         if (!$group) {
             throw new ModelNotFoundException("Group with id/code '$keyword' not found.");
@@ -426,13 +427,27 @@ class Team extends Model
         $this->delete();
     }
 
+    private function validateUserExists(object $user): void
+    {
+        if ($this->hasUser($user)) {
+            throw new RuntimeException(__('User already belongs to the team.'));
+        }
+    }
+
+    private function validateUserNotOwner(object $user): void
+    {
+        if ($user->id === $this->owner->id) {
+            throw new RuntimeException(__('You may not remove the team owner.'));
+        }
+    }
+
     /**
      * Get capability IDs for a list of capabilities.
      *
      * @param  array  $codes An array of capability codes to retrieve or create IDs for.
      * @return array
      */
-    protected function getCapabilityIds(array $codes): array
+    private function getCapabilityIds(array $codes): array
     {
         $capabilities = Teams::model('capability')
             ->whereIn('code', $codes)

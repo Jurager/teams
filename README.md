@@ -233,6 +233,9 @@ $team->deleteGroup(string $code)
 // Get all groups of the team.
 $team->groups();
 
+// Check if the team has a specific group by ID or code or any groups at all
+$team->hasRole(int|string|null $keyword)
+
 // Get team group by its code
 $team->getGroup(int|string $keyword);
 
