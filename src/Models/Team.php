@@ -426,7 +426,7 @@ class Team extends Model
     protected function getCapabilityIds(array $codes, $role): array
     {
         $capabilities = Teams::model('capability')::query()
-            ->where('team_id', $this->id)
+            ->where(config('teams.foreign_keys.team_id'), $this->id)
             ->where('role_id', $role->id)
             ->whereIn('code', $codes)
             ->pluck('id', 'code')
@@ -436,13 +436,13 @@ class Team extends Model
 
         if (!empty($diff)) {
 
-            $items = array_map(static fn($code) => ['code' => $code, 'team_id' => $this->id, 'role_id' => $role->id], $diff);
+            $items = array_map(static fn($code) => ['code' => $code, config('teams.foreign_keys.team_id') => $this->id, 'role_id' => $role->id], $diff);
 
             Teams::model('capability')::query()
                 ->insert($items);
 
             $inserted = Teams::model('capability')::query()
-                ->where('team_id', $this->id)
+                ->where(config('teams.foreign_keys.team_id'), $this->id)
                 ->where('role_id', $role->id)
                 ->whereIn('code', $diff)
                 ->pluck('id', 'code')
