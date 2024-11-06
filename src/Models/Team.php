@@ -141,11 +141,11 @@ class Team extends Model
      * Adds a user to the team with a specified role.
      *
      * @param object $user The user model instance to be added to the team.
-     * @param string $role_code The role object that will be assigned to the user within the team.
+     * @param string $role_keyword The role ID or code that will be assigned to the user within the team.
      *
      * @return void
      */
-    public function addUser(object $user, string $role_code): void
+    public function addUser(object $user, string $role_keyword): void
     {
         if ($this->hasUser($user)) {
             throw new RuntimeException(
@@ -153,7 +153,7 @@ class Team extends Model
             );
         }
 
-        if (! $role = $this->getRole($role_code)) {
+        if (! $role = $this->getRole($role_keyword)) {
             throw new RuntimeException(
                 __('We were unable to find a role :role within team.', ['role' => $role])
             );
@@ -172,11 +172,11 @@ class Team extends Model
     /**
      * Update the role of a specific user within the team.
      *
-     * @param object $user
-     * @param string $role_code
+     * @param object $user The user model instance to be updated in the team.
+     * @param string $role_keyword The role ID or code that will be assigned to the user within the team.
      * @return void
      */
-    public function updateUser(object $user, string $role_code): void
+    public function updateUser(object $user, string $role_keyword): void
     {
         if ($user->id === $this->owner->id) {
             throw new RuntimeException(
@@ -184,7 +184,7 @@ class Team extends Model
             );
         }
 
-        if (! $role = $this->getRole($role_code)) {
+        if (! $role = $this->getRole($role_keyword)) {
             throw new RuntimeException(
                 __('We were unable to find a role :role within team.', ['role' => $role])
             );
@@ -255,17 +255,18 @@ class Team extends Model
     }
 
     /**
-     * Check if the team has a specific role or any roles at all.
+     * Check if the team has a specific role by ID or code or any roles at all
      *
-     * @param string|null $code The role code to check for. If null, checks for any roles.
+     * @param string|null $keyword The role ID or code to check for. If null, checks for any roles.
      * @return bool
      */
-    public function hasRole(string|null $code = null): bool
+    public function hasRole(string|null $keyword = null): bool
     {
         $roles = $this->roles();
 
-        if ($code !== null) {
-            $roles->where('code', $code);
+        if ($keyword !== null) {
+            $roles->where('id', $keyword)
+                ->orWhere('code', $keyword);
         }
 
         return $roles->exists();
@@ -274,10 +275,10 @@ class Team extends Model
     /**
      * Retrieves a role by its ID or code.
      *
-     * @param int|string|null $keyword The ID or code of the role to search for.
+     * @param int|string $keyword The ID or code of the role to search for.
      * @return object|null
      */
-    public function getRole(int|string|null $keyword): object|null
+    public function getRole(int|string $keyword): object|null
     {
         return $this->roles()->firstWhere(function ($query) use ($keyword) {
             $query->where('id',  $keyword)

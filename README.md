@@ -16,7 +16,6 @@ You can add a user to a global group to grant them access to all teams with the 
 - [Requirements](#requirements)
 - [Schema](#schema)
 - [Installation](#installation)
-- [Actions](#actions)
 - [Teams](#teams)
 - [Users](#users)
 - [Groups](#groups)
@@ -81,15 +80,6 @@ class User extends Model {
 }
 ```
 
-Actions
--------------------------------------------
-
-During installation, actions are published to the `/app/Actions/Teams` directory, where they can be easily accessed and triggered in response to specific user actions.
-
-They offer a quick way to implement functionality without starting from scratch. You can also customize or extend these actions to fit your needs precisely.
-
-Explore the available actions and adapt them as necessary to maintain a clean and efficient codebase, speeding up your development process.
-
 Teams
 -------------------------------------------
 A team can be accessed via `$user->team`, providing methods for inspecting the team's attributes and relations:
@@ -101,20 +91,20 @@ $team->owner
 // Get all the team's users, excluding owner
 $team->users()
 
-// Adds a user to the team with a specified role.
-$team->addUser(object $user, string $role_code)
-
-// Update the role of a specific user within the team.
-$team->updateUser(object $user, string $role_code)
-
-// Remove the given user from the team.
-$team->deleteUser(object $user);
-
 // Get all the team's users, including the owner...
 $team->allUsers()
 
 // Determine if the given user is a team member...
 $team->hasUser(object $user)
+
+// Adds a user to the team with a specified role by role ID or code
+$team->addUser(object $user, string $role_keyword)
+
+// Update the role of a specific user within the team
+$team->updateUser(object $user, string $role_keyword)
+
+// Remove the given user from the team.
+$team->deleteUser(object $user);
 
 // Get all the abilities belong to the team.
 $team->abilities()
@@ -125,8 +115,8 @@ $team->roles()
 // Return the user role object from the team
 $team->userRole(object $user)
 
-// Check if the team has a specific role or any roles at all.
-$team->hasRole(string|null $code)
+// Check if the team has a specific role by ID or code or any roles at all
+$team->hasRole(int|string|null $keyword)
 
 // Get the role from the team by role id or code 
 $team->getRole(int|string $keyword)
