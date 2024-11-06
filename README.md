@@ -22,7 +22,7 @@ You can add a user to a global group to grant them access to all teams with the 
     - [Scope of Use](#scope-of-use)
     - [Groups Managing](#groups-managing)
     - [Groups Abilities](#groups-permissions)
-- [Roles & Permissions](#roles--permissions)
+- [Roles & Capabilities](#roles--capabilities)
     - [Authorization](#authorization)
 - [Abilities](#abilities)
   - [Adding an Ability](#adding-an-ability)
@@ -208,7 +208,7 @@ These methods enable you to efficiently manage and inspect a user's teams, roles
 Groups
 -------------------------------------------
 
-Users within teams can be organized into groups, each with its own set of permissions. 
+Users within teams can be organized into groups, each with its own set of abilities. 
 
 > [!NOTE]  
 > Access rights granted to a group of users take precedence over rights granted to a user within a team.
@@ -275,14 +275,14 @@ Middleware `ability` is used to check the user's rights within the team group du
 
 Refer to the [middlewares](#middlewares) section in the documentation for more information.
 
- Roles & Permissions
+ Roles & Capabilities
 -------------------------------------------
 
-Roles and permissions provide a flexible way to manage access control within your application. Each team member added to a team can be assigned a role, and each role is associated with a set of permissions.
+Roles and capabilities provide a flexible way to manage access control within your application. Each team member added to a team can be assigned a role, and each role is associated with a set of capabilities.
 
-These roles and permissions are stored in your application's database, allowing for dynamic management of access control. This enables features like role and permission management within your application's administration pages.
+These roles and capabilities are stored in your application's database, allowing for dynamic management of access control. This enables features like role and capabilities management within your application's administration pages.
 
-Example: Creating a New Team with Roles and Permissions
+Example: Creating a New Team with Roles and Capabilities
 
 ```php
 $team = new Team();
