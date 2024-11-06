@@ -35,7 +35,9 @@ class UpdateTeamMemberRole
 
         $team->users()->updateExistingPivot($teamMemberId, ['role' => $role]);
 
-        TeamMemberUpdated::dispatch($team->fresh(), Teams::model('team')::findUserByIdOrFail($teamMemberId));
+        TeamMemberUpdated::dispatch($team->fresh(), Teams::model('team')::query()
+            ->findUserByIdOrFail($teamMemberId)
+        );
     }
 
     /**

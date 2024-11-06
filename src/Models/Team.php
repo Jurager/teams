@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Jurager\Teams\Events\AddingTeamMember;
+use Jurager\Teams\Events\TeamMemberAdded;
+use Jurager\Teams\Rules\Role;
 use Jurager\Teams\Support\Facades\Teams;
 use RuntimeException;
 
@@ -132,6 +135,38 @@ class Team extends Model
     }
 
     /**
+     * Adds a user to the team with a specified role.
+     *
+     * @param object $user The user model instance to be added to the team.
+     * @param string $role The role code that will be assigned to the user within the team.
+     * @return bool Returns true if the user was successfully added to the team.
+     */
+    public function addUser(object $user, string $role): bool
+    {
+        if ($this->hasUser($user)) {
+            throw new RuntimeException(
+                __('User already belongs to the team.')
+            );
+        }
+
+        if (!$this->hasRole($role)) {
+            throw new RuntimeException(
+                __('We were unable to find a role :role within team.', ['role' => $role])
+            );
+        }
+
+        // Dispatch an event before attaching the user
+        AddingTeamMember::dispatch($this, $user);
+
+        $this->users()->attach($user, ['role' => $role]);
+
+        // Dispatch an event after user is added to the team
+        TeamMemberAdded::dispatch($this, $user);
+
+        return true;
+    }
+
+    /**
      * Check if the team includes a user with a specific email.
      *
      * @param  string  $email
@@ -167,13 +202,20 @@ class Team extends Model
     }
 
     /**
-     * Check if the team has any roles.
+     * Check if the team has a specific role or any roles at all.
      *
+     * @param string|null $code The role code to check for. If null, checks for any roles.
      * @return bool
      */
-    public function hasRoles(): bool
+    public function hasRole(string|null $code = null): bool
     {
-        return $this->roles()->exists();
+        $roles = $this->roles();
+
+        if ($code !== null) {
+            $roles->where('code', $code);
+        }
+
+        return $roles->exists();
     }
 
     /**
@@ -340,7 +382,8 @@ class Team extends Model
      */
     protected function getCapabilityIds(array $codes): array
     {
-        $capabilities = Teams::model('capability')::whereIn('code', $codes)
+        $capabilities = Teams::model('capability')::query()
+            ->whereIn('code', $codes)
             ->pluck('id', 'code')
             ->all();
 
@@ -350,9 +393,11 @@ class Team extends Model
 
             $items = array_map(static fn($code) => ['code' => $code], $diff);
 
-            Teams::model('capability')::insert($items);
+            Teams::model('capability')::query()
+                ->insert($items);
 
-            $inserted = Teams::model('capability')::whereIn('code', $diff)
+            $inserted = Teams::model('capability')::query()
+                ->whereIn('code', $diff)
                 ->pluck('id', 'code')
                 ->all();
 

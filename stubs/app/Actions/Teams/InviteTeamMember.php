@@ -73,7 +73,7 @@ class InviteTeamMember implements InvitesTeamMembers
                 'email',
                 Rule::unique('invitations')->where(fn ($query) => $query->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)),
             ],
-            'role' => $team->hasRoles() ? ['required', 'string', new Role($team)] : null,
+            'role' => $team->hasRole() ? ['required', 'string', new Role($team)] : null,
         ]);
     }
 

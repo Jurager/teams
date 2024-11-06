@@ -101,6 +101,9 @@ $team->owner
 // Get all the team's users, excluding owner
 $team->users()
 
+// Adds a user to the team with a specified role.
+$team->addUser(object $user, string $role)
+
 // Get all the team's users, including the owner...
 $team->allUsers()
 
@@ -115,6 +118,9 @@ $team->roles()
 
 // Return the user role object from the team
 $team->userRole(object $user)
+
+// Check if the team has a specific role or any roles at all.
+$team->hasRole(string|null $code)
 
 // Get the role from the team by role id or code 
 $team->getRole(int|string $keyword)
