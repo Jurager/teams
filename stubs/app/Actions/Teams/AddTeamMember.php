@@ -31,7 +31,7 @@ class AddTeamMember implements AddsTeamMembers
 
         $this->validate($team, $email, $role);
 
-        $member = Teams::model('team')->findUserByEmailOrFail($email);
+        $member = Teams::model('team')::findUserByEmailOrFail($email);
 
         AddingTeamMember::dispatch($team, $member);
 

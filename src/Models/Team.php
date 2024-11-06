@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Jurager\Teams\Support\Facades\Teams;
 use RuntimeException;
 
@@ -339,8 +340,7 @@ class Team extends Model
      */
     protected function getCapabilityIds(array $codes): array
     {
-        $capabilities = Teams::model('capability')
-            ->whereIn('code', $codes)
+        $capabilities = Teams::model('capability')::whereIn('code', $codes)
             ->pluck('id', 'code')
             ->all();
 
@@ -350,10 +350,9 @@ class Team extends Model
 
             $items = array_map(static fn($code) => ['code' => $code], $diff);
 
-            Teams::model('capability')->insert($items);
+            Teams::model('capability')::insert($items);
 
-            $inserted = Teams::model('capability')
-                ->whereIn('code', $diff)
+            $inserted = Teams::model('capability')::whereIn('code', $diff)
                 ->pluck('id', 'code')
                 ->all();
 

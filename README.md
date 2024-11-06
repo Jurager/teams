@@ -149,7 +149,7 @@ $team->userHasPermission(object $user, string|array $permission, bool $require =
 // Remove the given user from the team.
 $team->deleteUser(object $user);
 
-// Determine if the team has a member with the given email address...
+// Returns all team invitations
 $team->invitations()
 ```
 
