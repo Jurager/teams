@@ -125,10 +125,10 @@ $team->getRole(int|string $keyword)
 $team->addRole(string $code, array $capabilities)
 
 // Update the role in the team
-$team->updateRole(string $code, array $capabilities)
+$team->updateRole(int|string $keyword, array $capabilities)
 
 // Deletes the given role from team
-$team->deleteRole(string $code)
+$team->deleteRole(int|string $keyword)
 
 // Get all groups of the team.
 $team->groups()
@@ -137,10 +137,10 @@ $team->groups()
 $team->getGroup(int|string $keyword)
 
 // Add new group to the team
-$team->addGroup(string $code, string $name)
+$team->addGroup(int|string $keyword, string $name)
 
 // Delete group from the team
-$team->deleteGroup(string $code)
+$team->deleteGroup(int|string $keyword)
 
 // Determine if the team has a member with the given email address...
 $team->hasUserWithEmail(array $email)

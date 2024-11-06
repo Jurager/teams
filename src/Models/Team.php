@@ -319,16 +319,19 @@ class Team extends Model
     /**
      * Update an existing role with new capabilities.
      *
-     * @param  string  $code The unique code of the role to update.
+     * @param  int|string  $keyword The role ID or code to update
      * @param  array   $capabilities An array of capability codes to assign to the role.
      * @return object|bool
      */
-    public function updateRole(string $code, array $capabilities): object|bool
+    public function updateRole(int|string $keyword, array $capabilities): object|bool
     {
-        $role = $this->roles()->firstWhere('code', $code);
+        $role = $this->roles()
+            ->where('id', $keyword)
+            ->orWhere('code', $keyword)
+            ->first();
 
         if (!$role) {
-            throw new ModelNotFoundException("Role with code '$code' not found.");
+            throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
         }
 
         $capability_ids = $this->getCapabilityIds($capabilities);
@@ -345,15 +348,18 @@ class Team extends Model
     /**
      * Delete a role from the team.
      *
-     * @param  string $code The unique code of the role to delete
+     * @param  int|string $keyword The role ID or code to delete
      * @return bool
      */
-    public function deleteRole(string $code): bool
+    public function deleteRole(int|string $keyword): bool
     {
-        $role = $this->roles()->firstWhere('code', $code);
+        $role = $this->roles()
+            ->where('id', $keyword)
+            ->orWhere('code', $keyword)
+            ->first();
 
         if (!$role) {
-            throw new ModelNotFoundException("Role with code '$code' not found.");
+            throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
         }
 
         return $role->delete();
@@ -392,15 +398,18 @@ class Team extends Model
     /**
      * Remove a group from the team by code.
      *
-     * @param  string  $code The unique code of the group to delete.
+     * @param  int|string  $keyword The ID or code of the group to delete.
      * @return bool
      */
-    public function deleteGroup(string $code): bool
+    public function deleteGroup(int|string $keyword): bool
     {
-        $group = $this->groups()->firstWhere('code', $code);
+        $group = $this->groups()->firstWhere(function ($query) use ($keyword) {
+            $query->where('id',  $keyword)
+                ->orWhere('code', $keyword);
+        });
 
         if (!$group) {
-            throw new ModelNotFoundException("Group with code '$code' not found.");
+            throw new ModelNotFoundException("Group with id/code '$keyword' not found.");
         }
 
         return $group->delete();
@@ -425,13 +434,26 @@ class Team extends Model
      */
     protected function getCapabilityIds(array $codes): array
     {
-        $capabilities = array_map(static fn($code) => ['code' => $code], $codes);
-
-        Teams::model('capability')::query()->insertOrIgnore($capabilities);
-
-        return Teams::model('capability')::query()
-            ->whereIn('code', $capabilities)
-            ->pluck('id')
+        $capabilities = Teams::model('capability')
+            ->whereIn('code', $codes)
+            ->pluck('id', 'code')
             ->all();
+
+        $newCapabilities = array_diff($codes, array_keys($capabilities));
+
+        if (!empty($newCapabilities)) {
+            $items = array_map(static fn($code) => ['code' => $code], $newCapabilities);
+
+            Teams::model('capability')::query()->insert($items);
+
+            $capabilities = array_merge($capabilities, Teams::model('capability')::query()
+                ->whereIn('code', $newCapabilities)
+                ->pluck('id', 'code')
+                ->all());
+
+        }
+
+        return array_values($capabilities);
+
     }
 }
