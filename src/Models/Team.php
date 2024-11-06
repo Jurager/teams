@@ -9,12 +9,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Jurager\Teams\Events\AddingTeamMember;
 use Jurager\Teams\Events\TeamMemberAdded;
 use Jurager\Teams\Events\TeamMemberRemoved;
 use Jurager\Teams\Events\TeamMemberUpdated;
-use Jurager\Teams\Rules\Role;
 use Jurager\Teams\Support\Facades\Teams;
 use RuntimeException;
 
@@ -80,10 +78,10 @@ class Team extends Model
      */
     public function abilities(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::model('ability'), Teams::model('permission'))
+        return $this->morphToMany(Teams::model('ability'))
+            ->using(Teams::model('permission'))
             ->withTimestamps()
-            ->withPivot(['entity_type', 'entity_id'])
-            ->as('permission');
+            ->withPivot('team_id', 'forbidden');
     }
 
     /**

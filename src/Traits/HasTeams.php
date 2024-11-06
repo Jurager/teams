@@ -245,20 +245,15 @@ trait HasTeams
     public function teamAbilities(object $team, object $entity, bool $forbidden = false): mixed
     {
         // Start building the query to retrieve permissions
-        $permissions = Teams::instance('permission')->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id);
+        $abilities = $team->abilities()->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
 
         // If filtering by forbidden permissions, add the condition
         if ($forbidden) {
-            $permissions->where('forbidden', true);
+            $abilities->wherePivot('forbidden', true);
         }
 
-        // Filter permissions based on the entity
-        $permissions->whereHas('ability', static function ($query) use ($entity) {
-            $query->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
-        });
-
         // Retrieve the permissions along with their associated abilities
-        return $permissions->with('ability')->get();
+        return $abilities->get();
     }
 
     /**
