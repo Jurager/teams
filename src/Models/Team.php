@@ -307,7 +307,7 @@ class Team extends Model
             'description' => $description
         ]);
 
-        $capabilityIds = $this->getCapabilityIds($capabilities, $role);
+        $capabilityIds = $this->getCapabilityIds($capabilities);
 
         if (!empty($capabilityIds)) {
             $role->capabilities()->sync($capabilityIds);
@@ -331,7 +331,7 @@ class Team extends Model
             throw new ModelNotFoundException("Role with code '$code' not found.");
         }
 
-        $capability_ids = $this->getCapabilityIds($capabilities, $role);
+        $capability_ids = $this->getCapabilityIds($capabilities);
 
         if (!empty($capability_ids)) {
             $role->capabilities()->sync($capability_ids);
@@ -423,34 +423,15 @@ class Team extends Model
      * @param  array  $codes An array of capability codes to retrieve or create IDs for.
      * @return array
      */
-    protected function getCapabilityIds(array $codes, $role): array
+    protected function getCapabilityIds(array $codes): array
     {
-        $capabilities = Teams::model('capability')::query()
-            ->where(config('teams.foreign_keys.team_id'), $this->id)
-            ->where('role_id', $role->id)
-            ->whereIn('code', $codes)
-            ->pluck('id', 'code')
+        $capabilities = array_map(static fn($code) => ['code' => $code], $codes);
+
+        Teams::model('capability')::query()->insertOrIgnore($capabilities);
+
+        return Teams::model('capability')::query()
+            ->whereIn('code', $capabilities)
+            ->pluck('id')
             ->all();
-
-        $diff = array_diff($codes, array_keys($capabilities));
-
-        if (!empty($diff)) {
-
-            $items = array_map(static fn($code) => ['code' => $code, config('teams.foreign_keys.team_id') => $this->id, 'role_id' => $role->id], $diff);
-
-            Teams::model('capability')::query()
-                ->insert($items);
-
-            $inserted = Teams::model('capability')::query()
-                ->where(config('teams.foreign_keys.team_id'), $this->id)
-                ->where('role_id', $role->id)
-                ->whereIn('code', $diff)
-                ->pluck('id', 'code')
-                ->all();
-
-            return array_merge($capabilities, $inserted);
-        }
-
-        return [];
     }
 }
