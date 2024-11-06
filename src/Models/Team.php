@@ -325,19 +325,19 @@ class Team extends Model
      */
     public function updateRole(int|string $keyword, array $capabilities): object|bool
     {
-        $role = $this->roles()
-            ->where('id', $keyword)
-            ->orWhere('code', $keyword)
-            ->first();
+        $role = $this->roles()->firstWhere(function ($query) use ($keyword) {
+            $query->where('id',  $keyword)
+                ->orWhere('code', $keyword);
+        });
 
         if (!$role) {
             throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
         }
 
-        $capability_ids = $this->getCapabilityIds($capabilities);
+        $capabilityIds = $this->getCapabilityIds($capabilities);
 
-        if (!empty($capability_ids)) {
-            $role->capabilities()->sync($capability_ids);
+        if (!empty($capabilityIds)) {
+            $role->capabilities()->sync($capabilityIds);
         } else {
             $role->capabilities()->detach();
         }
@@ -353,10 +353,10 @@ class Team extends Model
      */
     public function deleteRole(int|string $keyword): bool
     {
-        $role = $this->roles()
-            ->where('id', $keyword)
-            ->orWhere('code', $keyword)
-            ->first();
+        $role = $this->roles()->firstWhere(function ($query) use ($keyword) {
+            $query->where('id',  $keyword)
+                ->orWhere('code', $keyword);
+        });
 
         if (!$role) {
             throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
