@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Jurager\Teams\Support\Services\TeamsService;
 use Jurager\Teams\Middleware\Ability as AbilityMiddleware;
-use Jurager\Teams\Middleware\Permission as PermissionMiddleware;
+use Jurager\Teams\Middleware\Capability as CapabilityMiddleware;
 use Jurager\Teams\Middleware\Role as RoleMiddleware;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -133,7 +133,7 @@ class TeamsServiceProvider extends ServiceProvider
         $middlewares = [
             'ability' => AbilityMiddleware::class,
             'role' => RoleMiddleware::class,
-            'permission' => PermissionMiddleware::class,
+            'capability' => CapabilityMiddleware::class,
         ];
 
         foreach ($middlewares as $key => $class) {

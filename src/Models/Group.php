@@ -100,12 +100,4 @@ class Group extends Model
 
         return false;
     }
-
-    /**
-     * Get the permissions of all team capabilities.
-     */
-    public function getPermissionsAttribute(): array
-    {
-        return $this->capabilities->pluck('code')->all();
-    }
 }

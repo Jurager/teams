@@ -234,16 +234,16 @@ class Team extends Model
     }
 
     /**
-     * Check if a user has a specific permission in the team.
+     * Check if a user has a specific capability in the team.
      *
      * @param  object       $user
-     * @param  string|array $permission
+     * @param  string|array $capability
      * @param  bool         $require
      * @return bool
      */
-    public function userHasPermission(object $user, string|array $permission, bool $require = false): bool
+    public function userHasCapability(object $user, string|array $capabilities, bool $require = false): bool
     {
-        return $user->hasTeamPermission($this, $permission, $require);
+        return $user->hasTeamCapability($this, $capabilities, $require);
     }
 
     /**

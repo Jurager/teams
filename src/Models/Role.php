@@ -33,15 +33,6 @@ class Role extends Model
     ];
 
     /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array<int, string>
-     */
-    protected $appends = [
-        'permissions',
-    ];
-
-    /**
      * The attributes that should be hidden for arrays.
      *
      * @var array<int, string>
@@ -76,15 +67,5 @@ class Role extends Model
     public function capabilities(): BelongsToMany
     {
         return $this->belongsToMany(Teams::model('capability'), 'role_capability');
-    }
-
-    /**
-     * Get the permissions of all team capabilities.
-     *
-     * @return array
-     */
-    public function getPermissionsAttribute(): array
-    {
-        return $this->capabilities->pluck('code')->all();
     }
 }

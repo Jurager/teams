@@ -62,7 +62,7 @@ class TeamPolicy
     }
 
     /**
-     * Determine whether the user can update team member permissions.
+     * Determine whether the user can update team member
      *
      * @param object $user
      * @param object $team

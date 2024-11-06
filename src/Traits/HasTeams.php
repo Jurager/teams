@@ -143,12 +143,12 @@ trait HasTeams
     }
 
     /**
-     * Get the user's permissions for the given team.
+     * Get the user's capabilities for the given team.
      *
      * @param object $team
      * @return array|string[]
      */
-    public function teamPermissions(object $team): array
+    public function teamCapabilities(object $team): array
     {
         // If the user is the team owner, grant him all rights.
         if ($this->ownsTeam($team)) {
@@ -163,23 +163,23 @@ trait HasTeams
         // Get the user's role in the team.
         $role = $this->teamRole($team);
 
-        // Return the role's permissions.
-        return $role ? $role->permissions : [];
+        // Return the role's capabilities.
+        return $role ? $role->capabilities->pluck('code')->all() : [];
     }
 
     /**
-     * Determine if the user has the given permission on the given team.
+     * Determine if the user has the given capability on the given team.
      *
      * @param object $team
-     * @param string|array $permissions
+     * @param string|array $capabilities
      * @param bool $require
      * @return bool
      */
-    public function hasTeamPermission(object $team, string|array $permissions = [], bool $require = false): bool
+    public function hasTeamCapability(object $team, string|array $capabilities = [], bool $require = false): bool
     {
 
-        //$require = true  (all permissions in the array are required)
-        //$require = false  (only one or more permissions in the array are required or $permissions var is empty)
+        //$require = true  (all capabilities in the array are required)
+        //$require = false  (only one or more capabilities in the array are required or $capabilities var is empty)
 
         if ($this->ownsTeam($team)) {
             return true;
@@ -190,47 +190,47 @@ trait HasTeams
             return false;
         }
 
-        // Convert a string to an array if a single permission is passed.
-        $permissions = (array) $permissions;
+        // Convert a string to an array if a single capability is passed.
+        $capabilities = (array) $capabilities;
 
-        // If the permission array is empty, return true if not required, false otherwise
-        if (empty($permissions) && !$require) {
+        // If the capability array is empty, return true if not required, false otherwise
+        if (empty($capabilities) && !$require) {
             return true;
         }
-        // Get user's permissions for the team
-        $user_permissions = $this->teamPermissions($team);
+        // Get user's capabilities for the team
+        $user_capabilities = $this->teamCapabilities($team);
 
-        // Check simple permission
-        $check_permission = static function ($permission) use ($user_permissions) {
+        // Check simple capability
+        $check_capability = static function ($capability) use ($user_capabilities) {
 
-            // Calculate wildcard permissions
-            $calculated_permissions = [...array_map(static fn ($part) => $part . '.*', explode('.', $permission)), $permission];
+            // Calculate wildcard capabilities
+            $calculated_capabilities = [...array_map(static fn ($part) => $part . '.*', explode('.', $capability)), $capability];
 
-            // Check if user has any of the calculated permissions
-            $common_permissions = array_intersect($calculated_permissions, $user_permissions);
+            // Check if user has any of the calculated capabilities
+            $common_capabilities = array_intersect($calculated_capabilities, $user_capabilities);
 
-            // Return true if the permission is found and not required
-            return !empty($common_permissions);
+            // Return true if the capability is found and not required
+            return !empty($common_capabilities);
         };
 
-        // Check each permission
-        foreach ($permissions as $permission) {
-            $has_permission = $check_permission($permission);
+        // Check each capability
+        foreach ($capabilities as $capability) {
+            $has_capability = $check_capability($capability);
 
-            //$require == false  (only one or more permissions in the array are required or $permissions is empty)
-            //return true after first permission right found
-            if ($has_permission && !$require) {
+            //$require == false  (only one or more capabilities in the array are required or $capabilities is empty)
+            //return true after first capability right found
+            if ($has_capability && !$require) {
                 return true;
             }
 
-            //$require == true  (all permissions in the array are required)
-            //return false after first permission right found
-            if (!$has_permission && $require) {
+            //$require == true  (all capabilities in the array are required)
+            //return false after first capability right found
+            if (!$has_capability && $require) {
                 return false;
             }
         }
 
-        //return $require var, cause if $require is true all the checks has been made, and if false you dont have the required permissions
+        //return $require var, cause if $require is true all the checks has been made, and if false you don't have the required capabilities
         return $require;
     }
 
@@ -286,7 +286,7 @@ trait HasTeams
             $group->load('capabilities');
 
             // All user permissions from global groups
-            $capabilities = [...$capabilities, ...$group->permissions];
+            $capabilities = [...$capabilities, ...$group->capabilities->pluck('code')->all()];
         }
 
         // Calculate wildcard permissions
@@ -310,7 +310,7 @@ trait HasTeams
     public function hasTeamAbility(object $team, string $ability, object $entity): bool
     {
         // Check if user is tech support or entity owner
-        // Check permission by role properties
+        // Check capability by role properties
         if ((method_exists($entity, 'isOwner') && $entity?->isOwner($this))) {
             return true;
         }
@@ -319,7 +319,7 @@ trait HasTeams
         $allowed = 0;
         $forbidden = 1;
 
-        if ($this->hasTeamPermission($team, $ability)) {
+        if ($this->hasTeamCapability($team, $ability)) {
             $allowed = 1;
         }
 

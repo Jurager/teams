@@ -28,11 +28,11 @@ class Teams
         // Mapping of method names
         $methodTypes = [
             'roles' => 'hasTeamRole',
-            'permissions' => 'hasTeamPermission',
+            'capability' => 'hasTeamCapability',
             'ability' => 'hasTeamAbility',
         ];
 
-        // Determine the action for checking the role or permissions
+        // Determine the action for checking the role or capabilities
         $action = $methodTypes[$method] ?? null;
 
         // Ensure method is valid
@@ -57,7 +57,6 @@ class Teams
             return $this->checkTeamAbility($request, $team, $params, $models);
         }
 
-        // Check the permissions
         return !Auth::guest() && Auth::user()?->$action($team, $params, $require);
     }
 

@@ -145,8 +145,8 @@ $team->deleteGroup(int|string $keyword)
 // Determine if the team has a member with the given email address...
 $team->hasUserWithEmail(array $email)
 
-// Determine if the given user is a team member with the given permission...
-$team->userHasPermission(object $user, string|array $permission, bool $require = false)
+// Determine if the given user is a team member with the given capability...
+$team->userHasCapability(object $user, string|array $capabilities, bool $require = false)
 
 // Returns all team invitations
 $team->invitations()
@@ -184,11 +184,11 @@ $user->teamRole(object $team) : \Jurager\Teams\Role
 // Determine if the user has the given role on the given team...
 $user->hasTeamRole(object $team, string|array 'admin', bool $require = false) : bool
 
-// Access an array of all permissions a user has for a given team...
-$user->teamPermissions(object $team) : array
+// Access an array of all capabilities a user has for a given team...
+$user->teamCapabilities(object $team) : array
 
 // Determine if a user has a given team permission...
-$user->hasTeamPermission(object $team, string|array 'server:create', bool $require = false) : bool
+$user->hasTeamCapability(object $team, string|array 'server:create', bool $require = false) : bool
 
 // Get list of abilities or forbidden abilities for users on certain model
 $user->teamAbilities(object $team, object $server) : mixed
@@ -323,16 +323,16 @@ The second argument for `$team->addRole()` is an array of capabilities, which de
 
 ### Authorization
 
-To ensure that incoming requests initiated by a team member can be executed by that user, the application needs to verify the permissions of the user's team. This verification can be done using the `hasTeamPermission` method, which is available through the `Jurager\Teams\Traits\HasTeams` trait.
+To ensure that incoming requests initiated by a team member can be executed by that user, the application needs to verify the permissions of the user's team. This verification can be done using the `hasTeamCapability` method, which is available through the `Jurager\Teams\Traits\HasTeams` trait.
 
 > [!NOTE]  
 > In most cases, it's unnecessary to check a user's role directly. Instead, focus on verifying specific granular permissions. Roles primarily serve as a way to group granular permissions for organizational purposes. Typically, you'll execute calls to this method within your application's [authorization policies](https://laravel.com/docs/authorization#creating-policies).
 
 ```php
-return $user->hasTeamPermission(string $server->team, string 'server:update');
+return $user->hasTeamCapability(string $server->team, string 'server:update');
 ```
 
-This example demonstrates how to check if a user within a team has permission to update a server. Adjust the parameters according to your application's specific requirements and use cases.
+This example demonstrates how to check if a user within a team has capability to update a server. Adjust the parameters according to your application's specific requirements and use cases.
 
 Abilities
 -------------------------------------------
@@ -427,8 +427,8 @@ For OR operations, use the pipe symbol:
 'middleware' => ['role:admin|root,team_id']
 // $user->hasTeamRole($team, ['admin', 'root']);
 
-'middleware' => ['permission:edit-post|edit-user']
-// $user->hasTeamPermission($team, ['edit-post', 'edit-user']);
+'middleware' => ['capability:edit-post|edit-user']
+// $user->hasTeamCapability($team, ['edit-post', 'edit-user']);
 ```
 
 For AND functionality:
@@ -437,8 +437,8 @@ For AND functionality:
 'middleware' => ['role:admin|root,team_id,require']
 // $user->hasTeamRole($team, ['admin', 'root'], require: true);
 
-'middleware' => ['permission:edit-post|edit-user,team_id,require']
-// $user->hasTeamPermission($team, ['edit-post', 'edit-user'], require: true);
+'middleware' => ['capability:edit-post|edit-user,team_id,require']
+// $user->hasTeamCapability($team, ['edit-post', 'edit-user'], require: true);
 ```
 
 To check the ability to perform an action on a specific model item, use the ability middleware:
