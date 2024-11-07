@@ -210,7 +210,9 @@ These methods enable you to efficiently manage and inspect a user's teams, roles
 Groups
 -------------------------------------------
 
-Users within teams can be organized into groups, each with its own set of abilities. 
+> Users within teams can be organized into groups, each with its own set of abilities and permissions.
+ 
+Team groups work together with abilities and permissions, so you should use ability and permission checking methods to determine if users have specific access rights within groups.
 
 > [!NOTE]  
 > Access rights granted to a group of users take precedence over rights granted to a user within a team.
@@ -239,7 +241,7 @@ $team->deleteGroup(string $code)
 $team->groups();
 
 // Check if the team has a specific group by ID or code or any groups at all
-$team->hasRole(int|string|null $keyword)
+$team->hasGroup(int|string|null $keyword)
 
 // Get team group by its code
 $team->getGroup(int|string $keyword);
@@ -253,32 +255,6 @@ $team->getGroup(int|string $keyword)->attachUser(Collection|Model $user);
 // Detach users or user from group
 $team->getGroup(int|string $keyword)->detachUser(Collection|Model $user);
 ```
-
-### Groups Abilities
-
-You can manage abilities within a group using the following methods:
-
-```php
-// Add an ability for user to action on certain model within team group, if not found, will create a new one
-$user->allowTeamAbility(object $team, string 'server:edit', object $server, object|null $group));
-
-// Forbid an ability for user to action on certain model within team group
-$user->forbidTeamAbility(object $team, string 'server:edit', object $server, object|null $group);
-
-// Delete user ability to action on certain model within team group
-$user->deleteTeamAbility(object $team, string 'server:edit', object $server, object|null $group);
-```
-> [!NOTE]
-> Team groups work together with abilities, so you should use ability checking methods to determine if users have specific access rights within groups.
-
-```php
-// Determinate if user can perform an action
-$user->hasTeamAbility(object $team, string 'server:edit', object $server)
-```
-
-Middleware `ability` is used to check the user's rights within the team group during requests to your application
-
-Refer to the [middlewares](#middlewares) section in the documentation for more information.
 
  Roles & Permissions
 -------------------------------------------
