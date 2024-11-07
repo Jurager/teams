@@ -4,11 +4,11 @@
 [![PHP Version Require](https://poser.pugx.org/jurager/teams/require/php)](https://packagist.org/packages/jurager/teams)
 [![License](https://poser.pugx.org/jurager/teams/license)](https://packagist.org/packages/jurager/teams)
 
-Laravel package to manage teams and operate with user permissions, abilities, supporting multi-tenant dynamic roles, roles groups and permissions for each team.
+A Laravel package for managing teams and user permissions, supporting multi-tenant dynamic roles, role groups, and team-specific permissions.
 
-Users in teams can be combined into groups, with their own abilities, access rights given to a user group overrides the rights granted to a user in a team. 
+Users can be organized into groups within teams, each with custom permissions and abilities. Permissions assigned to a user group override individual user permissions within a team.
 
-You can add a user to a global group to grant them access to all teams with the group's permissions. This feature is handy when you want to, for instance, provide support for all teams without assigning the user to created teams.
+Additionally, users can be added to a global group to grant them access across all teams with the group’s permissions. This feature is ideal for scenarios like providing support across multiple teams without the need to add users to each team individually.
 
 > [!NOTE]
 > The documentation for this package is currently being written. For now, please refer to this readme for information on the functionality and usage of the package.
@@ -28,7 +28,6 @@ You can add a user to a global group to grant them access to all teams with the 
   - [Adding an Ability](#adding-an-ability)
   - [Checking an Ability](#checking-an-ability)
   - [Forbidding an Ability](#forbidding-an-ability)
-  - [Creating Abilities](#creating-abilities)
 - [Middlewares](#middlewares)
   - [Middleware Configuration](#middleware-configuration)
   - [Middleware Routes](#middleware-routes)
@@ -278,16 +277,17 @@ Refer to the [middlewares](#middlewares) section in the documentation for more i
  Roles & Permissions
 -------------------------------------------
 
-Roles and permissions provide a flexible way to manage access control within your application. Each team member added to a team can be assigned a role, and each role is associated with a set of permissions.
+> Roles and permissions offer a flexible approach to managing access control within your application. Each team member can be assigned a role, with each role tied to a specific set of permissions.
 
-These roles and permissions are stored in your application's database, allowing for dynamic management of access control. This enables features like role and permissions management within your application's administration pages.
+These roles and permissions are stored in your application's database, allowing for dynamic and easy management of access. This enables features like role and permission management through your application's admin interface.
 
-Example: Creating a New Team with Roles and Permissions
+**Example**: Creating a New Team with Roles and Permissions
 
 ```php
 $team = new Team();
 
 $team->name = 'Example Team';
+$team->user_id = $user->id;
 
 if ($team->save()) {
 
@@ -326,25 +326,27 @@ The second argument for `$team->addRole()` is an array of permissions, which det
 To ensure that incoming requests initiated by a team member can be executed by that user, the application needs to verify the permissions of the user's team. This verification can be done using the `hasTeamPermission` method, which is available through the `Jurager\Teams\Traits\HasTeams` trait.
 
 > [!NOTE]  
-> In most cases, it's unnecessary to check a user's role directly. Instead, focus on verifying specific granular permissions. Roles primarily serve as a way to group granular permissions for organizational purposes. Typically, you'll execute calls to this method within your application's [authorization policies](https://laravel.com/docs/authorization#creating-policies).
+> In most cases, checking a user's role is often unnecessary. Instead, prioritize verifying specific granular permissions, as roles mainly serve to group these permissions for organizational clarity. Typically, you’ll use this approach within your application's [authorization policies](https://laravel.com/docs/authorization#creating-policies).
 
 ```php
 return $user->hasTeamPermission(string $server->team, string 'server:update');
 ```
 
-This example demonstrates how to check if a user within a team has permission to update a server. Adjust the parameters according to your application's specific requirements and use cases.
+This example demonstrates how to verify if a user within a team has permission to update a server. Adjust the parameters to fit your application's unique requirements and specific use cases.
 
 Abilities
 -------------------------------------------
 
-Adding abilities to users is straightforward. You don't need to create a role or an ability beforehand.
+> Abilities - enables users to perform specific actions on application entities or models.
 
-Simply pass the name of the ability, and the package will create it if it's not already existing.
+For example, you can grant a user within a team the ability to edit posts.
+
+Adding abilities to users is easy — just pass the ability name, and it’ll be created automatically if it doesn’t exist.
 
 
 ### Adding an Ability
 
-To add the ability to edit an article within a team for a specific user, you need to provide the entity, such as the article object, and the team object:
+To grant a user the ability to edit an article within a team, simply provide the relevant entities, such as the article and team objects:
 
 ```php
 User::allowTeamAbility(object $team, string 'edit', object $article, object|null $group);
@@ -352,7 +354,7 @@ User::allowTeamAbility(object $team, string 'edit', object $article, object|null
 
 ### Checking an Ability
 
-To check if a user has a specific ability in a team, you can use the following method:
+Use the following method to verify if a user has a specific ability within a team:
     
 ```php
 User::hasTeamAbility(object $team, string 'edit', object $article);
@@ -360,20 +362,9 @@ User::hasTeamAbility(object $team, string 'edit', object $article);
 
 ### Forbidding an Ability
 
-If you need to forbid a user from having a certain ability for instance, if the role abilities allow this ability, you can do so using the following method:
-
+To prevent a user from having a specific ability (even if their role allows it), use the following method:
 ```php
 User::forbidTeamAbility(object $team, string 'edit', object $article, object|null $group);
-```
-
-### Creating Abilities
-
-If you need to create abilities without attaching them to a user, you can use the `Ability` model provided by this package.
-
-This model is published during installation, allowing you to create abilities separately:
-    
-```php
-Ability::firstOrCreate([ 'name' => 'edit', 'title' => 'Edit' ]);
 ```
 
 Middlewares
@@ -421,7 +412,7 @@ Route::get('/{team_id}/users', ['middleware' => ['permission:views-users'], 'use
 
 ### Middleware Usage
 
-For OR operations, use the pipe symbol:
+For **OR** operations, use the pipe symbol:
 
 ```php
 'middleware' => ['role:admin|root,team_id']
@@ -431,7 +422,7 @@ For OR operations, use the pipe symbol:
 // $user->hasTeamPermission($team, ['edit-post', 'edit-user']);
 ```
 
-For AND functionality:
+For **AND** functionality:
 
 ```php
 'middleware' => ['role:admin|root,team_id,require']

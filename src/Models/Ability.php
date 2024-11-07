@@ -33,8 +33,33 @@ class Ability extends Model
         return $this->belongsTo(Teams::model('team'));
     }
 
-    public function entity(): MorphToMany
+    /**
+     * Get all the users that are assigned this ability.
+     */
+    public function users(): MorphToMany
     {
-        return $this->morphTo();
+        return $this->morphedByMany(Teams::model('user'), 'entity', 'entity_ability')
+            ->withPivot('forbidden')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get all the groups that are assigned this ability.
+     */
+    public function groups(): MorphToMany
+    {
+        return $this->morphedByMany(Teams::model('group'), 'entity', 'entity_ability')
+            ->withPivot('forbidden')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get all the roles that are assigned this ability.
+     */
+    public function roles(): MorphToMany
+    {
+        return $this->morphedByMany(Teams::model('role'), 'entity', 'entity_ability')
+            ->withPivot('forbidden')
+            ->withTimestamps();
     }
 }

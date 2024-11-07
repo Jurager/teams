@@ -55,21 +55,23 @@ class Group extends Model
     /**
      * Get the permissions that belongs to group.
      *
-     * @return MorphMany
+     * @return morphToMany
      */
-    public function permissions(): MorphMany
+    public function permissions(): morphToMany
     {
-        return $this->morphMany(Teams::model('permission'), 'entity');
+        return $this->morphToMany(Teams::model('ability'), 'entity', 'entity_permission');
     }
 
     /**
      * Get the abilities that belongs to group.
      *
-     * @return MorphMany
+     * @return MorphToMany
      */
-    public function abilities(): MorphMany
+    public function abilities(): MorphToMany
     {
-        return $this->morphMany(Teams::model('ability'), 'entity');
+        return $this->morphToMany(Teams::model('ability'), 'entity', 'entity_ability')
+            ->withPivot('forbidden')
+            ->withTimestamps();
     }
 
     /**

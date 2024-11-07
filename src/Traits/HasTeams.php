@@ -13,6 +13,17 @@ use Jurager\Teams\Models\Owner;
 trait HasTeams
 {
     /**
+     * Determine if the user owns the given team.
+     *
+     * @param object $team
+     * @return bool
+     */
+    public function ownsTeam(object $team): bool
+    {
+        return $this->id === $team->{$this->getForeignKey()};
+    }
+
+    /**
      * Get all the teams the user owns or belongs to.
      *
      * @return Collection
@@ -32,6 +43,7 @@ trait HasTeams
         return $this->hasMany(Teams::model('team'))->setEagerLoads([]);
     }
 
+
     /**
      * Get all the teams the user belongs to.
      *
@@ -47,14 +59,15 @@ trait HasTeams
     }
 
     /**
-     * Determine if the user owns the given team.
+     * Get the abilities that belongs to user.
      *
-     * @param object $team
-     * @return bool
+     * @return MorphToMany
      */
-    public function ownsTeam(object $team): bool
+    public function abilities(): MorphToMany
     {
-        return $this->id === $team->{$this->getForeignKey()};
+        return $this->morphToMany(Teams::model('ability'), 'entity', 'entity_ability')
+            ->withPivot('forbidden')
+            ->withTimestamps();
     }
 
     /**
@@ -235,7 +248,7 @@ trait HasTeams
     }
 
     /**
-     * Get all abilities to specific entity
+     * Get all ability that specific entity within team
      *
      * @param object $team
      * @param object $entity
@@ -245,7 +258,11 @@ trait HasTeams
     public function teamAbilities(object $team, object $entity, bool $forbidden = false): mixed
     {
         // Start building the query to retrieve abilities
-        $abilities = $team->abilities()->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
+        $abilities = $this->abilities()->where([
+            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
+            'entity_id' => $entity->id,
+            'entity_type' => $entity::class
+        ]);
 
         // If filtering by forbidden abilities, add the condition
         if ($forbidden) {
@@ -290,7 +307,7 @@ trait HasTeams
         // Check if user has any of the calculated permissions
         $common_permissions = array_intersect($calculated_permissions, $permissions);
 
-        // Return true if the abilities is found and not required
+        // Return true if the permissions is found and not required
         return ! empty($common_permissions);
     }
 
