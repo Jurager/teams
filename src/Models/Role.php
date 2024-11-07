@@ -65,7 +65,7 @@ class Role extends Model
      */
     public function permissions(): MorphToMany
     {
-        return $this->morphToMany(Teams::model('ability'), 'entity', 'entity_permission');
+        return $this->morphToMany(Teams::model('permission'), 'entity', 'entity_permission');
     }
 
     /**
