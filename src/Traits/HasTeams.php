@@ -176,8 +176,19 @@ trait HasTeams
         // Get the user's role in the team.
         $role = $this->teamRole($team);
 
-        // Return the role's permissions.
-        return $role ? $role->permissions->pluck('code')->all() : [];
+        // Defaults get role permission
+        $permissions = $role->permissions->pluck('code')->all();
+
+        // Get all team groups for user
+        $groups = $this->groups()->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)->get();
+
+        // Filling in group permissions
+        foreach ($groups as $group) {
+            $permissions = [...$permissions, ...$group->permissions->pluck('code')->all()];
+        }
+
+        // Return permissions.
+        return $permissions;
     }
 
     /**

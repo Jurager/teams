@@ -121,10 +121,10 @@ $team->hasRole(int|string|null $keyword)
 $team->getRole(int|string $keyword)
 
 // Add new role to the team
-$team->addRole(string $code, array $permissions)
+$team->addRole(string $code, array $permissions, string|null $name, string|null $description)
 
 // Update the role in the team
-$team->updateRole(int|string $keyword, array $permissions)
+$team->updateRole(int|string $keyword, array $permissions, string|null $name, string|null $description)
 
 // Deletes the given role from team
 $team->deleteRole(int|string $keyword)
@@ -136,7 +136,10 @@ $team->groups()
 $team->getGroup(int|string $keyword)
 
 // Add new group to the team
-$team->addGroup(int|string $keyword, string $name)
+$team->addGroup(string $code, array|null $permissions, string|null $name)
+
+// Update the group in the team
+$team->updateGroup(int|string $keyword, array|null $permissions, string|null $name)
 
 // Delete group from the team
 $team->deleteGroup(int|string $keyword)
@@ -224,7 +227,10 @@ The `Jurager\Teams\Traits\HasTeams` trait provides methods to inspect a user's t
 
 ```php
 // Add new group to the team
-$team->addGroup(string $code, string $name)
+$team->addGroup(string $code, array|null $permissions, string|null $name)
+
+// Update the group in the team
+$team->updateGroup(int|string $keyword, array|null $permissions, string|null $name)
 
 // Delete group from the team
 $team->deleteGroup(string $code)

@@ -19,6 +19,15 @@ class Group extends Model
     protected $fillable = ['code', 'name'];
 
     /**
+     * The relationships that should always be loaded.
+     *
+     * @var array
+     */
+    protected $with = [
+        'permissions',
+    ];
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool

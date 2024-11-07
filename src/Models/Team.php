@@ -309,9 +309,11 @@ class Team extends Model
      *
      * @param  int|string  $keyword The role ID or code to update
      * @param  array   $permissions An array of permissions codes to assign to the role.
+     * @param string|null $name Optional name for the role. Defaults to a formatted version of `$code` if not provided.
+     * @param string|null $description Optional description for the role to provide additional context.
      * @return object|bool
      */
-    public function updateRole(int|string $keyword, array $permissions): object|bool
+    public function updateRole(int|string $keyword, array $permissions, string|null $name = null, string|null $description = null): object|bool
     {
         $role = $this->getRole($keyword);
 
@@ -319,12 +321,18 @@ class Team extends Model
             throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
         }
 
-        $permissionIds = $this->getPermissionIds($permissions);
+        $role->name = $name ?? Str::studly($keyword);
+        $role->description = $description;
 
-        if (!empty($permissionIds)) {
-            $role->permissions()->sync($permissionIds);
-        } else {
-            $role->permissions()->detach();
+        if($role->save()) {
+
+            $permissionIds = $this->getPermissionIds($permissions);
+
+            if (!empty($permissionIds)) {
+                $role->permissions()->sync($permissionIds);
+            } else {
+                $role->permissions()->detach();
+            }
         }
 
         return $role;
@@ -382,17 +390,61 @@ class Team extends Model
     /**
      * Add a new group to the team.
      *
-     * @param  string  $code The unique code of the group.
-     * @param  string  $name
+     * @param string $code The unique code of the group.
+     * @param array|null $permissions
+     * @param string|null $name
      * @return object
      */
-    public function addGroup(string $code, string $name): object
+    public function addGroup(string $code, array|null $permissions = null, string|null $name = null): object
     {
         if ($this->hasGroup($code)) {
             throw new RuntimeException("Group with code '$code' already exists.");
         }
 
-        return $this->groups()->create(compact('code', 'name'));
+        $group = $this->groups()->create([
+            'code' => $code,
+            'name' => $name ?? Str::studly($code)
+        ]);
+
+        $permissionIds = $this->getPermissionIds($permissions);
+
+        if (!empty($permissionIds)) {
+            $group->permissions()->sync($permissionIds);
+        }
+
+        return $group;
+    }
+
+    /**
+     * Update an existing group with new permissions.
+     *
+     * @param int|string $keyword The group ID or code to update
+     * @param array $permissions An array of permissions codes to assign to the group.
+     * @param string|null $name Optional name for the group. Defaults to a formatted version of `$code` if not provided.
+     * @return object|bool
+     */
+    public function updateGroup(int|string $keyword, array $permissions, string|null $name = null): object|bool
+    {
+        $group = $this->getGroup($keyword);
+
+        if (!$group) {
+            throw new ModelNotFoundException("Group with id/code '$keyword' not found.");
+        }
+
+        $group->name = $name ?? Str::studly($keyword);
+
+        if($group->save()) {
+
+            $permissionIds = $this->getPermissionIds($permissions);
+
+            if (!empty($permissionIds)) {
+                $group->permissions()->sync($permissionIds);
+            } else {
+                $group->permissions()->detach();
+            }
+        }
+
+        return $group;
     }
 
     /**
