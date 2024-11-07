@@ -143,7 +143,13 @@ class Team extends Model
      */
     public function addUser(object $user, string $role_keyword): void
     {
-        $this->validateUserExists($user);
+        if ($user->id === $this->owner->id) {
+            throw new RuntimeException(__('Owner already belongs to the team.'));
+        }
+
+        if ($this->hasUser($user)) {
+            throw new RuntimeException(__('User already belongs to the team.'));
+        }
 
         $role = $this->getRole($role_keyword);
 
@@ -170,9 +176,13 @@ class Team extends Model
      */
     public function updateUser(object $user, string $role_keyword): void
     {
-        $this->validateUserNotOwner($user);
+        if ($user->id === $this->owner->id) {
+            throw new RuntimeException(__('You may not change the team owner.'));
+        }
 
-        $this->validateUserExists($user);
+        if (!$this->hasUser($user)) {
+            throw new RuntimeException(__('User not belongs to the team.'));
+        }
 
         $role = $this->getRole($role_keyword);
 
@@ -196,9 +206,13 @@ class Team extends Model
      */
     public function deleteUser(object $user): void
     {
-        $this->validateUserNotOwner($user);
+        if ($user->id === $this->owner->id) {
+            throw new RuntimeException(__('You may not remove the team owner.'));
+        }
 
-        $this->validateUserExists($user);
+        if (!$this->hasUser($user)) {
+            throw new RuntimeException(__('User not belongs to the team.'));
+        }
 
         // Detach the user from the team
         $this->users()->detach($user->id);
@@ -473,20 +487,6 @@ class Team extends Model
     {
         $this->users()->detach();
         $this->delete();
-    }
-
-    private function validateUserExists(object $user): void
-    {
-        if ($this->hasUser($user)) {
-            throw new RuntimeException(__('User already belongs to the team.'));
-        }
-    }
-
-    private function validateUserNotOwner(object $user): void
-    {
-        if ($user->id === $this->owner->id) {
-            throw new RuntimeException(__('You may not remove the team owner.'));
-        }
     }
 
     /**
