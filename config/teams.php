@@ -42,11 +42,10 @@ return [
         'user' => App\Models\User::class,
         'team' => Jurager\Teams\Models\Team::class,
         'ability' => Jurager\Teams\Models\Ability::class,
-        'capability' => Jurager\Teams\Models\Capability::class,
+        'permission' => Jurager\Teams\Models\Permission::class,
         'group' => Jurager\Teams\Models\Group::class,
         'invitation' => Jurager\Teams\Models\Invitation::class,
         'membership' => Jurager\Teams\Models\Membership::class,
-        'permission' => Jurager\Teams\Models\Permission::class,
         'role' => Jurager\Teams\Models\Role::class,
     ],
 
@@ -87,12 +86,4 @@ return [
             'middleware' => 'web'
         ]
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Support
-    |--------------------------------------------------------------------------
-    | Support's field in users table.  Support users has access to all teams
-    */
-    'support_field' => 'is_support'
 ];

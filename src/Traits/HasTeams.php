@@ -64,7 +64,7 @@ trait HasTeams
      */
     public function groups(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::model('group'), 'user_group', 'user_id', 'group_id');
+        return $this->belongsToMany(Teams::model('group'), 'group_user', 'user_id', 'group_id');
     }
 
     /**
@@ -143,12 +143,12 @@ trait HasTeams
     }
 
     /**
-     * Get the user's capabilities for the given team.
+     * Get the user's permissions for the given team.
      *
      * @param object $team
      * @return array|string[]
      */
-    public function teamCapabilities(object $team): array
+    public function teamPermissions(object $team): array
     {
         // If the user is the team owner, grant him all rights.
         if ($this->ownsTeam($team)) {
@@ -163,23 +163,23 @@ trait HasTeams
         // Get the user's role in the team.
         $role = $this->teamRole($team);
 
-        // Return the role's capabilities.
-        return $role ? $role->capabilities->pluck('code')->all() : [];
+        // Return the role's permissions.
+        return $role ? $role->permissions->pluck('code')->all() : [];
     }
 
     /**
-     * Determine if the user has the given capability on the given team.
+     * Determine if the user has the given permission on the given team.
      *
      * @param object $team
-     * @param string|array $capabilities
+     * @param string|array $permissions
      * @param bool $require
      * @return bool
      */
-    public function hasTeamCapability(object $team, string|array $capabilities = [], bool $require = false): bool
+    public function hasTeamPermission(object $team, string|array $permissions = [], bool $require = false): bool
     {
 
-        //$require = true  (all capabilities in the array are required)
-        //$require = false  (only one or more capabilities in the array are required or $capabilities var is empty)
+        //$require = true  (all permissions in the array are required)
+        //$require = false  (only one or more permission in the array are required or $permissions is empty)
 
         if ($this->ownsTeam($team)) {
             return true;
@@ -190,47 +190,47 @@ trait HasTeams
             return false;
         }
 
-        // Convert a string to an array if a single capability is passed.
-        $capabilities = (array) $capabilities;
+        // Convert a string to an array if a single permission is passed.
+        $permissions = (array) $permissions;
 
-        // If the capability array is empty, return true if not required, false otherwise
-        if (empty($capabilities) && !$require) {
+        // If the permissions array is empty, return true if not required, false otherwise
+        if (empty($permissions) && !$require) {
             return true;
         }
-        // Get user's capabilities for the team
-        $user_capabilities = $this->teamCapabilities($team);
+        // Get user's permissions for the team
+        $user_permissions = $this->teamPermissions($team);
 
-        // Check simple capability
-        $check_capability = static function ($capability) use ($user_capabilities) {
+        // Check simple permission
+        $check_permission = static function ($permission) use ($user_permissions) {
 
-            // Calculate wildcard capabilities
-            $calculated_capabilities = [...array_map(static fn ($part) => $part . '.*', explode('.', $capability)), $capability];
+            // Calculate wildcard permissions
+            $calculated_permissions = [...array_map(static fn ($part) => $part . '.*', explode('.', $permission)), $permission];
 
-            // Check if user has any of the calculated capabilities
-            $common_capabilities = array_intersect($calculated_capabilities, $user_capabilities);
+            // Check if user has any of the calculated permissions
+            $common_permissions = array_intersect($calculated_permissions, $user_permissions);
 
-            // Return true if the capability is found and not required
-            return !empty($common_capabilities);
+            // Return true if the permission is found and not required
+            return !empty($common_permissions);
         };
 
-        // Check each capability
-        foreach ($capabilities as $capability) {
-            $has_capability = $check_capability($capability);
+        // Check each permission
+        foreach ($permissions as $permission) {
+            $has_permission = $check_permission($permission);
 
-            //$require == false  (only one or more capabilities in the array are required or $capabilities is empty)
-            //return true after first capability right found
-            if ($has_capability && !$require) {
+            // $require == false  (only one or more permissions in the array are required or $permissions is empty)
+            // return true after first permission found
+            if ($has_permission && !$require) {
                 return true;
             }
 
-            //$require == true  (all capabilities in the array are required)
-            //return false after first capability right found
-            if (!$has_capability && $require) {
+            // $require == true  (all permissions in the array are required)
+            // return false after first permission found
+            if (!$has_permission && $require) {
                 return false;
             }
         }
 
-        //return $require var, cause if $require is true all the checks has been made, and if false you don't have the required capabilities
+        // return $require, cause if $require is true all the checks has been made, and if false you don't have the required permissions
         return $require;
     }
 
@@ -244,23 +244,23 @@ trait HasTeams
      */
     public function teamAbilities(object $team, object $entity, bool $forbidden = false): mixed
     {
-        // Start building the query to retrieve permissions
+        // Start building the query to retrieve abilities
         $abilities = $team->abilities()->where(['entity_id' => $entity->id, 'entity_type' => $entity::class]);
 
-        // If filtering by forbidden permissions, add the condition
+        // If filtering by forbidden abilities, add the condition
         if ($forbidden) {
             $abilities->wherePivot('forbidden', true);
         }
 
-        // Retrieve the permissions along with their associated abilities
+        // Retrieve the abilities
         return $abilities->get();
     }
 
     /**
-     * Determinate if user has ability outside team
+     * Determinate if user has global groups permissions
      *
-     * This function is to verify abilities within a universal group,
-     * especially in cases where a team requires a group enabling user additions
+     * This function is to verify permissions within a universal group.
+     * Especially in cases where a team requires a group enabling user additions
      * and removals without direct affiliation with the team
      *
      * Example: Each team should have a global group of moderators.
@@ -268,34 +268,35 @@ trait HasTeams
      * @param string $ability
      * @return bool
      */
-    private function hasAbility(string $ability): bool
+    private function hasGlobalGroupPermissions(string $ability): bool
     {
         // Get all global groups
         $groups = $this->groups->whereNull(config('teams.foreign_keys.team_id', 'team_id'));
 
-        $capabilities = [];
+        $permissions = [];
 
         foreach ($groups as $group) {
 
             // Eager load a relationship after modify
-            $group->load('capabilities');
+            $group->load('permissions');
 
             // All user permissions from global groups
-            $capabilities = [...$capabilities, ...$group->capabilities->pluck('code')->all()];
+            $permissions = [...$permissions, ...$group->permissions->pluck('code')->all()];
         }
 
-        // Calculate wildcard permissions
+        // Calculate wildcard permission
         $calculated_permissions = [...array_map(static fn ($part) => $part.'.*', explode('.', $ability)), $ability];
 
         // Check if user has any of the calculated permissions
-        $common_permissions = array_intersect($calculated_permissions, $capabilities);
+        $common_permissions = array_intersect($calculated_permissions, $permissions);
 
-        // Return true if the permission is found and not required
+        // Return true if the abilities is found and not required
         return ! empty($common_permissions);
     }
 
     /**
      * Determinate if user can perform an action
+     * @todo: Refactor this
      *
      * @param object $team
      * @param string $ability
@@ -304,8 +305,7 @@ trait HasTeams
      */
     public function hasTeamAbility(object $team, string $ability, object $entity): bool
     {
-        // Check if user is tech support or entity owner
-        // Check capability by role properties
+        // Check if user is entity owner by custom method
         if ((method_exists($entity, 'isOwner') && $entity?->isOwner($this))) {
             return true;
         }
@@ -314,11 +314,11 @@ trait HasTeams
         $allowed = 0;
         $forbidden = 1;
 
-        if ($this->hasTeamCapability($team, $ability)) {
+        if ($this->hasTeamPermission($team, $ability)) {
             $allowed = 1;
         }
 
-        if ($this->hasAbility($ability)) {
+        if ($this->hasGlobalGroupPermissions($ability)) {
             $allowed = 2;
         }
 
@@ -386,6 +386,7 @@ trait HasTeams
 
     /**
      * Allow user to perform an ability
+     * @todo: Refactor this
      *
      * @param object $team
      * @param string $ability
@@ -434,6 +435,7 @@ trait HasTeams
 
     /**
      * Forbid user to perform an ability
+     * @todo: Refactor this
      *
      * @param object $team
      * @param string $ability
@@ -483,6 +485,7 @@ trait HasTeams
 
     /**
      * Delete user ability
+     * @todo: Refactor this
      *
      * @param object $team
      * @param string $ability

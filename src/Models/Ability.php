@@ -4,6 +4,7 @@ namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Jurager\Teams\Support\Facades\Teams;
 
 class Ability extends Model
@@ -13,7 +14,7 @@ class Ability extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['name', 'title', 'entity_id', 'entity_type', 'only_owned', 'options'];
+    protected $fillable = ['id', 'name', 'title', 'entity_id', 'entity_type'];
 
     public function __construct(array $attributes = [])
     {
@@ -30,5 +31,10 @@ class Ability extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Teams::model('team'));
+    }
+
+    public function entity(): MorphToMany
+    {
+        return $this->morphTo();
     }
 }

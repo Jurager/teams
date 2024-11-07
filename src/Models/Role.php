@@ -5,6 +5,7 @@ namespace Jurager\Teams\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Jurager\Teams\Support\Facades\Teams;
 
 class Role extends Model
@@ -29,7 +30,7 @@ class Role extends Model
      * @var array
      */
     protected $with = [
-        'capabilities',
+        'permissions',
     ];
 
     /**
@@ -38,7 +39,7 @@ class Role extends Model
      * @var array<int, string>
      */
     protected $hidden = [
-        'capabilities',
+        'permissions',
     ];
 
     public function __construct(array $attributes = [])
@@ -58,14 +59,23 @@ class Role extends Model
         return $this->belongsTo(Teams::model('team'));
     }
 
+    /**
+     * Get the permissions that belongs to role.
+     *
+     * @return MorphMany
+     */
+    public function permissions(): MorphMany
+    {
+        return $this->morphMany(Teams::model('permission'), 'entity');
+    }
 
     /**
-     * Get the capabilities that belongs to team.
+     * Get the abilities that belongs to role.
      *
-     * @return BelongsToMany
+     * @return MorphMany
      */
-    public function capabilities(): BelongsToMany
+    public function abilities(): MorphMany
     {
-        return $this->belongsToMany(Teams::model('capability'), 'role_capability');
+        return $this->morphMany(Teams::model('ability'), 'entity');
     }
 }

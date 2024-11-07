@@ -22,9 +22,9 @@ class Owner implements JsonSerializable
     public string $name = 'Owner';
 
     /**
-     * The role's capabilities.
+     * The role's permissions.
      */
-    public array $capabilities = ['*'];
+    public array $permissions = ['*'];
 
     /**
      * The role's description.
@@ -52,7 +52,7 @@ class Owner implements JsonSerializable
             'id' => $this->id,
             'name' => __($this->name),
             'description' => __($this->description),
-            'capabilities' => $this->capabilities,
+            'permissions' => $this->permissions,
         ];
     }
 }

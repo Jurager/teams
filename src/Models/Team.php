@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Jurager\Teams\Events\AddingTeamMember;
@@ -31,8 +32,8 @@ class Team extends Model
      * @var array
      */
     protected $with = [
-        'roles.capabilities',
-        'groups',
+        'roles.permissions',
+        'groups.permissions',
     ];
 
     /**
@@ -74,14 +75,11 @@ class Team extends Model
     /**
      * Get all abilities linked to the team.
      *
-     * @return BelongsToMany
+     * @return HasMany
      */
-    public function abilities(): BelongsToMany
+    public function abilities(): HasMany
     {
-        return $this->morphToMany(Teams::model('ability'))
-            ->using(Teams::model('permission'))
-            ->withTimestamps()
-            ->withPivot('team_id', 'forbidden');
+        return $this->hasMany(Teams::model('ability'), config('teams.foreign_keys.team_id'),'id');
     }
 
     /**
@@ -232,16 +230,16 @@ class Team extends Model
     }
 
     /**
-     * Check if a user has a specific capability in the team.
+     * Check if a user has a specific permission in the team.
      *
      * @param  object       $user
-     * @param  string|array $capability
+     * @param  string|array $permissions
      * @param  bool         $require
      * @return bool
      */
-    public function userHasCapability(object $user, string|array $capabilities, bool $require = false): bool
+    public function userHasPermission(object $user, string|array $permissions, bool $require = false): bool
     {
-        return $user->hasTeamCapability($this, $capabilities, $require);
+        return $user->hasTeamPermission($this, $permissions, $require);
     }
 
     /**
@@ -277,15 +275,15 @@ class Team extends Model
     }
 
     /**
-     * Add a role to the team with specific capabilities.
+     * Add a role to the team with specific permissions.
      *
      * @param string $code Unique identifier for the role, used for retrieval and management.
-     * @param array $capabilities List of capability codes to associate with this role.
+     * @param array $permissions List of permissions codes to associate with this role.
      * @param string|null $name Optional name for the role. Defaults to a formatted version of `$code` if not provided.
      * @param string|null $description Optional description for the role to provide additional context.
      * @return object
      */
-    public function addRole(string $code, array $capabilities, string|null $name = null, string|null $description = null): object
+    public function addRole(string $code, array $permissions, string|null $name = null, string|null $description = null): object
     {
         if ($this->hasRole($code)) {
             throw new RuntimeException("Role with code '$code' already exists.");
@@ -297,23 +295,23 @@ class Team extends Model
             'description' => $description
         ]);
 
-        $capabilityIds = $this->getCapabilityIds($capabilities);
+        $permissionIds = $this->getPermissionIds($permissions);
 
-        if (!empty($capabilityIds)) {
-            $role->capabilities()->sync($capabilityIds);
+        if (!empty($permissionIds)) {
+            $role->permissions()->sync($permissionIds);
         }
 
         return $role;
     }
 
     /**
-     * Update an existing role with new capabilities.
+     * Update an existing role with new permissions.
      *
      * @param  int|string  $keyword The role ID or code to update
-     * @param  array   $capabilities An array of capability codes to assign to the role.
+     * @param  array   $permissions An array of permissions codes to assign to the role.
      * @return object|bool
      */
-    public function updateRole(int|string $keyword, array $capabilities): object|bool
+    public function updateRole(int|string $keyword, array $permissions): object|bool
     {
         $role = $this->getRole($keyword);
 
@@ -321,12 +319,12 @@ class Team extends Model
             throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
         }
 
-        $capabilityIds = $this->getCapabilityIds($capabilities);
+        $permissionIds = $this->getPermissionIds($permissions);
 
-        if (!empty($capabilityIds)) {
-            $role->capabilities()->sync($capabilityIds);
+        if (!empty($permissionIds)) {
+            $role->permissions()->sync($permissionIds);
         } else {
-            $role->capabilities()->detach();
+            $role->permissions()->detach();
         }
 
         return $role;
@@ -440,33 +438,34 @@ class Team extends Model
     }
 
     /**
-     * Get capability IDs for a list of capabilities.
+     * Get permissions IDs for a list of permissions.
      *
-     * @param  array  $codes An array of capability codes to retrieve or create IDs for.
+     * @param  array  $codes An array of permission codes to retrieve or create IDs for.
      * @return array
      */
-    private function getCapabilityIds(array $codes): array
+    private function getPermissionIds(array $codes): array
     {
-        $capabilities = Teams::model('capability')
+        $permissions = Teams::model('permission')
             ->whereIn('code', $codes)
             ->pluck('id', 'code')
             ->all();
 
-        $newCapabilities = array_diff($codes, array_keys($capabilities));
+        $newPermissions = array_diff($codes, array_keys($permissions));
 
-        if (!empty($newCapabilities)) {
-            $items = array_map(static fn($code) => ['code' => $code], $newCapabilities);
+        if (!empty($newPermissions)) {
 
-            Teams::model('capability')::query()->insert($items);
+            $items = array_map(static fn($code) => ['code' => $code], $newPermissions);
 
-            $capabilities = array_merge($capabilities, Teams::model('capability')::query()
-                ->whereIn('code', $newCapabilities)
+            Teams::model('permission')::query()->insert($items);
+
+            $permissions = array_merge($permissions, Teams::model('permission')::query()
+                ->whereIn('code', $newPermissions)
                 ->pluck('id', 'code')
                 ->all());
 
         }
 
-        return array_values($capabilities);
+        return array_values($permissions);
 
     }
 }

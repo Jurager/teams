@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Jurager\Teams\Support\Facades\Teams;
 
 class Group extends Model
@@ -48,17 +49,27 @@ class Group extends Model
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::model('user'), 'user_group', 'group_id', 'user_id');
+        return $this->belongsToMany(Teams::model('user'), 'group_user', 'group_id', 'user_id');
     }
 
     /**
-     * Get the capabilities that belongs to team.
+     * Get the permissions that belongs to group.
      *
-     * @return BelongsToMany
+     * @return MorphMany
      */
-    public function capabilities(): BelongsToMany
+    public function permissions(): MorphMany
     {
-        return $this->belongsToMany(Teams::model('capability'), 'group_capability');
+        return $this->morphMany(Teams::model('permission'), 'entity');
+    }
+
+    /**
+     * Get the abilities that belongs to group.
+     *
+     * @return MorphMany
+     */
+    public function abilities(): MorphMany
+    {
+        return $this->morphMany(Teams::model('ability'), 'entity');
     }
 
     /**

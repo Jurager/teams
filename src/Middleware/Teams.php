@@ -28,11 +28,11 @@ class Teams
         // Mapping of method names
         $methodTypes = [
             'roles' => 'hasTeamRole',
-            'capability' => 'hasTeamCapability',
+            'permission' => 'hasTeamPermission',
             'ability' => 'hasTeamAbility',
         ];
 
-        // Determine the action for checking the role or capabilities
+        // Determine the action for checking the role or permissions
         $action = $methodTypes[$method] ?? null;
 
         // Ensure method is valid

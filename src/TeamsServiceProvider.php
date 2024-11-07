@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Jurager\Teams\Support\Services\TeamsService;
 use Jurager\Teams\Middleware\Ability as AbilityMiddleware;
-use Jurager\Teams\Middleware\Capability as CapabilityMiddleware;
+use Jurager\Teams\Middleware\Permission as PermissionMiddleware;
 use Jurager\Teams\Middleware\Role as RoleMiddleware;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -54,16 +54,14 @@ class TeamsServiceProvider extends ServiceProvider
 
         $migrations = [
             __DIR__ . '/../database/migrations/create_teams_table.php' => database_path('migrations/2019_12_14_000001_create_teams_table.php'),
-            __DIR__ . '/../database/migrations/create_capabilities_table.php' => database_path('migrations/2019_12_14_000002_create_capabilities_table.php'),
+            __DIR__ . '/../database/migrations/create_permissions_table.php' => database_path('migrations/2019_12_14_000002_create_permissions_table.php'),
             __DIR__ . '/../database/migrations/create_roles_table.php' => database_path('migrations/2019_12_14_000003_create_roles_table.php'),
-            __DIR__ . '/../database/migrations/create_role_capability_table.php' => database_path('migrations/2019_12_14_000004_create_role_capability_table.php'),
             __DIR__ . '/../database/migrations/create_team_user_table.php' => database_path('migrations/2019_12_14_000005_create_team_user_table.php'),
             __DIR__ . '/../database/migrations/create_abilities_table.php' => database_path('migrations/2019_12_14_000006_create_abilities_table.php'),
-            __DIR__ . '/../database/migrations/create_permissions_table.php' => database_path('migrations/2019_12_14_000007_create_permissions_table.php'),
+            __DIR__ . '/../database/migrations/create_entity_ability_table.php' => database_path('migrations/2019_12_14_000006_create_entity_ability_table.php'),
             __DIR__ . '/../database/migrations/create_groups_table.php' => database_path('migrations/2019_12_14_000008_create_groups_table.php'),
-            __DIR__ . '/../database/migrations/create_user_group_table.php' => database_path('migrations/2019_12_14_000009_create_user_group_table.php'),
-            __DIR__ . '/../database/migrations/create_group_capability_table.php' => database_path('migrations/2019_12_14_000010_create_group_capability_table.php'),
-            __DIR__ . '/../database/migrations/add_fields_to_users_table.php' => database_path('migrations/2019_12_14_000011_add_fields_to_users_table.php'),
+            __DIR__ . '/../database/migrations/create_group_user_table.php' => database_path('migrations/2019_12_14_000009_create_group_user_table.php'),
+            __DIR__ . '/../database/migrations/create_entity_permission_table.php' => database_path('migrations/2019_12_14_000010_create_entity_permission_table.php'),
         ];
 
         if(config('teams.invitations.enabled')) {
@@ -133,7 +131,7 @@ class TeamsServiceProvider extends ServiceProvider
         $middlewares = [
             'ability' => AbilityMiddleware::class,
             'role' => RoleMiddleware::class,
-            'capability' => CapabilityMiddleware::class,
+            'permission' => PermissionMiddleware::class,
         ];
 
         foreach ($middlewares as $key => $class) {

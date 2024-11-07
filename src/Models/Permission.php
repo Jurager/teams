@@ -2,49 +2,23 @@
 
 namespace Jurager\Teams\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Jurager\Teams\Support\Facades\Teams;
 
-class Permission extends Pivot
+class Permission extends Model
 {
     /**
      * The attributes that are mass assignable.
      *
      * @var array<string>
      */
-    protected $fillable = ['ability_id', 'entity_id', 'entity_type', 'forbidden'];
+    protected $fillable = ['name', 'code'];
 
     /**
-     * Create a new Team model instance.
+     * Indicates if the model should be timestamped.
      *
-     * @param  array  $attributes
-     * @return void
+     * @var bool
      */
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-
-        $this->fillable[] = config('teams.foreign_keys.team_id');
-    }
-
-    /**
-     * Get the team that the permission belongs to.
-     *
-     * @return BelongsTo
-     */
-    public function team(): BelongsTo
-    {
-        return $this->belongsTo(Teams::model('team'));
-    }
-
-    /**
-     * Get the ability that the permission belongs to.
-     *
-     * @return BelongsTo
-     */
-    public function ability(): BelongsTo
-    {
-        return $this->belongsTo(Teams::model('ability'));
-    }
+    public $timestamps = false;
 }
