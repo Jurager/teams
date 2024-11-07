@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Jurager\Teams\Support\Facades\Teams;
 
 class Group extends Model
@@ -55,9 +55,9 @@ class Group extends Model
     /**
      * Get the permissions that belongs to group.
      *
-     * @return morphToMany
+     * @return MorphToMany
      */
-    public function permissions(): morphToMany
+    public function permissions(): MorphToMany
     {
         return $this->morphToMany(Teams::model('ability'), 'entity', 'entity_permission');
     }
