@@ -445,7 +445,7 @@ class Team extends Model
      */
     private function getPermissionIds(array $codes): array
     {
-        $permissions = Teams::model('permission')
+        $permissions = Teams::model('permission')::query()
             ->whereIn('code', $codes)
             ->pluck('id', 'code')
             ->all();

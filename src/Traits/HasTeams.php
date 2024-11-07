@@ -558,6 +558,6 @@ trait HasTeams
      */
     protected function generateAbilityName(object $entity, string $action): string
     {
-        Str::snake(Str::plural(class_basename($entity))) . '.' . $action;
+        return Str::snake(Str::plural(class_basename($entity))) . '.' . $action;
     }
 }
