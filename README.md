@@ -215,7 +215,7 @@ Groups
 Team groups work together with abilities and permissions, so you should use ability and permission checking methods to determine if users have specific access rights within groups.
 
 > [!NOTE]  
-> Access rights granted to a group of users take precedence over rights granted to a user within a team.
+> Access rights granted to a group of users take precedence over rights granted to a user within role in a team.
 
 ### Scope of Use
 
@@ -244,16 +244,16 @@ $team->groups();
 $team->hasGroup(int|string|null $keyword)
 
 // Get team group by its code
-$team->getGroup(int|string $keyword);
+$group = $team->getGroup(int|string $keyword);
 
 // Get all group users
-$team->getGroup(int|string $keyword)->users();
+$group->users();
 
 // Attach users or user to a group
-$team->getGroup(int|string $keyword)->attachUser(Collection|Model $user);
+$group->attachUser(Collection|Model $user);
 
 // Detach users or user from group
-$team->getGroup(int|string $keyword)->detachUser(Collection|Model $user);
+$group->detachUser(Collection|Model $user);
 ```
 
  Roles & Permissions
