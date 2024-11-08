@@ -311,11 +311,11 @@ class Team extends Model
             'description' => $description
         ]);
 
+        // Retrieve permission IDs from the provided permissions
         $permissionIds = $this->getPermissionIds($permissions);
 
-        if (!empty($permissionIds)) {
-            $role->permissions()->sync($permissionIds);
-        }
+        // Sync permissions if any valid IDs are found, otherwise detach all
+        $role->permissions()->sync($permissionIds);
 
         return $role;
     }
@@ -333,22 +333,22 @@ class Team extends Model
     {
         $role = $this->getRole($keyword);
 
+        // Throw an exception if the role is not found
         if (!$role) {
             throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
         }
 
-        $role->name = $name ?? Str::studly($keyword);
-        $role->description = $description;
+        $role->name = $name ?? $role->name;
+        $role->description = $description ?? $role->description;
 
+        // Save changes to the group and synchronize permissions if provided
         if($role->save()) {
 
+            // Retrieve permission IDs from the provided permissions
             $permissionIds = $this->getPermissionIds($permissions);
 
-            if (!empty($permissionIds)) {
-                $role->permissions()->sync($permissionIds);
-            } else {
-                $role->permissions()->detach();
-            }
+            // Sync permissions if any valid IDs are found, otherwise detach all
+            $role->permissions()->sync($permissionIds);
         }
 
         return $role;
@@ -409,11 +409,11 @@ class Team extends Model
      * Add a new group to the team.
      *
      * @param string $code The unique code of the group.
-     * @param array|null $permissions
+     * @param array $permissions
      * @param string|null $name
      * @return object
      */
-    public function addGroup(string $code, array|null $permissions = null, string|null $name = null): object
+    public function addGroup(string $code, array $permissions = [], string|null $name = null): object
     {
         if ($this->hasGroup($code)) {
             throw new RuntimeException("Group with code '$code' already exists.");
@@ -424,14 +424,11 @@ class Team extends Model
             'name' => $name ?? Str::studly($code)
         ]);
 
-        if($permissions) {
+        // Retrieve permission IDs from the provided permissions
+        $permissionIds = $this->getPermissionIds($permissions);
 
-            $permissionIds = $this->getPermissionIds($permissions);
-
-            if (!empty($permissionIds)) {
-                $group->permissions()->sync($permissionIds);
-            }
-        }
+        // Sync permissions if any valid IDs are found, otherwise detach all
+        $group->permissions()->sync($permissionIds);
 
         return $group;
     }
@@ -446,26 +443,25 @@ class Team extends Model
      */
     public function updateGroup(int|string $keyword, array|null $permissions = null, string|null $name = null): object|bool
     {
+        // Fetch the group by ID or code
         $group = $this->getGroup($keyword);
 
+        // Throw an exception if the group is not found
         if (!$group) {
             throw new ModelNotFoundException("Group with id/code '$keyword' not found.");
         }
 
-        $group->name = $name ?? Str::studly($keyword);
+        // Update group name if a new name is provided
+        $group->name = $name ?? $group->name;
 
+        // Save changes to the group and synchronize permissions if provided
         if($group->save()) {
 
-            if($permissions) {
+            // Retrieve permission IDs from the provided permissions
+            $permissionIds = $this->getPermissionIds($permissions);
 
-                $permissionIds = $this->getPermissionIds($permissions);
-
-                if (!empty($permissionIds)) {
-                    $group->permissions()->sync($permissionIds);
-                } else {
-                    $group->permissions()->detach();
-                }
-            }
+            // Sync permissions if any valid IDs are found, otherwise detach all
+            $group->permissions()->sync($permissionIds);
         }
 
         return $group;
