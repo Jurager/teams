@@ -27,13 +27,6 @@ class Group extends Model
         'permissions',
     ];
 
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
