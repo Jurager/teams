@@ -423,10 +423,13 @@ class Team extends Model
             'name' => $name ?? Str::studly($code)
         ]);
 
-        $permissionIds = $this->getPermissionIds($permissions);
+        if($permissions) {
 
-        if (!empty($permissionIds)) {
-            $group->permissions()->sync($permissionIds);
+            $permissionIds = $this->getPermissionIds($permissions);
+
+            if (!empty($permissionIds)) {
+                $group->permissions()->sync($permissionIds);
+            }
         }
 
         return $group;
@@ -436,11 +439,11 @@ class Team extends Model
      * Update an existing group with new permissions.
      *
      * @param int|string $keyword The group ID or code to update
-     * @param array $permissions An array of permissions codes to assign to the group.
+     * @param array|null $permissions An array of permissions codes to assign to the group.
      * @param string|null $name Optional name for the group. Defaults to a formatted version of `$code` if not provided.
      * @return object|bool
      */
-    public function updateGroup(int|string $keyword, array $permissions, string|null $name = null): object|bool
+    public function updateGroup(int|string $keyword, array|null $permissions = null, string|null $name = null): object|bool
     {
         $group = $this->getGroup($keyword);
 
@@ -452,12 +455,15 @@ class Team extends Model
 
         if($group->save()) {
 
-            $permissionIds = $this->getPermissionIds($permissions);
+            if($permissions) {
 
-            if (!empty($permissionIds)) {
-                $group->permissions()->sync($permissionIds);
-            } else {
-                $group->permissions()->detach();
+                $permissionIds = $this->getPermissionIds($permissions);
+
+                if (!empty($permissionIds)) {
+                    $group->permissions()->sync($permissionIds);
+                } else {
+                    $group->permissions()->detach();
+                }
             }
         }
 
