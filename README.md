@@ -136,7 +136,7 @@ $team->groups()
 $team->getGroup(int|string $keyword)
 
 // Add new group to the team
-$team->addGroup(string $code, array|null $permissions, string|null $name)
+$team->addGroup(string $code, array|null $permissions = [], string|null $name)
 
 // Update the group in the team
 $team->updateGroup(int|string $keyword, array|null $permissions, string|null $name)
@@ -316,10 +316,10 @@ The `Jurager\Teams\Traits\HasTeams` trait provides methods to inspect a user's t
 
 ```php
 // Add new group to the team
-$team->addGroup(string $code, array|null $permissions, string|null $name)
+$team->addGroup(string $code, array $permissions = [], string|null $name)
 
-// Update the group in the team
-$team->updateGroup(int|string $keyword, array|null $permissions, string|null $name)
+// Update the group in the team, if permissions is empty array all exiting permissions will be detached
+$team->updateGroup(int|string $keyword, array $permissions => [], string|null $name)
 
 // Delete group from the team
 $team->deleteGroup(string $code)
