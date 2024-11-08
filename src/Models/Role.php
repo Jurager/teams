@@ -57,9 +57,9 @@ class Role extends Model
 
         static::deleting(static function ($role) {
 
-            $role->permissions()->delete();
+            $role->permissions()->detach();
 
-            $role->abilities()->delete();
+            $role->abilities()->detach();
 
         });
 

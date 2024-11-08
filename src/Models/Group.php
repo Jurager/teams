@@ -50,9 +50,9 @@ class Group extends Model
 
         static::deleting(static function ($group) {
 
-            $group->permissions()->delete();
+            $group->permissions()->detach();
 
-            $group->abilities()->delete();
+            $group->abilities()->detach();
 
         });
 
