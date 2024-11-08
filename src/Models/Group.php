@@ -28,6 +28,23 @@ class Group extends Model
     ];
 
     /**
+     * Bootstrap any application services.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::deleting(static function ($group) {
+
+            $group->permissions()->delete();
+
+            $group->abilities()->delete();
+
+        });
+
+    }
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool

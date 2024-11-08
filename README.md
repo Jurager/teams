@@ -18,16 +18,16 @@ Additionally, users can be added to a global group to grant them access across a
 - [Installation](#installation)
 - [Teams](#teams)
 - [Users](#users)
-- [Groups](#groups)
-    - [Scope of Use](#scope-of-use)
-    - [Groups Managing](#groups-managing)
-    - [Groups Abilities](#groups-permissions)
 - [Roles & Permissions](#roles--permissions)
     - [Authorization](#authorization)
 - [Abilities](#abilities)
   - [Adding an Ability](#adding-an-ability)
   - [Checking an Ability](#checking-an-ability)
   - [Forbidding an Ability](#forbidding-an-ability)
+- [Groups](#groups)
+  - [Usage Scope](#usage-scope)
+  - [Groups Managing](#groups-managing)
+  - [Groups Abilities](#groups-permissions)
 - [Middlewares](#middlewares)
   - [Middleware Configuration](#middleware-configuration)
   - [Middleware Routes](#middleware-routes)
@@ -207,61 +207,10 @@ $user->forbidTeamAbility(object $team, string 'server:edit', object $server) : b
 
 These methods enable you to efficiently manage and inspect a user's teams, roles, permissions, and abilities within your application.
 
-Groups
--------------------------------------------
-
-> Users within teams can be organized into groups, each with its own set of abilities and permissions.
- 
-Team groups work together with abilities and permissions, so you should use ability and permission checking methods to determine if users have specific access rights within groups.
-
-> [!NOTE]  
-> Access rights granted to a group of users take precedence over rights granted to a user within role in a team.
-
-### Scope of Use
-
- * A user can `server:edit` within the team, but is part of a group restricted from `server:edit` for specific entities.
-
- * A user can't `server:edit` within the team, but is in a group permitted to `server:edit` specific entities.
-
-### Groups Managing
-
-The `Jurager\Teams\Traits\HasTeams` trait provides methods to inspect a user's team groups:
-
-```php
-// Add new group to the team
-$team->addGroup(string $code, array|null $permissions, string|null $name)
-
-// Update the group in the team
-$team->updateGroup(int|string $keyword, array|null $permissions, string|null $name)
-
-// Delete group from the team
-$team->deleteGroup(string $code)
-
-// Get all groups of the team.
-$team->groups();
-
-// Check if the team has a specific group by ID or code or any groups at all
-$team->hasGroup(int|string|null $keyword)
-
-// Get team group by its code
-$group = $team->getGroup(int|string $keyword);
-
-// Get all group users
-$group->users();
-
-// Attach users or user to a group
-$group->attachUser(Collection|Model $user);
-
-// Detach users or user from group
-$group->detachUser(Collection|Model $user);
-```
-
  Roles & Permissions
 -------------------------------------------
 
-> Roles and permissions offer a flexible approach to managing access control within your application. Each team member can be assigned a role, with each role tied to a specific set of permissions.
-
-These roles and permissions are stored in your application's database, allowing for dynamic and easy management of access. This enables features like role and permission management through your application's admin interface.
+> Roles and permissions offer a flexible approach to managing access control within your application. Each team member can be assigned a role, with each role tied to a specific set of permissions. These roles and permissions are stored in your application's database, allowing for dynamic and easy management of access and enables features like role and permission management through your application's admin interface.
 
 **Example**: Creating a New Team with Roles and Permissions
 
@@ -301,7 +250,7 @@ if ($team->save()) {
 
 In the above example, we create a new team and assign it two roles: "admin" and "user". Each role is associated with a set of permissions that define what actions users with that role can perform within the application.
 
-The second argument for `$team->addRole()` is an array of permissions, which determine the actions that users with the corresponding role can perform in the application. These permissions are stored in the database and can be managed dynamically.
+The second argument for `$team->addRole()` is an array of permissions, which determine the actions that users with the corresponding role can perform in the application.
 
 ### Authorization
 
@@ -310,23 +259,20 @@ To ensure that incoming requests initiated by a team member can be executed by t
 > [!NOTE]  
 > In most cases, checking a user's role is often unnecessary. Instead, prioritize verifying specific granular permissions, as roles mainly serve to group these permissions for organizational clarity. Typically, you’ll use this approach within your application's [authorization policies](https://laravel.com/docs/authorization#creating-policies).
 
-```php
-return $user->hasTeamPermission(string $server->team, string 'server:update');
-```
+**Example**: Check if a user within a team has permission to update a server
 
-This example demonstrates how to verify if a user within a team has permission to update a server. Adjust the parameters to fit your application's unique requirements and specific use cases.
+```php
+return $user->hasTeamPermission(object $team, string $server->team, string 'server:update');
+```
 
 Abilities
 -------------------------------------------
 
-> Abilities - enables users to perform specific actions on application entities or models.
-
-For example, you can grant a user within a team the ability to edit posts.
-
-Adding abilities to users is easy — just pass the ability name, and it’ll be created automatically if it doesn’t exist.
-
+> Abilities - enables users to perform specific actions on application entities or models. For example, you can grant a user within a team the ability to edit posts.
 
 ### Adding an Ability
+
+Adding abilities to users is easy — just pass the ability name, and it’ll be created automatically if it doesn’t exist.
 
 To grant a user the ability to edit an article within a team, simply provide the relevant entities, such as the article and team objects:
 
@@ -347,6 +293,54 @@ User::hasTeamAbility(object $team, string 'edit', object $article);
 To prevent a user from having a specific ability (even if their role allows it), use the following method:
 ```php
 User::forbidTeamAbility(object $team, string 'edit', object $article, object|null $group);
+```
+
+Groups
+-------------------------------------------
+
+> Users within teams can be organized into groups, each with its own set of abilities and permissions. Groups work together with abilities and permissions, so you should use ability and permission checking methods to determine if users have specific access rights within groups.
+
+
+> [!NOTE]  
+> Access rights granted to a group of users take precedence over rights granted to a user within role in a team.
+
+### Usage Scope
+
+* User **can** `server:edit` in the team, but is part of a group **restricted** from `server:edit` for specific entities.
+
+* User **can't** `server:edit` in the team, but is in a group **permitted** to `server:edit` specific entities.
+
+### Groups Managing
+
+The `Jurager\Teams\Traits\HasTeams` trait provides methods to inspect a user's team groups:
+
+```php
+// Add new group to the team
+$team->addGroup(string $code, array|null $permissions, string|null $name)
+
+// Update the group in the team
+$team->updateGroup(int|string $keyword, array|null $permissions, string|null $name)
+
+// Delete group from the team
+$team->deleteGroup(string $code)
+
+// Get all groups of the team.
+$team->groups();
+
+// Check if the team has a specific group by ID or code or any groups at all
+$team->hasGroup(int|string|null $keyword)
+
+// Get team group by its code
+$group = $team->getGroup(int|string $keyword);
+
+// Get all group users
+$group->users();
+
+// Attach users or user to a group
+$group->attachUser(Collection|Model $user);
+
+// Detach users or user from group
+$group->detachUser(Collection|Model $user);
 ```
 
 Middlewares

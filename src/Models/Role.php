@@ -49,6 +49,23 @@ class Role extends Model
     }
 
     /**
+     * Bootstrap any application services.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(static function ($role) {
+
+            $role->permissions()->delete();
+
+            $role->abilities()->delete();
+
+        });
+
+    }
+
+    /**
      * Get the team that the role belongs to.
      *
      * @return BelongsTo
