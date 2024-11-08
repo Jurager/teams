@@ -28,6 +28,20 @@ class Group extends Model
     ];
 
     /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->fillable[] = config('teams.foreign_keys.team_id');
+    }
+
+    /**
      * Bootstrap any application services.
      */
     protected static function boot(): void
@@ -42,20 +56,6 @@ class Group extends Model
 
         });
 
-    }
-
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-
-        $this->fillable[] = config('teams.foreign_keys.team_id');
     }
 
     /**
@@ -85,7 +85,7 @@ class Group extends Model
      */
     public function permissions(): MorphToMany
     {
-        return $this->morphToMany(Teams::model('ability'), 'entity', 'entity_permission');
+        return $this->morphToMany(Teams::model('permission'), 'entity', 'entity_permission');
     }
 
     /**

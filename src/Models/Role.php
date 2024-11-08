@@ -51,7 +51,7 @@ class Role extends Model
     /**
      * Bootstrap any application services.
      */
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
