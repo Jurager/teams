@@ -2,6 +2,7 @@
 
 namespace Jurager\Teams\Traits;
 
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Jurager\Teams\Support\Facades\Teams;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -88,7 +89,7 @@ trait HasTeams
      */
     public function belongsToTeam(object $team): bool
     {
-        return $this->ownsTeam($team) || $this->teams()->where(config('teams.foreign_keys.team_id', 'team_id'), $team?->id)->exists();
+        return $this->ownsTeam($team) || $this->teams()->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)->exists();
     }
 
     /**
@@ -334,7 +335,7 @@ trait HasTeams
     public function hasTeamAbility(object $team, string $ability, object $entity): bool
     {
         // Check if user is entity owner by custom method
-        if ((method_exists($entity, 'isOwner') && $entity?->isOwner($this))) {
+        if ((method_exists($entity, 'isOwner') && $entity->isOwner($this))) {
             return true;
         }
 
@@ -442,7 +443,7 @@ trait HasTeams
 
         // Ensure the ability model is successfully retrieved or created
         if (! $ability_model) {
-            throw new ModelNotFoundException("Ability with name '{$ability}' not found.");
+            throw new ModelNotFoundException("Ability with name '$ability' not found.");
         }
 
         // Update or create permission for the user entity to perform the action on the target
@@ -451,7 +452,7 @@ trait HasTeams
                 config('teams.foreign_keys.team_id', 'team_id') => $team->id,
                 'ability_id' => $ability_model->id,
                 'entity_id' => $group->id ?? $this->id,
-                'entity_type' => $group ? $group::class : $this::class,
+                'entity_type' => $group::class ?? $this::class,
             ],
             [
                 'forbidden' => false,
@@ -492,7 +493,7 @@ trait HasTeams
 
         // Ensure the ability model is successfully retrieved or created
         if (! $ability_model) {
-            throw new ModelNotFoundException("Ability with name '{$ability}' not found.");
+            throw new ModelNotFoundException("Ability with name '$ability' not found.");
         }
 
         // Update or create permission for the user entity to perform the action on the target
@@ -542,7 +543,7 @@ trait HasTeams
 
         // Ensure the ability model is successfully retrieved or created
         if (! $ability_model) {
-            throw new ModelNotFoundException("Ability with name '{$ability}' not found.");
+            throw new ModelNotFoundException("Ability with name '$ability' not found.");
         }
 
         // Find permission for the user entity to perform the action on the target

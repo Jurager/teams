@@ -125,11 +125,11 @@ class Teams
     /**
      * Get the model to authorize.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param Request $request
      * @param string $model
      * @return string
      */
-    protected function getModel(Request $request, $model): string
+    protected function getModel(Request $request, string $model): string
     {
         // Trim the model name and ensure it is a fully qualified class name if not already
         $trimmedModel = trim($model);

@@ -267,11 +267,12 @@ class Team extends Model
         $roles = $this->roles();
 
         if ($keyword !== null) {
-            $roles->where(function ($query) use ($keyword) {
+            $roles = $roles->where(function ($query) use ($keyword) {
                 $query->where('id', $keyword)
                     ->orWhere('code', $keyword);
             });
         }
+
         return $roles->exists();
     }
 
@@ -381,7 +382,7 @@ class Team extends Model
         $groups = $this->groups();
 
         if ($keyword !== null) {
-            $groups->where(function ($query) use ($keyword) {
+            $groups = $groups->where(function ($query) use ($keyword) {
                 $query->where('id', $keyword)
                     ->orWhere('code', $keyword);
             });

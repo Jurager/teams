@@ -55,7 +55,7 @@ class TeamsService
         $modelClass = $this->models[$key] ?? null;
 
         if (!$modelClass || !class_exists($modelClass)) {
-            throw new \RuntimeException("Model class for key {$key} not found.");
+            throw new \RuntimeException("Model class for key $key not found.");
         }
 
         return $instance ? new $modelClass : $modelClass;
