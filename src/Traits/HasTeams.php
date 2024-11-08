@@ -4,10 +4,10 @@ namespace Jurager\Teams\Traits;
 
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Jurager\Teams\Support\Facades\Teams;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 use Jurager\Teams\Models\Owner;
 
@@ -200,9 +200,8 @@ trait HasTeams
      * @param bool $require
      * @return bool
      */
-    public function hasTeamPermission(object $team, string|array $permissions = [], bool $require = false): bool
+    public function hasTeamPermission(object $team, string|array $permissions, bool $require = false): bool
     {
-
         //$require = true  (all permissions in the array are required)
         //$require = false  (only one or more permission in the array are required or $permissions is empty)
 
@@ -219,9 +218,10 @@ trait HasTeams
         $permissions = (array) $permissions;
 
         // If the permissions array is empty, return true if not required, false otherwise
-        if (empty($permissions) && !$require) {
-            return true;
+        if (empty($permissions)) {
+            return false;
         }
+
         // Get user's permissions for the team
         $user_permissions = $this->teamPermissions($team);
 

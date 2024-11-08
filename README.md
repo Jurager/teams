@@ -190,6 +190,8 @@ $user->hasTeamRole(object $team, string|array 'admin', bool $require = false) : 
 $user->teamPermissions(object $team) : array
 
 // Determine if a user has a given team permission...
+// $require = true  (all permissions in the array are required)
+// $require = false  (only one or more permission in the array are required)
 $user->hasTeamPermission(object $team, string|array 'server:create', bool $require = false) : bool
 
 // Get list of abilities or forbidden abilities for users on certain model
@@ -262,7 +264,7 @@ To ensure that incoming requests initiated by a team member can be executed by t
 **Example**: Check if a user within a team has permission to update a server
 
 ```php
-return $user->hasTeamPermission(object $team, string $server->team, string 'server:update');
+return $user->hasTeamPermission(object $team, string 'server:update');
 ```
 
 Abilities

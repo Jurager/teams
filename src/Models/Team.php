@@ -323,8 +323,8 @@ class Team extends Model
     /**
      * Update an existing role with new permissions.
      *
-     * @param  int|string  $keyword The role ID or code to update
-     * @param  array   $permissions An array of permissions codes to assign to the role.
+     * @param int|string  $keyword The role ID or code to update
+     * @param array $permissions An array of permissions codes to assign to the role.
      * @param string|null $name Optional name for the role. Defaults to a formatted version of `$code` if not provided.
      * @param string|null $description Optional description for the role to provide additional context.
      * @return object|bool
@@ -409,8 +409,8 @@ class Team extends Model
      * Add a new group to the team.
      *
      * @param string $code The unique code of the group.
-     * @param array $permissions
-     * @param string|null $name
+     * @param array $permissions An array of permissions codes to assign to the group.
+     * @param string|null $name Optional name for the group. Defaults to a formatted version of `$code` if not provided.
      * @return object
      */
     public function addGroup(string $code, array $permissions = [], string|null $name = null): object
@@ -437,11 +437,11 @@ class Team extends Model
      * Update an existing group with new permissions.
      *
      * @param int|string $keyword The group ID or code to update
-     * @param array|null $permissions An array of permissions codes to assign to the group.
+     * @param array $permissions An array of permissions codes to assign to the group.
      * @param string|null $name Optional name for the group. Defaults to a formatted version of `$code` if not provided.
      * @return object|bool
      */
-    public function updateGroup(int|string $keyword, array|null $permissions = null, string|null $name = null): object|bool
+    public function updateGroup(int|string $keyword, array $permissions = [], string|null $name = null): object|bool
     {
         // Fetch the group by ID or code
         $group = $this->getGroup($keyword);
