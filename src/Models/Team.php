@@ -504,6 +504,7 @@ class Team extends Model
     private function getPermissionIds(array $codes): array
     {
         $permissions = Teams::model('permission')::query()
+            ->where(config('teams.foreign_keys.team_id', 'team_id'), $this->id)
             ->whereIn('code', $codes)
             ->pluck('id', 'code')
             ->all();
@@ -512,14 +513,15 @@ class Team extends Model
 
         if (!empty($newPermissions)) {
 
-            $items = array_map(static fn($code) => ['code' => $code], $newPermissions);
+            $items = array_map(static fn($code) => [config('teams.foreign_keys.team_id', 'team_id') => $this->id ,'code' => $code], $newPermissions);
 
             Teams::model('permission')::query()->insert($items);
 
-            $permissions = array_merge($permissions, Teams::model('permission')::query()
-                ->whereIn('code', $newPermissions)
+            $permissions = Teams::model('permission')::query()
+                ->where(config('teams.foreign_keys.team_id', 'team_id'), $this->id)
+                ->whereIn('code', $codes)
                 ->pluck('id', 'code')
-                ->all());
+                ->all();
 
         }
 

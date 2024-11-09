@@ -22,6 +22,13 @@ class Permission extends Model
      */
     public $timestamps = false;
 
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->fillable[] = config('teams.foreign_keys.team_id');
+    }
+
     /**
      * Get all the groups that are assigned this permission.
      */

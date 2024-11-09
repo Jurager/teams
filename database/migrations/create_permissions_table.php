@@ -13,8 +13,11 @@ return new class extends Migration
     {
         Schema::create('permissions', static function (Blueprint $table) {
             $table->id();
+            $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
             $table->string('name')->nullable();
             $table->string('code');
+
+            $table->unique([config('teams.foreign_keys.team_id', 'team_id'), 'code']);
         });
     }
 

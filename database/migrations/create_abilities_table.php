@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('abilities', static function (Blueprint $table) {
             $table->id();
             $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
-            $table->string('name');
+            $table->string('action');
             $table->string('title')->nullable();
             $table->morphs('entity');
             $table->timestamps();

@@ -187,12 +187,14 @@ $user->teamRole(object $team) : \Jurager\Teams\Role
 $user->hasTeamRole(object $team, string|array 'admin', bool $require = false) : bool
 
 // Access an array of all permissions a user has for a given team...
-$user->teamPermissions(object $team) : array
+// Scope identifies which model to take permissions from, by default getting all permissions ( ex. 'role', 'group')
+$user->teamPermissions(object $team, string|null $scope = null) : array
 
 // Determine if a user has a given team permission...
 // $require = true  (all permissions in the array are required)
 // $require = false  (only one or more permission in the array are required)
-$user->hasTeamPermission(object $team, string|array 'server:create', bool $require = false) : bool
+// $scope - identifies in which model to check permissions, by default in all ( ex. 'role', 'group')
+$user->hasTeamPermission(object $team, string|array 'server:create', bool $require = false, string|null $scope = null) : bool
 
 // Get list of abilities or forbidden abilities for users on certain model
 $user->teamAbilities(object $team, object $server) : mixed
@@ -279,7 +281,7 @@ Adding abilities to users is easy — just pass the ability name, and it’ll be
 To grant a user the ability to edit an article within a team, simply provide the relevant entities, such as the article and team objects:
 
 ```php
-User::allowTeamAbility(object $team, string 'edit', object $article, object|null $group);
+allowTeamAbility(object $team, string $action, object $action_entity, object|null $target_entity = null)
 ```
 
 ### Checking an Ability
@@ -294,7 +296,7 @@ User::hasTeamAbility(object $team, string 'edit', object $article);
 
 To prevent a user from having a specific ability (even if their role allows it), use the following method:
 ```php
-User::forbidTeamAbility(object $team, string 'edit', object $article, object|null $group);
+User::forbidTeamAbility(object $team, string $action, object $action_entity, object|null $target_entity = null)
 ```
 
 Groups

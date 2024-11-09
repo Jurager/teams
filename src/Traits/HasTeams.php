@@ -160,9 +160,10 @@ trait HasTeams
      * Get the user's permissions for the given team.
      *
      * @param object $team
+     * @param string|null $scope Scope of permissions to get (ex. 'role', 'group'), by default getting all permissions
      * @return array|string[]
      */
-    public function teamPermissions(object $team): array
+    public function teamPermissions(object $team, string|null $scope = null): array
     {
         // If the user is the team owner, grant him all rights.
         if ($this->ownsTeam($team)) {
@@ -174,22 +175,26 @@ trait HasTeams
             return [];
         }
 
-        // Get the user's role in the team.
-        $role = $this->teamRole($team);
+        $permissions = [];
 
-        // Defaults get role permission
-        $permissions = $role->permissions->pluck('code')->all();
-
-        // Get all team groups for user
-        $groups = $this->groups()->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)->get();
-
-        // Filling in group permissions
-        foreach ($groups as $group) {
-            $permissions = [...$permissions, ...$group->permissions->pluck('code')->all()];
+        // Get role-based permissions if the scope is 'role' or null (both)
+        if (!$scope || $scope === 'role') {
+            $permissions = $this->teamRole($team)->permissions->pluck('code')->all();
         }
 
-        // Return permissions.
-        return $permissions;
+        // Append group-based permissions if the scope is 'group' or null (both)
+        if (!$scope || $scope === 'group') {
+            $groupPermissions = $this->groups()
+                ->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)
+                ->get()
+                ->flatMap(fn($group) => $group->permissions->pluck('code'))
+                ->all();
+
+            $permissions = array_merge($permissions, $groupPermissions);
+        }
+
+        // Return unique permissions
+        return array_unique($permissions);
     }
 
     /**
@@ -198,9 +203,10 @@ trait HasTeams
      * @param object $team
      * @param string|array $permissions
      * @param bool $require
+     * @param string|null $scope Scope of permissions to check (ex. 'role', 'group'), by default checking all permissions
      * @return bool
      */
-    public function hasTeamPermission(object $team, string|array $permissions, bool $require = false): bool
+    public function hasTeamPermission(object $team, string|array $permissions, bool $require = false, string|null $scope = null): bool
     {
         //$require = true  (all permissions in the array are required)
         //$require = false  (only one or more permission in the array are required or $permissions is empty)
@@ -223,7 +229,7 @@ trait HasTeams
         }
 
         // Get user's permissions for the team
-        $user_permissions = $this->teamPermissions($team);
+        $user_permissions = $this->teamPermissions($team, $scope);
 
         // Check simple permission
         $check_permission = static function ($permission) use ($user_permissions) {
@@ -328,14 +334,14 @@ trait HasTeams
      * @todo: Refactor this
      *
      * @param object $team
-     * @param string $ability
-     * @param object $entity
+     * @param string $action
+     * @param object $action_entity
      * @return bool
      */
-    public function hasTeamAbility(object $team, string $ability, object $entity): bool
+    public function hasTeamAbility(object $team, string $action, object $action_entity): bool
     {
         // Check if user is entity owner by custom method
-        if ((method_exists($entity, 'isOwner') && $entity->isOwner($this))) {
+        if ((method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this))) {
             return true;
         }
 
@@ -343,20 +349,20 @@ trait HasTeams
         $allowed = 0;
         $forbidden = 1;
 
-        if ($this->hasTeamPermission($team, $ability)) {
+        if ($this->hasTeamPermission($team, $action)) {
             $allowed = 1;
         }
 
-        if ($this->hasGlobalGroupPermissions($ability)) {
+        if ($this->hasGlobalGroupPermissions($action)) {
             $allowed = 2;
         }
 
         // Get an ability
         $ability = Teams::instance('ability')->firstWhere([
             config('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'entity_id' => $entity->id,
-            'entity_type' => $entity::class,
-            'name' => $ability,
+            'entity_id' => $action_entity->id,
+            'entity_type' => $action_entity::class,
+            'action' => $action,
         ]);
 
         // If there is a rule for an entity
@@ -383,7 +389,7 @@ trait HasTeams
                     'allowed' => 2,
                     'forbidden' => 3,
                 ],
-                $this::class => [
+                Teams::model('user') => [
                     'allowed' => 3,
                     'forbidden' => 4,
                 ],
@@ -414,162 +420,85 @@ trait HasTeams
     }
 
     /**
-     * Allow user to perform an ability
-     * @todo: Refactor this
+     * Allow user to perform an ability on entity
      *
      * @param object $team
-     * @param string $ability
-     * @param object $entity
-     * @param object|null $group
-     * @return bool
-     */
-    public function allowTeamAbility(object $team, string $ability, object $entity, ?object $group = null): bool
-    {
-        // Determine the ability required to edit the entity
-        $requiredAbility = $this->generateAbilityName($entity, 'edit');
-
-        // Check if the user has the required ability to edit the entity
-        if (! $this->hasTeamAbility($team, $requiredAbility, $entity)) {
-            return false;
-        }
-
-        // Get or create the ability model for the specified action
-        $ability_model = Teams::instance('ability')->firstOrCreate([
-            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'entity_id' => $entity->id,
-            'entity_type' => $entity::class,
-            'name' => $ability,
-        ]);
-
-        // Ensure the ability model is successfully retrieved or created
-        if (! $ability_model) {
-            throw new ModelNotFoundException("Ability with name '$ability' not found.");
-        }
-
-        // Update or create permission for the user entity to perform the action on the target
-        Teams::instance('permission')->updateOrCreate(
-            [
-                config('teams.foreign_keys.team_id', 'team_id') => $team->id,
-                'ability_id' => $ability_model->id,
-                'entity_id' => $group->id ?? $this->id,
-                'entity_type' => $group::class ?? $this::class,
-            ],
-            [
-                'forbidden' => false,
-            ]
-        );
-
-        return true;
-    }
-
-    /**
-     * Forbid user to perform an ability
-     * @todo: Refactor this
-     *
-     * @param object $team
-     * @param string $ability
-     * @param object $entity
-     * @param object|null $group
-     * @return bool
-     */
-    public function forbidTeamAbility(object $team, string $ability, object $entity, ?object $group): bool
-    {
-        // Determine the ability required to edit the entity
-        $requiredAbility = $this->generateAbilityName($entity, 'edit');
-
-        // Check if the user has the required ability to edit the entity
-        if (! $this->hasTeamAbility($team, $requiredAbility, $entity)) {
-            return false;
-        }
-
-        // Get an ability to perform an action on specific entity object inside team
-        //
-        $ability_model = Teams::instance('ability')->firstOrCreate([
-            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'entity_id' => $entity->id,
-            'entity_type' => $entity::class,
-            'name' => $ability,
-        ]);
-
-        // Ensure the ability model is successfully retrieved or created
-        if (! $ability_model) {
-            throw new ModelNotFoundException("Ability with name '$ability' not found.");
-        }
-
-        // Update or create permission for the user entity to perform the action on the target
-        Teams::instance('permission')->updateOrCreate(
-            [
-                config('teams.foreign_keys.team_id', 'team_id') => $team->id,
-                'ability_id' => $ability_model->id,
-                'entity_id' => $group->id ?? $this->id,
-                'entity_type' => $group::class ?? $this::class,
-            ],
-            [
-                'forbidden' => true,
-            ]
-        );
-
-        return true;
-    }
-
-    /**
-     * Delete user ability
-     * @todo: Refactor this
-     *
-     * @param object $team
-     * @param string $ability
-     * @param object $entity
-     * @param object|null $group
-     * @return bool
-     */
-    public function deleteTeamAbility(object $team, string $ability, object $entity, ?object $group): bool
-    {
-        // Determine the ability required to edit the entity
-        $requiredAbility = $this->generateAbilityName($entity, 'edit');
-
-        // Check if the user has the required ability to edit the entity
-        if (! $this->hasTeamAbility($team, $requiredAbility, $entity)) {
-            return false;
-        }
-
-        // Get an ability to perform an action on specific entity object inside team
-        //
-        $ability_model = Teams::instance('ability')->firstWhere([
-            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'entity_id' => $entity->id,
-            'entity_type' => $entity::class,
-            'name' => $ability,
-        ]);
-
-        // Ensure the ability model is successfully retrieved or created
-        if (! $ability_model) {
-            throw new ModelNotFoundException("Ability with name '$ability' not found.");
-        }
-
-        // Find permission for the user entity to perform the action on the target
-        $permission = Teams::instance('permission')->firstWhere([
-            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'ability_id' => $ability_model->id,
-            'entity_id' => $group->id ?? $this->id,
-            'entity_type' => $group::class ?? $this::class,
-        ]);
-
-        if ($permission->delete()) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Helper method for generating ability name
-     *
-     * @param object $entity
      * @param string $action
-     * @return string
+     * @param object $action_entity
+     * @param object|null $target_entity
+     * @return void
      */
-    protected function generateAbilityName(object $entity, string $action): string
+    public function allowTeamAbility(object $team, string $action, object $action_entity, object|null $target_entity = null): void
     {
-        return Str::snake(Str::plural(class_basename($entity))) . '.' . $action;
+        $this->updateAbilityOnEntity($team, 'attach', $action, $action_entity, $target_entity);
+    }
+
+    /**
+     * Forbid user to perform an ability on entity
+     *
+     * @param object $team
+     * @param string $action
+     * @param object $action_entity
+     * @param object|null $target_entity
+     * @return void
+     */
+    public function forbidTeamAbility(object $team, string $action, object $action_entity, object|null $target_entity = null): void
+    {
+        $this->updateAbilityOnEntity($team, 'attach', $action, $action_entity, $target_entity, true);
+    }
+
+    /**
+     * Delete user ability on entity
+     *
+     * @param object $team
+     * @param string $action
+     * @param object $action_entity
+     * @param object|null $target_entity
+     * @return void
+     *
+     */
+    public function deleteTeamAbility(object $team, string $action, object $action_entity, object|null $target_entity = null): void
+    {
+        $this->updateAbilityOnEntity($team, 'detach', $action, $action_entity, $target_entity);
+    }
+
+    /**
+     * Helper method for attaching or detaching ability to entity
+     *
+     * @param object $team
+     * @param string $method
+     * @param string $action
+     * @param object $action_entity
+     * @param object|null $target_entity
+     * @param bool $forbidden
+     * @return void
+     */
+    private function updateAbilityOnEntity(object $team, string $method, string $action, object $action_entity, object|null $target_entity = null, bool $forbidden = false): void
+    {
+        $ability_model = Teams::instance('ability')->firstOrCreate([
+            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
+            'entity_id' => $action_entity->id,
+            'entity_type' => $action_entity::class,
+            'action' => $action,
+        ]);
+
+        // Ensure the ability model is successfully retrieved or created
+        if (! $ability_model) {
+            throw new ModelNotFoundException("Ability with action '$action' not found.");
+        }
+
+        // Target for ability defaults to user
+        $target_entity = $target_entity ?? $this;
+
+        // Get relation name for ability
+        $relation = Str::plural(strtolower(class_basename($target_entity::class)));
+
+        if(!method_exists($ability_model, $relation)) {
+            throw new ModelNotFoundException("Ability relation '$relation' not found.");
+        }
+
+        $ability_model->{$relation}()->{$method}($target_entity->id, [
+            'forbidden' => $forbidden,
+        ]);
     }
 }
