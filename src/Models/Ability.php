@@ -14,7 +14,7 @@ class Ability extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['id', 'name', 'title', 'entity_id', 'entity_type'];
+    protected $fillable = ['id', 'permission_id', 'title', 'entity_id', 'entity_type'];
 
     public function __construct(array $attributes = [])
     {
