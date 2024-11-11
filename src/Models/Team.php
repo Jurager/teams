@@ -501,7 +501,7 @@ class Team extends Model
      * @param  array  $codes An array of permission codes to retrieve or create IDs for.
      * @return array
      */
-    private function getPermissionIds(array $codes): array
+    public function getPermissionIds(array $codes): array
     {
         $permissions = Teams::model('permission')::query()
             ->where(config('teams.foreign_keys.team_id', 'team_id'), $this->id)

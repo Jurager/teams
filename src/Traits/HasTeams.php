@@ -334,11 +334,11 @@ trait HasTeams
      * @todo: Refactor this
      *
      * @param object $team
-     * @param string $action
+     * @param string $permission
      * @param object $action_entity
      * @return bool
      */
-    public function hasTeamAbility(object $team, string $action, object $action_entity): bool
+    public function hasTeamAbility(object $team, string $permission, object $action_entity): bool
     {
         // Check if user is entity owner by custom method
         if ((method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this))) {
@@ -349,12 +349,16 @@ trait HasTeams
         $allowed = 0;
         $forbidden = 1;
 
-        if ($this->hasTeamPermission($team, $action)) {
+        if ($this->hasTeamPermission($team, $permission, scope: 'role')) {
             $allowed = 1;
         }
 
-        if ($this->hasGlobalGroupPermissions($action)) {
-            $allowed = 2;
+        if ($this->hasTeamPermission($team, $permission, scope: 'group')) {
+            $allowed = 3;
+        }
+
+        if ($this->hasGlobalGroupPermissions($permission)) {
+            $allowed = 6;
         }
 
         // Get an ability
@@ -362,17 +366,11 @@ trait HasTeams
             config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $action_entity->id,
             'entity_type' => $action_entity::class,
-            'action' => $action,
-        ]);
+            'permission_id' => reset($team->getPermissionIds([$permission]))
+        ])->with(['users', 'groups', 'roles']);
 
         // If there is a rule for an entity
         if ($ability) {
-
-            // Get permissions
-            $permissions = Teams::instance('permission')->where([
-                config('teams.foreign_keys.team_id', 'team_id') => $team->id,
-                'ability_id' => $ability->id,
-            ])->get();
 
             $role = $this->teamRole($team);
             $groups = $this->groups->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id);
@@ -382,16 +380,16 @@ trait HasTeams
 
             $access_levels = [
                 Teams::model('role') => [
-                    'allowed' => 1,
-                    'forbidden' => 2,
+                    'allowed' => 2,
+                    'forbidden' => 3
                 ],
                 Teams::model('group') => [
-                    'allowed' => 2,
-                    'forbidden' => 3,
+                    'allowed' => 4,
+                    'forbidden' => 5
                 ],
                 Teams::model('user') => [
-                    'allowed' => 3,
-                    'forbidden' => 4,
+                    'allowed' => 5,
+                    'forbidden' => 6
                 ],
             ];
 
@@ -402,17 +400,16 @@ trait HasTeams
                     continue;
                 }
 
-                $permission = $permissions->firstWhere(['entity_id' => $item->id, 'entity_type' => $item::class]);
+                $entity = $ability->{$this->getRelationName($item)}->firstWhere('id', $item->id);
 
-                if ($permission) {
-                    if ($permission->forbidden) {
+                if ($entity) {
+                    if ($entity->pivot->forbidden) {
                         $forbidden = $access_levels[$item::class]['forbidden'];
                     } else {
                         $allowed = $access_levels[$item::class]['allowed'];
                     }
                 }
             }
-
         }
 
         // Access level comparison
@@ -423,28 +420,28 @@ trait HasTeams
      * Allow user to perform an ability on entity
      *
      * @param object $team
-     * @param string $action
+     * @param string $permission
      * @param object $action_entity
      * @param object|null $target_entity
      * @return void
      */
-    public function allowTeamAbility(object $team, string $action, object $action_entity, object|null $target_entity = null): void
+    public function allowTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
     {
-        $this->updateAbilityOnEntity($team, 'attach', $action, $action_entity, $target_entity);
+        $this->updateAbilityOnEntity($team, 'attach', $permission, $action_entity, $target_entity);
     }
 
     /**
      * Forbid user to perform an ability on entity
      *
      * @param object $team
-     * @param string $action
+     * @param string $permission
      * @param object $action_entity
      * @param object|null $target_entity
      * @return void
      */
-    public function forbidTeamAbility(object $team, string $action, object $action_entity, object|null $target_entity = null): void
+    public function forbidTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
     {
-        $this->updateAbilityOnEntity($team, 'attach', $action, $action_entity, $target_entity, true);
+        $this->updateAbilityOnEntity($team, 'attach', $permission, $action_entity, $target_entity, true);
     }
 
     /**
@@ -457,9 +454,9 @@ trait HasTeams
      * @return void
      *
      */
-    public function deleteTeamAbility(object $team, string $action, object $action_entity, object|null $target_entity = null): void
+    public function deleteTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
     {
-        $this->updateAbilityOnEntity($team, 'detach', $action, $action_entity, $target_entity);
+        $this->updateAbilityOnEntity($team, 'detach', $permission, $action_entity, $target_entity);
     }
 
     /**
@@ -467,31 +464,31 @@ trait HasTeams
      *
      * @param object $team
      * @param string $method
-     * @param string $action
+     * @param string $permission
      * @param object $action_entity
      * @param object|null $target_entity
      * @param bool $forbidden
      * @return void
      */
-    private function updateAbilityOnEntity(object $team, string $method, string $action, object $action_entity, object|null $target_entity = null, bool $forbidden = false): void
+    private function updateAbilityOnEntity(object $team, string $method, string $permission, object $action_entity, object|null $target_entity = null, bool $forbidden = false): void
     {
         $ability_model = Teams::instance('ability')->firstOrCreate([
             config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $action_entity->id,
             'entity_type' => $action_entity::class,
-            'action' => $action,
+            'permission_id' => reset($team->getPermissionIds([$permission]))
         ]);
 
         // Ensure the ability model is successfully retrieved or created
         if (! $ability_model) {
-            throw new ModelNotFoundException("Ability with action '$action' not found.");
+            throw new ModelNotFoundException("Ability with permission '$permission' not found.");
         }
 
         // Target for ability defaults to user
         $target_entity = $target_entity ?? $this;
 
         // Get relation name for ability
-        $relation = Str::plural(strtolower(class_basename($target_entity::class)));
+        $relation = $this->getRelationName($target_entity);
 
         if(!method_exists($ability_model, $relation)) {
             throw new ModelNotFoundException("Ability relation '$relation' not found.");
@@ -500,5 +497,16 @@ trait HasTeams
         $ability_model->{$relation}()->{$method}($target_entity->id, [
             'forbidden' => $forbidden,
         ]);
+    }
+
+    /**
+     * Get relation name for ability
+     *
+     * @param object|string $classname
+     * @return string
+     */
+    private function getRelationName(object|string $classname): string
+    {
+        return  Str::plural(strtolower(class_basename( is_object($classname) ? $classname::class : $classname )));
     }
 }
