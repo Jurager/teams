@@ -311,11 +311,7 @@ class Team extends Model
             'description' => $description
         ]);
 
-        // Retrieve permission IDs from the provided permissions
-        $permissionIds = $this->getPermissionIds($permissions);
-
-        // Sync permissions if any valid IDs are found, otherwise detach all
-        $role->permissions()->sync($permissionIds);
+        $role->permissions()->sync($this->getPermissionIds($permissions));
 
         return $role;
     }
@@ -338,18 +334,12 @@ class Team extends Model
             throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
         }
 
-        $role->name = $name ?? $role->name;
-        $role->description = $description ?? $role->description;
+        $role->update([
+            'name' => $name ?? $role->name,
+            'description' => $description ?? $role->description
+        ]);
 
-        // Save changes to the group and synchronize permissions if provided
-        if($role->save()) {
-
-            // Retrieve permission IDs from the provided permissions
-            $permissionIds = $this->getPermissionIds($permissions);
-
-            // Sync permissions if any valid IDs are found, otherwise detach all
-            $role->permissions()->sync($permissionIds);
-        }
+        $role->permissions()->sync($this->getPermissionIds($permissions));
 
         return $role;
     }
@@ -424,11 +414,7 @@ class Team extends Model
             'name' => $name ?? Str::studly($code)
         ]);
 
-        // Retrieve permission IDs from the provided permissions
-        $permissionIds = $this->getPermissionIds($permissions);
-
-        // Sync permissions if any valid IDs are found, otherwise detach all
-        $group->permissions()->sync($permissionIds);
+        $group->permissions()->sync($this->getPermissionIds($permissions));
 
         return $group;
     }
@@ -451,18 +437,11 @@ class Team extends Model
             throw new ModelNotFoundException("Group with id/code '$keyword' not found.");
         }
 
-        // Update group name if a new name is provided
-        $group->name = $name ?? $group->name;
+        $group->update([
+            'name' => $name ?? $group->name
+        ]);
 
-        // Save changes to the group and synchronize permissions if provided
-        if($group->save()) {
-
-            // Retrieve permission IDs from the provided permissions
-            $permissionIds = $this->getPermissionIds($permissions);
-
-            // Sync permissions if any valid IDs are found, otherwise detach all
-            $group->permissions()->sync($permissionIds);
-        }
+        $group->permissions()->sync($this->getPermissionIds($permissions));
 
         return $group;
     }

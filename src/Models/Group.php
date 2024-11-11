@@ -101,16 +101,14 @@ class Group extends Model
      */
     public function attachUser(Collection|Model $user): bool
     {
-        if ($user instanceof Collection) {
-            $users = $user->filter(fn($item) => $this->team->hasUser($item));
+        // Convert user to collection if it is the only model
+        $users = $user instanceof Collection ? $user : collect([$user]);
 
-            return $users->isNotEmpty() && count($this->users()->sync($users, false));
-        }
-        if ($user instanceof Model && $this->team->hasUser($user)) {
-            return (bool) $this->users()->syncWithoutDetaching($user);
-        }
+        // Filter only those users who are in the team
+        $filteredUserIds = $users->filter(fn($item) => $this->team->hasUser($item));
 
-        return false;
+        // If there are users left after filtering, synchronize and return the result
+        return $filteredUserIds->isNotEmpty() && $this->users()->syncWithoutDetaching($filteredUserIds->pluck('id')) > 0;
     }
 
     /**
@@ -118,17 +116,13 @@ class Group extends Model
      */
     public function detachUser(Collection|Model $user): bool
     {
-        if ($user instanceof Collection) {
+        // Convert user to collection if it is the only model
+        $users = $user instanceof Collection ? $user : collect([$user]);
 
-            $users = $user->filter(fn ($item) => $this->team->hasUser($item));
+        // Filter only those users who are in the team
+        $filteredUserIds  = $users->filter(fn($item) => $this->team->hasUser($item));
 
-            return $users->isNotEmpty() && count($this->users()->detach($users->pluck('id')->all()));
-        }
-
-        if ($this->team->hasUser($user)) {
-            return (bool) $this->users()->detach($user->id);
-        }
-
-        return false;
+        // If there are any users left after filtering, we execute detach and return the result
+        return $filteredUserIds ->isNotEmpty() && $this->users()->detach($filteredUserIds->pluck('id')) > 0;
     }
 }
