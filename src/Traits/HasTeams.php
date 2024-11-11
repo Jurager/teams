@@ -14,7 +14,7 @@ use Jurager\Teams\Models\Owner;
 trait HasTeams
 {
     /**
-     * Determine if the user owns the given team.
+     * Check if the user owns the given team.
      *
      * @param object $team
      * @return bool
@@ -25,7 +25,7 @@ trait HasTeams
     }
 
     /**
-     * Get all the teams the user owns or belongs to.
+     * Retrieve all teams the user owns or belongs to.
      *
      * @return Collection
      */
@@ -35,32 +35,32 @@ trait HasTeams
     }
 
     /**
-     * Get all the teams the user owns.
+     * Retrieve all teams the user owns.
      *
      * @return HasMany
      */
     public function ownedTeams(): HasMany
     {
-        return $this->hasMany(Teams::model('team'))->setEagerLoads([]);
+        return $this->hasMany(Teams::model('team'))->withoutGlobalScopes();
     }
 
 
     /**
-     * Get all the teams the user belongs to.
+     * Retrieve all teams the user belongs to.
      *
      * @return BelongsToMany
      */
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Teams::model('team'), Teams::model('membership'), 'user_id', config('teams.foreign_keys.team_id'))
-            ->setEagerLoads([])
+            ->withoutGlobalScopes()
             ->withPivot('role_id')
             ->withTimestamps()
             ->as('membership');
     }
 
     /**
-     * Get the abilities that belongs to user.
+     * Retrieve abilities related to the user.
      *
      * @return MorphToMany
      */
@@ -72,7 +72,7 @@ trait HasTeams
     }
 
     /**
-     * Get all the groups the user belongs to.
+     * Retrieve all groups the user belongs to.
      *
      * @return BelongsToMany
      */
@@ -82,7 +82,7 @@ trait HasTeams
     }
 
     /**
-     * Determine if the user belongs to the given team.
+     * Check if the user belongs to the specified team.
      *
      * @param object $team
      * @return bool
@@ -93,30 +93,25 @@ trait HasTeams
     }
 
     /**
-     * Get the role that the user has on the team.
+     * Retrieve the user's role in a team.
      *
      * @param object $team
      * @return mixed
      */
     public function teamRole(object $team): mixed
     {
-        // If the user is the owner of the team, return the Owner object.
         if ($this->ownsTeam($team)) {
             return new Owner();
         }
 
-        // If the user does not belong to the team, return null.
-        if (! $this->belongsToTeam($team)) {
-            return null;
-        }
-
-        // Get the user's role in the team.
-        return $team->getRole($team->users->firstWhere('id', $this->id)->membership->role->id ?? null);
+        return $this->belongsToTeam($team)
+            ? $team->getRole($this->teams()->find($team->id)?->membership?->role_id)
+            : null;
     }
 
 
     /**
-     * Determine if the user has the given role on the given team.
+     * Check if the user has the specified role on the team.
      *
      * @param object $team
      * @param string|array $roles
@@ -129,31 +124,13 @@ trait HasTeams
             return true;
         }
 
-        if (! $this->belongsToTeam($team)) {
-            return false;
-        }
+        $userRole = $this->teamRole($team)?->code;
 
-        // Convert a string to an array if a single role is passed.
         $roles = (array) $roles;
 
-        // If the list of roles is empty, then we return true or false depending on $require.
-        if (empty($roles)) {
-            return $require;
-        }
-
-        $userRole = $team->users->firstWhere('id', $this->id)->membership->role->code ?? null;
-
-        if (!$userRole) {
-            return false;
-        }
-
-        // For require=true, check that the user role matches all passed roles.
-        if ($require) {
-            return empty(array_diff($roles, [$userRole]));
-        }
-
-        // For require=false, return true if at least one of the roles matches the user's role.
-        return in_array($userRole, $roles, true);
+        return $require
+            ? !array_diff($roles, [$userRole])
+            : in_array($userRole, $roles, true);
     }
 
     /**
@@ -165,35 +142,25 @@ trait HasTeams
      */
     public function teamPermissions(object $team, string|null $scope = null): array
     {
-        // If the user is the team owner, grant him all rights.
         if ($this->ownsTeam($team)) {
             return ['*'];
         }
 
-        // If the user does not belong to the team, return an empty array of rights.
-        if (! $this->belongsToTeam($team)) {
-            return [];
-        }
-
         $permissions = [];
 
-        // Get role-based permissions if the scope is 'role' or null (both)
         if (!$scope || $scope === 'role') {
-            $permissions = $this->teamRole($team)->permissions->pluck('code')->all();
+            $permissions = array_merge($permissions, $this->teamRole($team)?->permissions?->pluck('code')?->toArray() ?? []);
         }
 
-        // Append group-based permissions if the scope is 'group' or null (both)
         if (!$scope || $scope === 'group') {
-            $groupPermissions = $this->groups()
-                ->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)
+            $groupPermissions = $this->groups()->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)
+                ->with('permissions')
                 ->get()
                 ->flatMap(fn($group) => $group->permissions->pluck('code'))
-                ->all();
-
+                ->toArray();
             $permissions = array_merge($permissions, $groupPermissions);
         }
 
-        // Return unique permissions
         return array_unique($permissions);
     }
 
@@ -215,53 +182,27 @@ trait HasTeams
             return true;
         }
 
-        // If the user does not belong to the team, deny access
-        if (!$this->belongsToTeam($team)) {
-            return false;
-        }
-
-        // Convert a string to an array if a single permission is passed.
         $permissions = (array) $permissions;
 
-        // If the permissions array is empty, return true if not required, false otherwise
         if (empty($permissions)) {
             return false;
         }
 
-        // Get user's permissions for the team
-        $user_permissions = $this->teamPermissions($team, $scope);
+        $userPermissions = $this->teamPermissions($team, $scope);
 
-        // Check simple permission
-        $check_permission = static function ($permission) use ($user_permissions) {
-
-            // Calculate wildcard permissions
-            $calculated_permissions = [...array_map(fn ($part) => $part . '.*', explode('.', $permission)), $permission];
-
-            // Check if user has any of the calculated permissions
-            $common_permissions = array_intersect($calculated_permissions, $user_permissions);
-
-            // Return true if the permission is found and not required
-            return !empty($common_permissions);
-        };
-
-        // Check each permission
         foreach ($permissions as $permission) {
-            $has_permission = $check_permission($permission);
 
-            // $require == false  (only one or more permissions in the array are required or $permissions is empty)
-            // return true after first permission found
-            if ($has_permission && !$require) {
+            $hasPermission = $this->checkPermissionWildcard($userPermissions, $permission);
+
+            if ($hasPermission && !$require) {
                 return true;
             }
 
-            // $require == true  (all permissions in the array are required)
-            // return false after first permission found
-            if (!$has_permission && $require) {
+            if (!$hasPermission && $require) {
                 return false;
             }
         }
 
-        // return $require, cause if $require is true all the checks has been made, and if false you don't have the required permissions
         return $require;
     }
 
@@ -305,28 +246,12 @@ trait HasTeams
      */
     private function hasGlobalGroupPermissions(string $ability): bool
     {
-        // Get all global groups
-        $groups = $this->groups->whereNull(config('teams.foreign_keys.team_id', 'team_id'));
+        $permissions = $this->groups->whereNull(config('teams.foreign_keys.team_id', 'team_id'))
+            ->load('permissions')
+            ->flatMap(fn ($group) => $group->permissions->pluck('code'))
+            ->toArray();
 
-        $permissions = [];
-
-        foreach ($groups as $group) {
-
-            // Eager load a relationship after modify
-            $group->load('permissions');
-
-            // All user permissions from global groups
-            $permissions = [...$permissions, ...$group->permissions->pluck('code')->all()];
-        }
-
-        // Calculate wildcard permission
-        $calculated_permissions = [...array_map(fn ($part) => $part.'.*', explode('.', $ability)), $ability];
-
-        // Check if user has any of the calculated permissions
-        $common_permissions = array_intersect($calculated_permissions, $permissions);
-
-        // Return true if the permissions is found and not required
-        return ! empty($common_permissions);
+        return $this->checkPermissionWildcard($permissions, $ability);
     }
 
     /**
@@ -442,11 +367,10 @@ trait HasTeams
      * Delete user ability on entity
      *
      * @param object $team
-     * @param string $action
+     * @param string $permission
      * @param object $action_entity
      * @param object|null $target_entity
      * @return void
-     *
      */
     public function deleteTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
     {
@@ -466,7 +390,7 @@ trait HasTeams
      */
     private function updateAbilityOnEntity(object $team, string $method, string $permission, object $action_entity, object|null $target_entity = null, bool $forbidden = false): void
     {
-        $ability_model = Teams::instance('ability')->firstOrCreate([
+        $abilityModel = Teams::instance('ability')->firstOrCreate([
             config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $action_entity->id,
             'entity_type' => $action_entity::class,
@@ -474,21 +398,21 @@ trait HasTeams
         ]);
 
         // Ensure the ability model is successfully retrieved or created
-        if (! $ability_model) {
+        if (! $abilityModel) {
             throw new ModelNotFoundException("Ability with permission '$permission' not found.");
         }
 
         // Target for ability defaults to user
-        $target_entity = $target_entity ?? $this;
+        $targetEntity = $target_entity ?? $this;
 
         // Get relation name for ability
-        $relation = $this->getRelationName($target_entity);
+        $relation = $this->getRelationName($targetEntity);
 
-        if(!method_exists($ability_model, $relation)) {
-            throw new ModelNotFoundException("Ability relation '$relation' not found.");
+        if (! method_exists($abilityModel, $relation)) {
+            throw new ModelNotFoundException("Relation '$relation' not found on ability model.");
         }
 
-        $ability_model->{$relation}()->{$method}([$target_entity->id => [
+        $abilityModel->{$relation}()->{$method}([$targetEntity->id => [
             'forbidden' => $forbidden,
         ]]);
     }
@@ -502,5 +426,19 @@ trait HasTeams
     private function getRelationName(object|string $classname): string
     {
         return  Str::plural(strtolower(class_basename( is_object($classname) ? $classname::class : $classname )));
+    }
+
+    /**
+     * Check for wildcard permissions.
+     */
+    private function checkPermissionWildcard(array $userPermissions, string $permission): bool
+    {
+        // Generate all possible wildcards from the permission segments
+        $wildcards = collect(explode('.', $permission))
+            ->reduce(function ($carry, $segment) {
+                return array_merge($carry, [($carry ? implode('.', $carry) . '.' : '') . $segment . '.*']);
+            }, []);
+
+        return !empty(array_intersect([...$wildcards, $permission], $userPermissions));
     }
 }
