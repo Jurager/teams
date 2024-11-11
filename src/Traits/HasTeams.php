@@ -417,7 +417,7 @@ trait HasTeams
      */
     public function allowTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
     {
-        $this->updateAbilityOnEntity($team, 'attach', $permission, $action_entity, $target_entity);
+        $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $target_entity);
     }
 
     /**
@@ -431,7 +431,7 @@ trait HasTeams
      */
     public function forbidTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
     {
-        $this->updateAbilityOnEntity($team, 'attach', $permission, $action_entity, $target_entity, true);
+        $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $target_entity, true);
     }
 
     /**
