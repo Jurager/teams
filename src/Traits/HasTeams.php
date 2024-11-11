@@ -388,16 +388,20 @@ trait HasTeams
                 }
 
                 $relation = $this->getRelationName($entity);
-                $foundEntity = $ability->{$relation}->firstWhere('id', $entity->id);
 
-                if ($foundEntity) {
+                if(property_exists($ability, $relation)) {
 
-                    $isForbidden = $foundEntity->pivot->forbidden;
+                    $foundEntity = $ability->{$relation}->firstWhere('id', $entity->id);
 
-                    if ($isForbidden) {
-                        $forbidden = max($forbidden,$relation === 'role' ? $ROLE_FORBIDDEN : ($relation === 'group' ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
-                    } else {
-                        $allowed = max($allowed,$relation === 'role' ? $ROLE_ALLOWED : ($relation === 'group' ? $GROUP_ALLOWED : $USER_ALLOWED));
+                    if ($foundEntity) {
+
+                        $isForbidden = $foundEntity->pivot->forbidden;
+
+                        if ($isForbidden) {
+                            $forbidden = max($forbidden,$relation === 'role' ? $ROLE_FORBIDDEN : ($relation === 'group' ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
+                        } else {
+                            $allowed = max($allowed,$relation === 'role' ? $ROLE_ALLOWED : ($relation === 'group' ? $GROUP_ALLOWED : $USER_ALLOWED));
+                        }
                     }
                 }
             }
