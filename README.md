@@ -23,6 +23,8 @@ Additionally, users can be added to a global group to grant them access across a
 - [Abilities](#abilities)
   - [Adding an Ability](#adding-an-ability)
   - [Checking an Ability](#checking-an-ability)
+    - [Access Levels](#access-levels)
+    - [How Access Logic Works](#how-access-logic-works)
   - [Forbidding an Ability](#forbidding-an-ability)
 - [Groups](#groups)
   - [Usage Scope](#usage-scope)
@@ -286,11 +288,47 @@ allowTeamAbility(object $team, string $action, object $action_entity, object|nul
 
 ### Checking an Ability
 
-Use the following method to verify if a user has a specific ability within a team:
+To verify if a user has a specific ability within the context of a team, based on various permission levels (role, group, user, and global), you can use the following method:
     
 ```php
-User::hasTeamAbility(object $team, string 'edit', object $article);
+User::hasTeamAbility(object $team, string 'edit_post', object $post);
 ```
+
+This method checks if the user can perform the specified ability (e.g., 'edit_post') on the given entity (e.g., a post) within the context of the specified team. It takes into account the user's role, groups, global permissions, and any entity-specific access rules.
+##### Access Levels
+
+Permissions are governed by different access levels, which are compared to determine whether an action is allowed or forbidden. There are two key indicators:
+
+* **allowed**: The highest permission level granted to the user.
+* **forbidden**: The highest restriction applied to the user.
+
+If the **allowed** value is greater than or equal to the **forbidden** value, the action is permitted.
+
+| Level             | Value | Description                                                                                  |
+|-------------------|-------|----------------------------------------------------------------------------------------------|
+| `DEFAULT`         | 0     | Base level with no explicit permissions or restrictions.                                     |
+| `FORBIDDEN`       | 1     | Base level denying access.                                                                   |
+| `ROLE_ALLOWED`    | 2     | Permission granted based on the user's role in the team.                                     |
+| `ROLE_FORBIDDEN`  | 3     | Restriction applied based on the user's role in the team.                                    |
+| `GROUP_ALLOWED`   | 4     | Permission granted based on the user's group within the team.                                |
+| `GROUP_FORBIDDEN` | 5     | Restriction applied based on the user's group within the team.                               |
+| `USER_ALLOWED`    | 5     | Permission granted specifically for the user.                                                |
+| `USER_FORBIDDEN`  | 6     | Restriction applied specifically to the user for this entity.                                |
+| `GLOBAL_ALLOWED`  | 6     | Global permissions applicable to the user regardless of the team context.                    |
+
+
+##### How Access Logic Works
+
+1.  **Ownership Check**: If the user is the owner of the entity (via isOwner), access is immediately granted.
+2.  **Team-Level Permission Check**: The method checks:
+  *   Role-based permissions using **hasTeamPermission.**
+  *   Group-based permissions using **hasGroupPermission.**
+  *   Global permissions using **hasGlobalGroupPermissions.**
+3.  **Entity-Specific Rules**: If the entity has specific rules (abilities), permissions and restrictions are evaluated for:
+  *   The user's role within the team.
+  *   The user's groups within the team.
+  *   The specific user assigned to this entity.
+4.  **Final Decision**: If the final allowed level is greater than or equal to the forbidden level, access is granted.
 
 ### Forbidding an Ability
 

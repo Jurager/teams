@@ -331,7 +331,6 @@ trait HasTeams
 
     /**
      * Determinate if user can perform an action
-     * @todo: Refactor this
      *
      * @param object $team
      * @param string $permission
@@ -340,79 +339,73 @@ trait HasTeams
      */
     public function hasTeamAbility(object $team, string $permission, object $action_entity): bool
     {
-        // Check if user is entity owner by custom method
-        if ((method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this))) {
+        if (method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this)) {
             return true;
         }
 
-        // The meaning of the default access levels
-        $allowed = 0;
-        $forbidden = 1;
+
+        $DEFAULT = 0;
+        $FORBIDDEN = 1;
+        $ROLE_ALLOWED = 2;
+        $ROLE_FORBIDDEN = 3;
+        $GROUP_ALLOWED = 4;
+        $GROUP_FORBIDDEN = 5;
+        $USER_ALLOWED = 5;
+        $USER_FORBIDDEN = 6;
+        $GLOBAL_ALLOWED = 6;
+
+
+        $allowed = $DEFAULT;
+        $forbidden = $FORBIDDEN;
 
         if ($this->hasTeamPermission($team, $permission, scope: 'role')) {
-            $allowed = 1;
+            $allowed = max($allowed, $ROLE_ALLOWED);
         }
 
         if ($this->hasTeamPermission($team, $permission, scope: 'group')) {
-            $allowed = 3;
+            $allowed = max($allowed, $GROUP_ALLOWED);
         }
 
         if ($this->hasGlobalGroupPermissions($permission)) {
-            $allowed = 6;
+            $allowed = max($allowed, $GLOBAL_ALLOWED);
         }
 
-        // Get an ability
+
         $ability = Teams::instance('ability')->firstWhere([
             config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $action_entity->id,
-            'entity_type' => $action_entity::class,
+            'entity_type' => get_class($action_entity),
             'permission_id' => reset($team->getPermissionIds([$permission]))
         ])->with(['users', 'groups', 'roles']);
 
-        // If there is a rule for an entity
+
         if ($ability) {
 
             $role = $this->teamRole($team);
             $groups = $this->groups->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id);
 
-            // Check permissions for role, group, and user
-            $entities_to_check = [$role, ...$groups, $this];
+            foreach ([$role, ...$groups, $this] as $entity) {
 
-            $access_levels = [
-                Teams::model('role') => [
-                    'allowed' => 2,
-                    'forbidden' => 3
-                ],
-                Teams::model('group') => [
-                    'allowed' => 4,
-                    'forbidden' => 5
-                ],
-                Teams::model('user') => [
-                    'allowed' => 5,
-                    'forbidden' => 6
-                ],
-            ];
-
-            foreach ($entities_to_check as $item) {
-
-                // Checking if $item exists
-                if (! isset($item)) {
+                if (!isset($entity)) {
                     continue;
                 }
 
-                $entity = $ability->{$this->getRelationName($item)}->firstWhere('id', $item->id);
+                $relation = $this->getRelationName($entity);
+                $foundEntity = $ability->{$relation}->firstWhere('id', $entity->id);
 
-                if ($entity) {
-                    if ($entity->pivot->forbidden) {
-                        $forbidden = $access_levels[$item::class]['forbidden'];
+                if ($foundEntity) {
+
+                    $isForbidden = $foundEntity->pivot->forbidden;
+
+                    if ($isForbidden) {
+                        $forbidden = max($forbidden,$relation === 'role' ? $ROLE_FORBIDDEN : ($relation === 'group' ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
                     } else {
-                        $allowed = $access_levels[$item::class]['allowed'];
+                        $allowed = max($allowed,$relation === 'role' ? $ROLE_ALLOWED : ($relation === 'group' ? $GROUP_ALLOWED : $USER_ALLOWED));
                     }
                 }
             }
         }
 
-        // Access level comparison
         return $allowed >= $forbidden;
     }
 
