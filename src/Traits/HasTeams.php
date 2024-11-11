@@ -488,9 +488,9 @@ trait HasTeams
             throw new ModelNotFoundException("Ability relation '$relation' not found.");
         }
 
-        $ability_model->{$relation}()->{$method}($target_entity->id, [
+        $ability_model->{$relation}()->{$method}([$target_entity->id => [
             'forbidden' => $forbidden,
-        ]);
+        ]]);
     }
 
     /**
