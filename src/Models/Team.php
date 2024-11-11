@@ -513,7 +513,7 @@ class Team extends Model
 
         if (!empty($newPermissions)) {
 
-            $items = array_map(static fn($code) => [config('teams.foreign_keys.team_id', 'team_id') => $this->id ,'code' => $code], $newPermissions);
+            $items = array_map(fn($code) => [config('teams.foreign_keys.team_id', 'team_id') => $this->id ,'code' => $code], $newPermissions);
 
             Teams::model('permission')::query()->insert($items);
 

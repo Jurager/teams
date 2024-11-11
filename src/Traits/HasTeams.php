@@ -235,7 +235,7 @@ trait HasTeams
         $check_permission = static function ($permission) use ($user_permissions) {
 
             // Calculate wildcard permissions
-            $calculated_permissions = [...array_map(static fn ($part) => $part . '.*', explode('.', $permission)), $permission];
+            $calculated_permissions = [...array_map(fn ($part) => $part . '.*', explode('.', $permission)), $permission];
 
             // Check if user has any of the calculated permissions
             $common_permissions = array_intersect($calculated_permissions, $user_permissions);
@@ -320,7 +320,7 @@ trait HasTeams
         }
 
         // Calculate wildcard permission
-        $calculated_permissions = [...array_map(static fn ($part) => $part.'.*', explode('.', $ability)), $ability];
+        $calculated_permissions = [...array_map(fn ($part) => $part.'.*', explode('.', $ability)), $ability];
 
         // Check if user has any of the calculated permissions
         $common_permissions = array_intersect($calculated_permissions, $permissions);

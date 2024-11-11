@@ -58,7 +58,7 @@ class Group extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::model('team'));
+        return $this->belongsTo(Teams::model('team'), config('teams.foreign_keys.team_id'));
     }
 
     /**
@@ -106,9 +106,8 @@ class Group extends Model
 
             return $users->isNotEmpty() && count($this->users()->sync($users, false));
         }
-
         if ($user instanceof Model && $this->team->hasUser($user)) {
-            return count($this->users()->syncWithoutDetaching($user));
+            return (bool) $this->users()->syncWithoutDetaching($user);
         }
 
         return false;
@@ -127,7 +126,7 @@ class Group extends Model
         }
 
         if ($this->team->hasUser($user)) {
-            return count($this->users()->detach($user->id));
+            return (bool) $this->users()->detach($user->id);
         }
 
         return false;
