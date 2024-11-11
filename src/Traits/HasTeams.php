@@ -343,7 +343,6 @@ trait HasTeams
             return true;
         }
 
-
         $DEFAULT = 0;
         $FORBIDDEN = 1;
         $ROLE_ALLOWED = 2;
@@ -353,7 +352,6 @@ trait HasTeams
         $USER_ALLOWED = 5;
         $USER_FORBIDDEN = 6;
         $GLOBAL_ALLOWED = 6;
-
 
         $allowed = $DEFAULT;
         $forbidden = $FORBIDDEN;
@@ -370,12 +368,11 @@ trait HasTeams
             $allowed = max($allowed, $GLOBAL_ALLOWED);
         }
 
-
         $ability = Teams::instance('ability')->firstWhere([
             config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $action_entity->id,
             'entity_type' => get_class($action_entity),
-            'permission_id' => reset($team->getPermissionIds([$permission]))
+            'permission_id' => $team->getPermissionIds([$permission])[0]
         ])->with(['users', 'groups', 'roles']);
 
 
@@ -469,7 +466,7 @@ trait HasTeams
             config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $action_entity->id,
             'entity_type' => $action_entity::class,
-            'permission_id' => reset($team->getPermissionIds([$permission]))
+            'permission_id' => $team->getPermissionIds([$permission])[0]
         ]);
 
         // Ensure the ability model is successfully retrieved or created
