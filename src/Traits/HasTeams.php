@@ -278,8 +278,8 @@ trait HasTeams
         // Start building the query to retrieve abilities
         $abilities = $this->abilities()->where([
             config('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'entity_id' => $entity->id,
-            'entity_type' => $entity::class
+            'abilities.entity_id' => $entity->id,
+            'abilities.entity_type' => $entity::class
         ]);
 
         // If filtering by forbidden abilities, add the condition
