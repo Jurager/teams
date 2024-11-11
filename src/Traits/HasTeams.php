@@ -368,12 +368,12 @@ trait HasTeams
             $allowed = max($allowed, $GLOBAL_ALLOWED);
         }
 
-        $ability = Teams::instance('ability')->firstWhere([
+        $ability = Teams::model('ability')->firstWhere([
             config('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $action_entity->id,
             'entity_type' => get_class($action_entity),
             'permission_id' => $team->getPermissionIds([$permission])[0]
-        ])->with(['users', 'groups', 'roles']);
+        ])->with(['users', 'groups', 'roles'])->get();
 
 
         if ($ability) {
