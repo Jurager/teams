@@ -293,41 +293,39 @@ trait HasTeams
             $allowed = max($allowed, $GLOBAL_ALLOWED);
         }
 
-        $ability = Teams::model('ability')->firstWhere([
-            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'entity_id' => $action_entity->id,
-            'entity_type' => get_class($action_entity),
-            'permission_id' => $team->getPermissionIds([$permission])[0]
-        ])->with(['users', 'groups', 'roles'])->get();
+        $permission_id = $team->getPermissionIds([$permission])[0];
 
+        $role = $this->teamRole($team)->load(['abilities' => function ($query) use ($action_entity, $permission_id) {
+            $query->where([
+                'entity_id' => $action_entity->id,
+                'entity_type' => get_class($action_entity),
+                'permission_id' => $permission_id
+            ]);
+        }]);
 
-        if ($ability) {
+        $groups = $this->groups->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)->load(['abilities' => function ($query) use ($action_entity, $permission_id) {
+            $query->where([
+                'entity_id' => $action_entity->id,
+                'entity_type' => get_class($action_entity),
+                'permission_id' => $permission_id
+            ]);
+        }]);
+        $this->load(['abilities' => function ($query) use ($action_entity, $permission_id) {
+            $query->where([
+                'entity_id' => $action_entity->id,
+                'entity_type' => get_class($action_entity),
+                'permission_id' => $permission_id
+            ]);
+        }]);
 
-            $role = $this->teamRole($team);
-            $groups = $this->groups->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id);
+        foreach ([$role, ...$groups, $this] as $entity) {
 
-            foreach ([$role, ...$groups, $this] as $entity) {
+            foreach ($entity->abilities as $ability) {
 
-                if (!isset($entity)) {
-                    continue;
-                }
-
-                $relation = $this->getRelationName($entity);
-
-                if(property_exists($ability, $relation)) {
-
-                    $foundEntity = $ability->{$relation}->firstWhere('id', $entity->id);
-
-                    if ($foundEntity) {
-
-                        $isForbidden = $foundEntity->pivot->forbidden;
-
-                        if ($isForbidden) {
-                            $forbidden = max($forbidden,$relation === 'role' ? $ROLE_FORBIDDEN : ($relation === 'group' ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
-                        } else {
-                            $allowed = max($allowed,$relation === 'role' ? $ROLE_ALLOWED : ($relation === 'group' ? $GROUP_ALLOWED : $USER_ALLOWED));
-                        }
-                    }
+                if ($ability->pivot->forbidden) {
+                    $forbidden = max($forbidden,$entity::class === Teams::model('role') ? $ROLE_FORBIDDEN : ($entity::class === Teams::model('group') ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
+                } else {
+                    $allowed = max($allowed,$entity::class === Teams::model('role') ? $ROLE_ALLOWED : ($entity::class === Teams::model('group') ? $GROUP_ALLOWED : $USER_ALLOWED));
                 }
             }
         }
