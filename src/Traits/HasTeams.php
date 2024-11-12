@@ -297,23 +297,23 @@ trait HasTeams
 
         $role = $this->teamRole($team)->load(['abilities' => function ($query) use ($action_entity, $permission_id) {
             $query->where([
-                'entity_id' => $action_entity->id,
-                'entity_type' => get_class($action_entity),
+                'abilities.entity_id' => $action_entity->id,
+                'abilities.entity_type' => get_class($action_entity),
                 'permission_id' => $permission_id
             ]);
         }]);
 
         $groups = $this->groups->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)->load(['abilities' => function ($query) use ($action_entity, $permission_id) {
             $query->where([
-                'entity_id' => $action_entity->id,
-                'entity_type' => get_class($action_entity),
+                'abilities.entity_id' => $action_entity->id,
+                'abilities.entity_type' => get_class($action_entity),
                 'permission_id' => $permission_id
             ]);
         }]);
         $this->load(['abilities' => function ($query) use ($action_entity, $permission_id) {
             $query->where([
-                'entity_id' => $action_entity->id,
-                'entity_type' => get_class($action_entity),
+                'abilities.entity_id' => $action_entity->id,
+                'abilities.entity_type' => get_class($action_entity),
                 'permission_id' => $permission_id
             ]);
         }]);
