@@ -264,7 +264,7 @@ trait HasTeams
      */
     public function hasTeamAbility(object $team, string $permission, object $action_entity): bool
     {
-        if (method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this)) {
+        if ($this->ownsTeam($team) || (method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this))) {
             return true;
         }
 
