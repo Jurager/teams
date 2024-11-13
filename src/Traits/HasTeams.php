@@ -293,14 +293,15 @@ trait HasTeams
             $allowed = max($allowed, $GLOBAL_ALLOWED);
         }
 
-        $wildcards = collect(explode('.', $permission))
-            ->reduce(function ($carry, $segment) {
-                return array_merge($carry, [($carry ? implode('.', $carry) . '.' : '') . $segment . '.*']);
-            }, []);
+        $segments = collect(explode('.', $permission));
+        
+        $codes = $segments->map(function ($item, $key) use ($segments) {
+            return $segments->take($key + 1)->implode('.') . ($key + 1 === $segments->count() ? '' : '.*') ;
+        });
 
         $permission_ids = Teams::model('permission')::query()
-            ->where(config('teams.foreign_keys.team_id', 'team_id'), $this->id)
-            ->whereIn('code', [...$wildcards, $permission])
+            ->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)
+            ->whereIn('code', $codes)
             ->pluck('id')
             ->all();
 
@@ -440,11 +441,11 @@ trait HasTeams
     private function checkPermissionWildcard(array $userPermissions, string $permission): bool
     {
         // Generate all possible wildcards from the permission segments
-        $wildcards = collect(explode('.', $permission))
-            ->reduce(function ($carry, $segment) {
-                return array_merge($carry, [($carry ? implode('.', $carry) . '.' : '') . $segment . '.*']);
-            }, []);
+        $segments = collect(explode('.', $permission));
+        $codes = $segments->map(function ($item, $key) use ($segments) {
+            return $segments->take($key + 1)->implode('.') . ($key + 1 === $segments->count() ? '' : '.*') ;
+        });
 
-        return !empty(array_intersect([...$wildcards, $permission], $userPermissions));
+        return !empty(array_intersect($codes, $userPermissions));
     }
 }
