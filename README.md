@@ -283,7 +283,7 @@ Adding abilities to users is easy — just pass the ability name, and it’ll be
 To grant a user the ability to edit an article within a team, simply provide the relevant entities, such as the article and team objects:
 
 ```php
-allowTeamAbility(object $team, string $action, object $action_entity, object|null $target_entity = null)
+$user->allowTeamAbility(object $team, string $action, object $action_entity, object|null $target_entity = null)
 ```
 
 ### Checking an Ability

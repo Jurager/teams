@@ -293,29 +293,36 @@ trait HasTeams
             $allowed = max($allowed, $GLOBAL_ALLOWED);
         }
 
-        $permission_id = $team->getPermissionIds([$permission])[0];
+        $wildcards = collect(explode('.', $permission))
+            ->reduce(function ($carry, $segment) {
+                return array_merge($carry, [($carry ? implode('.', $carry) . '.' : '') . $segment . '.*']);
+            }, []);
 
-        $role = $this->teamRole($team)->load(['abilities' => function ($query) use ($action_entity, $permission_id) {
+        $permission_ids = Teams::model('permission')::query()
+            ->where(config('teams.foreign_keys.team_id', 'team_id'), $this->id)
+            ->whereIn('code', [...$wildcards, $permission])
+            ->pluck('id')
+            ->all();
+
+        $role = $this->teamRole($team)->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
             $query->where([
                 'abilities.entity_id' => $action_entity->id,
                 'abilities.entity_type' => get_class($action_entity),
-                'permission_id' => $permission_id
-            ]);
+            ])->whereIn('permission_id', $permission_ids);
         }]);
 
-        $groups = $this->groups->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)->load(['abilities' => function ($query) use ($action_entity, $permission_id) {
+        $groups = $this->groups->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
             $query->where([
                 'abilities.entity_id' => $action_entity->id,
                 'abilities.entity_type' => get_class($action_entity),
-                'permission_id' => $permission_id
-            ]);
+            ])->whereIn('permission_id', $permission_ids);
         }]);
-        $this->load(['abilities' => function ($query) use ($action_entity, $permission_id) {
+
+        $this->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
             $query->where([
                 'abilities.entity_id' => $action_entity->id,
                 'abilities.entity_type' => get_class($action_entity),
-                'permission_id' => $permission_id
-            ]);
+            ])->whereIn('permission_id', $permission_ids);
         }]);
 
         foreach ([$role, ...$groups, $this] as $entity) {
@@ -332,6 +339,7 @@ trait HasTeams
 
         return $allowed >= $forbidden;
     }
+
 
     /**
      * Allow user to perform an ability on entity
