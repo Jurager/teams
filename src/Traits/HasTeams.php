@@ -294,7 +294,7 @@ trait HasTeams
         }
 
         $segments = collect(explode('.', $permission));
-        
+
         $codes = $segments->map(function ($item, $key) use ($segments) {
             return $segments->take($key + 1)->implode('.') . ($key + 1 === $segments->count() ? '' : '.*') ;
         });
@@ -446,6 +446,6 @@ trait HasTeams
             return $segments->take($key + 1)->implode('.') . ($key + 1 === $segments->count() ? '' : '.*') ;
         });
 
-        return !empty(array_intersect($codes, $userPermissions));
+        return !empty(array_intersect($codes->all(), $userPermissions));
     }
 }
