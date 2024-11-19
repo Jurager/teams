@@ -50,11 +50,12 @@ class Teams
         $foreignId = $teamId ?? $request->input($foreignKey) ?? $request->route($foreignKey);
 
         // Get the team model
+        // @todo: Throw exception or something to know that team not found
         $team = TeamFacade::instance('team')->findOrFail($foreignId);
 
         // Check the ability
         if ($action === 'hasTeamAbility') {
-            return $this->checkTeamAbility($request, $team, $params, $models);
+            return $this->checkTeamAbility($request, $team, reset($params), $models);
         }
 
         return !Auth::guest() && Auth::user()?->$action($team, $params, $require);
@@ -63,7 +64,7 @@ class Teams
     /**
      * Check user's ability for the team.
      */
-    protected function checkTeamAbility(Request $request, $team, array $params, ?array $models): bool
+    protected function checkTeamAbility(Request $request, $team, string $ability, ?array $models): bool
     {
         // Get the models for ability check
         [$entityClass, $entityId] = $this->getGateArguments($request, $models);
@@ -76,12 +77,13 @@ class Teams
         // Fetch the entity model or return false if not found
         $entity = $entityClass::find($entityId);
 
+        // @todo: Throw exception or something to know that entity not exists
         if (!$entity) {
             return false;
         }
 
         // Check the ability for the entity for the current user
-        return $request->user()->hasTeamAbility($team, $params, $entity);
+        return $request->user()->hasTeamAbility($team, $ability, $entity);
     }
 
     /**

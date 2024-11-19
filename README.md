@@ -412,31 +412,31 @@ Route::group(['prefix' => 'admin', 'middleware' => ['role:admin,team_id']], func
 ```
 
 > [!NOTE]  
-> Middleware logic may vary based on how you pass the `team_id` variable.
+> Middleware logic may vary based on how you pass the `{team_id}` variable.
 
-* You can pass the `team_id` variable as a route parameter:
+* You can pass the `{team_id}` variable as a route parameter:
 
 ```php
 Route::get('/{team_id}/users', ['middleware' => ['permission:views-users'], 'uses' => 'CommonController@commonUsers']);
 ```
 
-* You can pass the `team_id` variable directly as a middleware option:
+* You can pass the `{team_id}` variable directly as a middleware option:
 
 ```php
-'middleware' => ['role:admin|root,team_id']
+'middleware' => ['role:admin|root,{team_id}']
 ```
 
-* You can send the `team_id` variable with each request type (GET/POST/PUT, etc.).
+* You can send the `{team_id}` variable with each request type (GET/POST/PUT, etc.).
 
 ### Middleware Usage
 
 For **OR** operations, use the pipe symbol:
 
 ```php
-'middleware' => ['role:admin|root,team_id']
+'middleware' => ['role:admin|root,{team_id}']
 // $user->hasTeamRole($team, ['admin', 'root']);
 
-'middleware' => ['permission:edit-post|edit-user']
+'middleware' => ['permission:edit-post|edit-user,{team_id}']
 // $user->hasTeamPermission($team, ['edit-post', 'edit-user']);
 ```
 
@@ -450,14 +450,14 @@ For **AND** functionality:
 // $user->hasTeamPermission($team, ['edit-post', 'edit-user'], require: true);
 ```
 
-To check the ability to perform an action on a specific model item, use the ability middleware:
+To check the ability to perform a specific action on a specific model item, use the **ability** middleware:
     
 ```php
-'middleware' => ['ability:edit,App\Models\Article,atricle_id']
+'middleware' => ['ability:edit,App\Models\Article,{article_id}']
 // $user->hasTeamAbility($team, 'edit', $article);
 ```
 
-In this case, pass `article_id` as a request parameter or route parameter to allow the package to identify the model object.
+In this case, pass `{article_id}` as a request parameter or route parameter to allow the package to identify the model object.
 
 ## License
 
