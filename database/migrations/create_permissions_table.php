@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -13,11 +14,11 @@ return new class extends Migration
     {
         Schema::create('permissions', static function (Blueprint $table) {
             $table->id();
-            $table->foreignId(config('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
+            $table->foreignId(Config::get('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
             $table->string('name')->nullable();
             $table->string('code');
 
-            $table->unique([config('teams.foreign_keys.team_id', 'team_id'), 'code']);
+            $table->unique([Config::get('teams.foreign_keys.team_id', 'team_id'), 'code']);
         });
     }
 

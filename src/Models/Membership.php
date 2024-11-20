@@ -4,6 +4,7 @@ namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams;
 
 class Membership extends Pivot
@@ -31,11 +32,15 @@ class Membership extends Pivot
         'role',
     ];
 
+    /**
+     * Creates a new instance of the model.
+     *
+     * @param array $attributes
+     */
     public function __construct(array $attributes = [])
     {
-        $this->table = config('teams.tables.team_user', 'team_user');
-
         parent::__construct($attributes);
+        $this->table = Config::get('teams.tables.team_user', 'team_user');
     }
 
     /**

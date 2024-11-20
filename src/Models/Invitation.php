@@ -4,6 +4,7 @@ namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams;
 
 class Invitation extends Model
@@ -19,7 +20,7 @@ class Invitation extends Model
     {
         parent::__construct($attributes);
 
-        $this->fillable[] = config('teams.foreign_keys.team_id');
+        $this->fillable[] = Config::get('teams.foreign_keys.team_id');
     }
 
     /**
@@ -27,7 +28,7 @@ class Invitation extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::model('team'), config('teams.foreign_keys.team_id'));
+        return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**

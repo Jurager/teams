@@ -2,6 +2,8 @@
 
 namespace Jurager\Teams\Support\Services;
 
+use Illuminate\Support\Facades\Config;
+
 class TeamsService
 {
     /**
@@ -13,7 +15,7 @@ class TeamsService
 
     public function __construct()
     {
-        $this->models = config('teams.models');
+        $this->models = Config::get('teams.models');
     }
 
     /**

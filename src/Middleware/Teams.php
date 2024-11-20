@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams as TeamFacade;
 use InvalidArgumentException;
 
@@ -44,7 +45,7 @@ class Teams
         $params = is_array($params) ? $params : explode('|', $params);
 
         // Foreign key for team_id field
-        $foreignKey = config('teams.foreign_keys.team_id', 'team_id');
+        $foreignKey = Config::get('teams.foreign_keys.team_id', 'team_id');
 
         // If team id not directly passed, get the id from request or route param
         $foreignId = $teamId ?? $request->input($foreignKey) ?? $request->route($foreignKey);
@@ -92,8 +93,8 @@ class Teams
     protected function unauthorized(): RedirectResponse
     {
         // Method to be called in the middleware return
-        $handling = config('teams.middleware.handling');
-        $handler = config('teams.middleware.handlers.' . $handling);
+        $handling = Config::get('teams.middleware.handling');
+        $handler = Config::get('teams.middleware.handlers.' . $handling);
 
         if ($handling === 'abort') {
             abort($handler['code'], $handler['message']);

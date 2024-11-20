@@ -3,6 +3,7 @@
 namespace Jurager\Teams\Traits;
 
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -52,7 +53,7 @@ trait HasTeams
      */
     public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::model('team'), Teams::model('membership'), 'user_id', config('teams.foreign_keys.team_id'))
+        return $this->belongsToMany(Teams::model('team'), Teams::model('membership'), 'user_id', Config::get('teams.foreign_keys.team_id'))
             ->withoutGlobalScopes()
             ->withPivot('role_id')
             ->withTimestamps()
@@ -89,7 +90,7 @@ trait HasTeams
      */
     public function belongsToTeam(object $team): bool
     {
-        return $this->ownsTeam($team) || $this->teams()->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)->exists();
+        return $this->ownsTeam($team) || $this->teams()->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)->exists();
     }
 
     /**
@@ -153,7 +154,7 @@ trait HasTeams
         }
 
         if (!$scope || $scope === 'group') {
-            $groupPermissions = $this->groups()->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)
+            $groupPermissions = $this->groups()->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)
                 ->with('permissions')
                 ->get()
                 ->flatMap(fn($group) => $group->permissions->pluck('code'))
@@ -218,7 +219,7 @@ trait HasTeams
     {
         // Start building the query to retrieve abilities
         $abilities = $this->abilities()->where([
-            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
+            Config::get('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'abilities.entity_id' => $entity->id,
             'abilities.entity_type' => $entity::class
         ]);
@@ -246,7 +247,7 @@ trait HasTeams
      */
     private function hasGlobalGroupPermissions(string $ability): bool
     {
-        $permissions = $this->groups->whereNull(config('teams.foreign_keys.team_id', 'team_id'))
+        $permissions = $this->groups->whereNull(Config::get('teams.foreign_keys.team_id', 'team_id'))
             ->load('permissions')
             ->flatMap(fn ($group) => $group->permissions->pluck('code'))
             ->toArray();
@@ -300,7 +301,7 @@ trait HasTeams
         });
 
         $permission_ids = Teams::model('permission')::query()
-            ->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)
+            ->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)
             ->whereIn('code', $codes)
             ->pluck('id')
             ->all();
@@ -312,7 +313,7 @@ trait HasTeams
             ])->whereIn('permission_id', $permission_ids);
         }]);
 
-        $groups = $this->groups->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
+        $groups = $this->groups->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
             $query->where([
                 'abilities.entity_id' => $action_entity->id,
                 'abilities.entity_type' => get_class($action_entity),
@@ -398,7 +399,7 @@ trait HasTeams
     private function updateAbilityOnEntity(object $team, string $method, string $permission, object $action_entity, object|null $target_entity = null, bool $forbidden = false): void
     {
         $abilityModel = Teams::instance('ability')->firstOrCreate([
-            config('teams.foreign_keys.team_id', 'team_id') => $team->id,
+            Config::get('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $action_entity->id,
             'entity_type' => $action_entity::class,
             'permission_id' => $team->getPermissionIds([$permission])[0]

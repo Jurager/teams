@@ -5,6 +5,7 @@ namespace Jurager\Teams\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams;
 
 class Role extends Model
@@ -44,8 +45,7 @@ class Role extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-
-        $this->fillable[] = config('teams.foreign_keys.team_id');
+        $this->fillable[] = Config::get('teams.foreign_keys.team_id');
     }
 
     /**
@@ -56,11 +56,8 @@ class Role extends Model
         parent::boot();
 
         static::deleting(static function ($role) {
-
             $role->permissions()->detach();
-
             $role->abilities()->detach();
-
         });
 
     }

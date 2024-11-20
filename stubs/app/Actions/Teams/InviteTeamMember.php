@@ -3,6 +3,7 @@
 namespace App\Actions\Teams;
 
 use Closure;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -71,7 +72,7 @@ class InviteTeamMember implements InvitesTeamMembers
             'email' => [
                 'required',
                 'email',
-                Rule::unique('invitations')->where(fn ($query) => $query->where(config('teams.foreign_keys.team_id', 'team_id'), $team->id)),
+                Rule::unique('invitations')->where(fn ($query) => $query->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)),
             ],
             'role' => $team->hasRole() ? ['required', 'string', new Role($team)] : null,
         ]);

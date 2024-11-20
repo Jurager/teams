@@ -3,6 +3,7 @@
 namespace Jurager\Teams;
 
 use Exception;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Jurager\Teams\Support\Services\TeamsService;
@@ -38,7 +39,7 @@ class TeamsServiceProvider extends ServiceProvider
         $this->registerFacades();
         $this->registerMiddlewares();
 
-        if(config('teams.invitations.enabled') && config('teams.invitations.routes.register')) {
+        if(Config::get('teams.invitations.enabled') && Config::get('teams.invitations.routes.register')) {
             $this->registerRoutes();
         }
     }
@@ -64,7 +65,7 @@ class TeamsServiceProvider extends ServiceProvider
             __DIR__ . '/../database/migrations/create_entity_permission_table.php' => database_path('migrations/2019_12_14_000010_create_entity_permission_table.php'),
         ];
 
-        if(config('teams.invitations.enabled')) {
+        if(Config::get('teams.invitations.enabled')) {
             $migrations[__DIR__ . '/../database/migrations/create_invitations_table.php'] = database_path('migrations/2019_12_14_000012_create_invitations_table.php');
         }
 
@@ -109,8 +110,8 @@ class TeamsServiceProvider extends ServiceProvider
     protected function registerRoutes(): void
     {
         Route::group([
-            'prefix' => config('teams.routes.prefix', '/'),
-            'middleware' => config('teams.routes.middleware', 'web'),
+            'prefix' => Config::get('teams.routes.prefix', '/'),
+            'middleware' => Config::get('teams.routes.middleware', 'web'),
         ], function () {
             $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
         });

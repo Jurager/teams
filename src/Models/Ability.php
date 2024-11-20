@@ -5,6 +5,7 @@ namespace Jurager\Teams\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams;
 
 class Ability extends Model
@@ -20,7 +21,7 @@ class Ability extends Model
     {
         parent::__construct($attributes);
 
-        $this->fillable[] = config('teams.foreign_keys.team_id');
+        $this->fillable[] = Config::get('teams.foreign_keys.team_id', 'team_id');
     }
 
     /**

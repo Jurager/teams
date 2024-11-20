@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams;
 
 class Group extends Model
@@ -31,7 +32,7 @@ class Group extends Model
     {
         parent::__construct($attributes);
 
-        $this->fillable[] = config('teams.foreign_keys.team_id');
+        $this->fillable[] = Config::get('teams.foreign_keys.team_id');
     }
 
     /**
@@ -42,13 +43,10 @@ class Group extends Model
         parent::boot();
 
         static::deleting(static function ($group) {
-
             $group->permissions()->detach();
-
             $group->abilities()->detach();
 
         });
-
     }
 
     /**
@@ -58,7 +56,7 @@ class Group extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::model('team'), config('teams.foreign_keys.team_id'));
+        return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
