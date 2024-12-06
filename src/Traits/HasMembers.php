@@ -231,18 +231,13 @@ trait HasMembers
      * @param string|null $keyword The role ID or code to check for. If null, checks for any roles.
      * @return bool
      */
-    public function hasRole(string|null $keyword = null): bool
+    public function hasRole(int|string|null $keyword = null): bool
     {
-        $roles = $this->roles();
-
-        if ($keyword !== null) {
-            $roles = $roles->where(function ($query) use ($keyword) {
-                $query->where('id', $keyword)
-                    ->orWhere('code', $keyword);
-            });
+        if ($keyword === null) {
+            return $this->roles()->exists();
         }
 
-        return $roles->exists();
+        return $this->roles()->where((is_numeric($keyword) ? 'id' : 'code'), $keyword)->exists();
     }
 
     /**
@@ -253,10 +248,7 @@ trait HasMembers
      */
     public function getRole(int|string $keyword): object|null
     {
-        return $this->roles()->firstWhere(function ($query) use ($keyword) {
-            $query->where('id',  $keyword)
-                ->orWhere('code', $keyword);
-        });
+        return $this->roles()->firstWhere((is_numeric($keyword) ? 'id' : 'code'), $keyword);
     }
 
     /**
@@ -336,18 +328,13 @@ trait HasMembers
      * @param string|null $keyword The role ID or code to check for. If null, checks for any groups.
      * @return bool
      */
-    public function hasGroup(string|null $keyword = null): bool
+    public function hasGroup(int|string|null $keyword = null): bool
     {
-        $groups = $this->groups();
-
-        if ($keyword !== null) {
-            $groups = $groups->where(function ($query) use ($keyword) {
-                $query->where('id', $keyword)
-                    ->orWhere('code', $keyword);
-            });
+        if ($keyword === null) {
+            return $this->groups()->exists();
         }
 
-        return $groups->exists();
+        return $this->groups()->where((is_numeric($keyword) ? 'id' : 'code'), $keyword)->exists();
     }
 
     /**
@@ -358,10 +345,7 @@ trait HasMembers
      */
     public function getGroup(int|string $keyword): object|null
     {
-        return $this->groups()->firstWhere(function ($query) use ($keyword) {
-            $query->where('id',  $keyword)
-                ->orWhere('code', $keyword);
-        });
+        return $this->groups()->firstWhere((is_numeric($keyword) ? 'id' : 'code'), $keyword);
     }
 
     /**
