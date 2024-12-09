@@ -113,17 +113,17 @@ trait HasMembers
     public function addUser(object $user, string $role_keyword): void
     {
         if ($user->id === $this->owner->id) {
-            throw new RuntimeException(__('Owner already belongs to the team.'));
+            throw new \RuntimeException(__('Owner already belongs to the team.'));
         }
 
         if ($this->hasUser($user)) {
-            throw new RuntimeException(__('User already belongs to the team.'));
+            throw new \RuntimeException(__('User already belongs to the team.'));
         }
 
         $role = $this->getRole($role_keyword);
 
         if (!$role) {
-            throw new RuntimeException(__('Unable to find a role :role within team.', ['role' => $role_keyword]));
+            throw new \RuntimeException(__('Unable to find a role :role within team.', ['role' => $role_keyword]));
         }
 
         // Dispatch an event before attaching the user
@@ -146,17 +146,17 @@ trait HasMembers
     public function updateUser(object $user, string $role_keyword): void
     {
         if ($user->id === $this->owner->id) {
-            throw new RuntimeException(__('You may not change the team owner.'));
+            throw new \RuntimeException(__('You may not change the team owner.'));
         }
 
         if (!$this->hasUser($user)) {
-            throw new RuntimeException(__('User not belongs to the team.'));
+            throw new \RuntimeException(__('User not belongs to the team.'));
         }
 
         $role = $this->getRole($role_keyword);
 
         if (!$role) {
-            throw new RuntimeException(__('Unable to find a role :role within team.', ['role' => $role_keyword]));
+            throw new \RuntimeException(__('Unable to find a role :role within team.', ['role' => $role_keyword]));
         }
 
         // Update the user role for the team
@@ -176,11 +176,11 @@ trait HasMembers
     public function deleteUser(object $user): void
     {
         if ($user->id === $this->owner->id) {
-            throw new RuntimeException(__('You may not remove the team owner.'));
+            throw new \RuntimeException(__('You may not remove the team owner.'));
         }
 
         if (!$this->hasUser($user)) {
-            throw new RuntimeException(__('User not belongs to the team.'));
+            throw new \RuntimeException(__('User not belongs to the team.'));
         }
 
         // Detach the user from the team
@@ -263,7 +263,7 @@ trait HasMembers
     public function addRole(string $code, array $permissions, string|null $name = null, string|null $description = null): object
     {
         if ($this->hasRole($code)) {
-            throw new RuntimeException("Role with code '$code' already exists.");
+            throw new \RuntimeException("Role with code '$code' already exists.");
         }
 
         $role = $this->roles()->create([
@@ -359,7 +359,7 @@ trait HasMembers
     public function addGroup(string $code, array $permissions = [], string|null $name = null): object
     {
         if ($this->hasGroup($code)) {
-            throw new RuntimeException("Group with code '$code' already exists.");
+            throw new \RuntimeException("Group with code '$code' already exists.");
         }
 
         $group = $this->groups()->create([
