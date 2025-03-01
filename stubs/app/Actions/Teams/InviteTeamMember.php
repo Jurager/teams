@@ -34,6 +34,8 @@ class InviteTeamMember implements InvitesTeamMembers
 
         InvitingTeamMember::dispatch($team, $email, $role);
 
+        $role_id = $roleCode ? optional($team->getRole($roleCode))->id : null;
+
         $invitation = $team->invitations()->create(compact('email', 'role'));
 
         Mail::to($email)->send(new Invitation($invitation));
