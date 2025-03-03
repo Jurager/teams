@@ -63,6 +63,12 @@ class Teams
 
     /**
      * Check user's ability for the team.
+     *
+     * @param Request $request
+     * @param $team
+     * @param string $ability
+     * @param array|null $models
+     * @return bool
      */
     protected function checkTeamAbility(Request $request, $team, string $ability, ?array $models): bool
     {
@@ -86,8 +92,11 @@ class Teams
         return $request->user()->hasTeamAbility($team, $ability, $entity);
     }
 
+
     /**
      * The request is unauthorized, so it handles the aborting/redirecting.
+     *
+     * @return RedirectResponse
      */
     protected function unauthorized(): RedirectResponse
     {
@@ -112,6 +121,10 @@ class Teams
 
     /**
      * Get the arguments parameters for the gate.
+     *
+     * @param Request $request
+     * @param array|null $models
+     * @return array
      */
     protected function getGateArguments(Request $request, ?array $models): array
     {

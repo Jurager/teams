@@ -168,6 +168,9 @@ trait HasTeams
     /**
      * Determine if the user has the given permission on the given team.
      *
+     * $require = true (all permissions in the array are required)
+     * $require = false (only one or more permission in the array are required or $permissions is empty)
+     *
      * @param object $team
      * @param string|array $permissions
      * @param bool $require
@@ -176,9 +179,6 @@ trait HasTeams
      */
     public function hasTeamPermission(object $team, string|array $permissions, bool $require = false, string|null $scope = null): bool
     {
-        //$require = true  (all permissions in the array are required)
-        //$require = false  (only one or more permission in the array are required or $permissions is empty)
-
         if ($this->ownsTeam($team)) {
             return true;
         }
@@ -238,7 +238,7 @@ trait HasTeams
      *
      * This function is to verify permissions within a universal group.
      * Especially in cases where a team requires a group enabling user additions
-     * and removals without direct affiliation with the team
+     * and removals without direct affiliation with the team.
      *
      * Example: Each team should have a global group of moderators.
      *
@@ -438,6 +438,10 @@ trait HasTeams
 
     /**
      * Check for wildcard permissions.
+     *
+     * @param array $userPermissions
+     * @param string $permission
+     * @return bool
      */
     private function checkPermissionWildcard(array $userPermissions, string $permission): bool
     {

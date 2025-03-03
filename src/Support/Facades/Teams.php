@@ -9,7 +9,7 @@ use Jurager\Teams\Support\Services\TeamsService;
  * @method static string model(string $model)
  * @method static object instance(string $model)
  *
- * @see \Jurager\Teams\Support\Services\TeamsService
+ * @see TeamsService
  */
 class Teams extends Facade
 {
