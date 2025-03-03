@@ -10,7 +10,8 @@ use Jurager\Teams\Models\Invitation as InvitationModel;
 
 class Invitation extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * The team invitation instance.

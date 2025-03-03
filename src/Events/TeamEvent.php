@@ -8,7 +8,9 @@ use Illuminate\Queue\SerializesModels;
 
 abstract class TeamEvent
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * The team instance.

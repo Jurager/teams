@@ -60,6 +60,6 @@ class TeamsService
             throw new \RuntimeException("Model class for key $key not found.");
         }
 
-        return $instance ? new $modelClass : $modelClass;
+        return $instance ? new $modelClass() : $modelClass;
     }
 }

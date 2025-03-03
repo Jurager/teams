@@ -36,18 +36,18 @@ class InstallCommand extends Command
         $this->call('vendor:publish', ['--tag' => 'teams-views', '--force' => true]);
 
         // Directories...
-        (new Filesystem)->ensureDirectoryExists(app_path('Actions/Teams'));
-        (new Filesystem)->ensureDirectoryExists(app_path('Events'));
-        (new Filesystem)->ensureDirectoryExists(app_path('Policies'));
+        (new Filesystem())->ensureDirectoryExists(app_path('Actions/Teams'));
+        (new Filesystem())->ensureDirectoryExists(app_path('Events'));
+        (new Filesystem())->ensureDirectoryExists(app_path('Policies'));
 
         // Actions...
-        (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/app/Actions/Teams', app_path('Actions/Teams/'));
+        (new Filesystem())->copyDirectory(__DIR__.'/../../stubs/app/Actions/Teams', app_path('Actions/Teams/'));
 
         // Policies...
-        (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/app/Policies', app_path('Policies'));
+        (new Filesystem())->copyDirectory(__DIR__.'/../../stubs/app/Policies', app_path('Policies'));
 
         // Controllers...
-        (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/app/Controllers', app_path('Http/Controllers/'));
+        (new Filesystem())->copyDirectory(__DIR__.'/../../stubs/app/Controllers', app_path('Http/Controllers/'));
 
         $this->info('All done. Have a nice journey.');
     }

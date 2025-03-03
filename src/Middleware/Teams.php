@@ -12,7 +12,6 @@ use InvalidArgumentException;
 
 class Teams
 {
-
     /**
      * Check if the request has authorization to continue.
      *
@@ -122,7 +121,7 @@ class Teams
         }
 
         // Filter out invalid model instances and fetch actual model instances
-        return array_map(fn($model) => $model instanceof Model ? $model : $this->getModel($request, $model), $models);
+        return array_map(fn ($model) => $model instanceof Model ? $model : $this->getModel($request, $model), $models);
     }
 
     /**

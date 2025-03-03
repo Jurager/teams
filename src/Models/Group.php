@@ -103,7 +103,7 @@ class Group extends Model
         $users = $user instanceof Collection ? $user : collect([$user]);
 
         // Filter only those users who are in the team
-        $filteredUserIds = $users->filter(fn($item) => $this->team->hasUser($item));
+        $filteredUserIds = $users->filter(fn ($item) => $this->team->hasUser($item));
 
         // If there are users left after filtering, synchronize and return the result
         return $filteredUserIds->isNotEmpty() && $this->users()->syncWithoutDetaching($filteredUserIds->pluck('id')) > 0;
@@ -118,7 +118,7 @@ class Group extends Model
         $users = $user instanceof Collection ? $user : collect([$user]);
 
         // Filter only those users who are in the team
-        $filteredUserIds  = $users->filter(fn($item) => $this->team->hasUser($item));
+        $filteredUserIds  = $users->filter(fn ($item) => $this->team->hasUser($item));
 
         // If there are any users left after filtering, we execute detach and return the result
         return $filteredUserIds ->isNotEmpty() && $this->users()->detach($filteredUserIds->pluck('id')) > 0;

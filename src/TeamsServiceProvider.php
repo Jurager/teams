@@ -39,7 +39,7 @@ class TeamsServiceProvider extends ServiceProvider
         $this->registerFacades();
         $this->registerMiddlewares();
 
-        if(Config::get('teams.invitations.enabled') && Config::get('teams.invitations.routes.register')) {
+        if (Config::get('teams.invitations.enabled') && Config::get('teams.invitations.routes.register')) {
             $this->registerRoutes();
         }
     }
@@ -65,7 +65,7 @@ class TeamsServiceProvider extends ServiceProvider
             __DIR__ . '/../database/migrations/create_entity_permission_table.php' => database_path('migrations/2019_12_14_000010_create_entity_permission_table.php'),
         ];
 
-        if(Config::get('teams.invitations.enabled')) {
+        if (Config::get('teams.invitations.enabled')) {
             $migrations[__DIR__ . '/../database/migrations/create_invitations_table.php'] = database_path('migrations/2019_12_14_000012_create_invitations_table.php');
         }
 
@@ -100,7 +100,7 @@ class TeamsServiceProvider extends ServiceProvider
     protected function registerFacades(): void
     {
         $this->app->singleton('teams', static function () {
-            return new TeamsService;
+            return new TeamsService();
         });
     }
 

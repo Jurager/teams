@@ -39,5 +39,5 @@ class Invitation extends Model
         // @todo: accept invitation
         // $this->team()->users()->attach($user, ['role' => $role]);
         // $invite->delete();
-   }
+    }
 }

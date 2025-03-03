@@ -48,7 +48,7 @@ trait HasMembers
      */
     public function abilities(): HasMany
     {
-        return $this->hasMany(Teams::model('ability'), Config::get('teams.foreign_keys.team_id', 'team_id'),'id');
+        return $this->hasMany(Teams::model('ability'), Config::get('teams.foreign_keys.team_id', 'team_id'), 'id');
     }
 
     /**
@@ -58,7 +58,7 @@ trait HasMembers
      */
     public function roles(): HasMany
     {
-        return $this->hasMany(Teams::model('role'), Config::get('teams.foreign_keys.team_id', 'team_id'),'id');
+        return $this->hasMany(Teams::model('role'), Config::get('teams.foreign_keys.team_id', 'team_id'), 'id');
     }
 
     /**
@@ -68,7 +68,7 @@ trait HasMembers
      */
     public function groups(): HasMany
     {
-        return $this->hasMany(Teams::model('group'), Config::get('teams.foreign_keys.team_id', 'team_id'),'id');
+        return $this->hasMany(Teams::model('group'), Config::get('teams.foreign_keys.team_id', 'team_id'), 'id');
     }
 
     /**
@@ -78,7 +78,7 @@ trait HasMembers
      */
     public function invitations(): HasMany
     {
-        return $this->hasMany(Teams::model('invitation'), Config::get('teams.foreign_keys.team_id', 'team_id'),'id');
+        return $this->hasMany(Teams::model('invitation'), Config::get('teams.foreign_keys.team_id', 'team_id'), 'id');
     }
 
     /**
@@ -198,7 +198,7 @@ trait HasMembers
      */
     public function hasUserWithEmail(string $email): bool
     {
-        return $this->allUsers()->contains(fn($user) => $user->email === $email);
+        return $this->allUsers()->contains(fn ($user) => $user->email === $email);
     }
 
     /**
@@ -209,7 +209,7 @@ trait HasMembers
      */
     public function userRole(object $user): object|null
     {
-        return $this->owner === $user ? new Owner : $this->getRole($this->users->firstWhere('id', $user->id)->membership->role->id ?? null);
+        return $this->owner === $user ? new Owner() : $this->getRole($this->users->firstWhere('id', $user->id)->membership->role->id ?? null);
     }
 
     /**
@@ -447,7 +447,7 @@ trait HasMembers
 
         if (!empty($newPermissions)) {
 
-            $items = array_map(fn($code) => [$teamIdField => $this->id ,'code' => $code], $newPermissions);
+            $items = array_map(fn ($code) => [$teamIdField => $this->id ,'code' => $code], $newPermissions);
 
             Teams::model('permission')::query()->insert($items);
 

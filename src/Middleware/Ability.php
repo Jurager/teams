@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 
 class Ability extends Teams
 {
-
     /**
      * Handle incoming request.
      *

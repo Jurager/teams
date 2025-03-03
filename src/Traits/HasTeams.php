@@ -157,7 +157,7 @@ trait HasTeams
             $groupPermissions = $this->groups()->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)
                 ->with('permissions')
                 ->get()
-                ->flatMap(fn($group) => $group->permissions->pluck('code'))
+                ->flatMap(fn ($group) => $group->permissions->pluck('code'))
                 ->toArray();
             $permissions = array_merge($permissions, $groupPermissions);
         }
@@ -332,9 +332,9 @@ trait HasTeams
             foreach ($entity->abilities as $ability) {
 
                 if ($ability->pivot->forbidden) {
-                    $forbidden = max($forbidden,$entity::class === Teams::model('role') ? $ROLE_FORBIDDEN : ($entity::class === Teams::model('group') ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
+                    $forbidden = max($forbidden, $entity::class === Teams::model('role') ? $ROLE_FORBIDDEN : ($entity::class === Teams::model('group') ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
                 } else {
-                    $allowed = max($allowed,$entity::class === Teams::model('role') ? $ROLE_ALLOWED : ($entity::class === Teams::model('group') ? $GROUP_ALLOWED : $USER_ALLOWED));
+                    $allowed = max($allowed, $entity::class === Teams::model('role') ? $ROLE_ALLOWED : ($entity::class === Teams::model('group') ? $GROUP_ALLOWED : $USER_ALLOWED));
                 }
             }
         }
@@ -433,7 +433,7 @@ trait HasTeams
      */
     private function getRelationName(object|string $classname): string
     {
-        return  Str::plural(strtolower(class_basename( is_object($classname) ? $classname::class : $classname )));
+        return  Str::plural(strtolower(class_basename(is_object($classname) ? $classname::class : $classname)));
     }
 
     /**
