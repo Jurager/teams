@@ -79,7 +79,7 @@ trait HasTeams
         }
 
         // Get the user's role in the team.
-        $role = $team->users->where('id', $this->id)->first()->membership->role;
+        $role = $team->users->where('id', $this->id)->first()?->membership?->role;
 
         // If the user has a role, return the role object, otherwise return null.
         return $role ? $team->findRole($role->id) : null;
@@ -112,7 +112,7 @@ trait HasTeams
         foreach ($roles as $role) {
 
             // Obtain the user's role in the team.
-            $user_role = $team->findRole($team->users->where('id', $this->id)->first()->membership->role->id);
+            $user_role = $team->findRole($team->users->where('id', $this->id)->first()?->membership?->role?->id);
 
             // If the user has at least one of the roles and $require is false, then we return true.
             if ($user_role && $user_role->code === $role && ! $require) {
