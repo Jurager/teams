@@ -108,6 +108,12 @@ $team->updateUser($user, $role_keyword)
 // Remove the given user from the team.
 $team->deleteUser($user);
 
+// Create invitation for given email and send message with invitation link
+$team->inviteUser($email, $role_keyword)
+
+// Accepts the invitation by adding the user identified by the given email to the team, then deletes the invitation.
+$team->inviteAccept($invitation_id)
+
 // Get all the abilities belong to the team.
 $team->abilities()
 

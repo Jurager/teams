@@ -4,7 +4,7 @@ namespace Jurager\Teams\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 
-class AddingTeamMember
+class TeamMemberInviting
 {
     use Dispatchable;
 
@@ -14,18 +14,24 @@ class AddingTeamMember
     public mixed $team;
 
     /**
-     * The team member being added.
+     * The email address of the invitee.
      */
-    public mixed $user;
+    public mixed $email;
+
+    /**
+     * The role of the invitee.
+     */
+    public mixed $role;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(mixed $team, mixed $user)
+    public function __construct(mixed $team, mixed $email, mixed $role)
     {
         $this->team = $team;
-        $this->user = $user;
+        $this->email = $email;
+        $this->role = $role;
     }
 }

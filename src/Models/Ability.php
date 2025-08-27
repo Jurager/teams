@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
 
 class Ability extends Model
 {
@@ -31,7 +31,7 @@ class Ability extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::model('team'));
+        return $this->belongsTo(TeamsFacade::model('team'));
     }
 
     /**
@@ -39,7 +39,7 @@ class Ability extends Model
      */
     public function users(): MorphToMany
     {
-        return $this->morphedByMany(Teams::model('user'), 'entity', 'entity_ability')
+        return $this->morphedByMany(TeamsFacade::model('user'), 'entity', 'entity_ability')
             ->withPivot('forbidden')
             ->withTimestamps();
     }
@@ -49,7 +49,7 @@ class Ability extends Model
      */
     public function groups(): MorphToMany
     {
-        return $this->morphedByMany(Teams::model('group'), 'entity', 'entity_ability')
+        return $this->morphedByMany(TeamsFacade::model('group'), 'entity', 'entity_ability')
             ->withPivot('forbidden')
             ->withTimestamps();
     }
@@ -59,7 +59,7 @@ class Ability extends Model
      */
     public function roles(): MorphToMany
     {
-        return $this->morphedByMany(Teams::model('role'), 'entity', 'entity_ability')
+        return $this->morphedByMany(TeamsFacade::model('role'), 'entity', 'entity_ability')
             ->withPivot('forbidden')
             ->withTimestamps();
     }

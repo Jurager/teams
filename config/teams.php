@@ -82,7 +82,7 @@ return [
 
         'routes' => [
             'register' => true,
-            'url' => '/invitation/accept',
+            'url' => '/invitation/{invitation_id}/accept',
             'middleware' => 'web'
         ]
     ],

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams as TeamFacade;
 use InvalidArgumentException;
+use Exception;
 
 class Teams
 {
@@ -22,6 +23,7 @@ class Teams
      * @param array|null $models
      * @param bool $require
      * @return bool
+     * @throws Exception
      */
     protected function authorization(Request $request, string $method, string|array $params, ?string $teamId, ?array $models, bool $require = false): bool
     {

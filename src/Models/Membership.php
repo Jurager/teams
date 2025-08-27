@@ -5,7 +5,8 @@ namespace Jurager\Teams\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Exception;
 
 class Membership extends Pivot
 {
@@ -47,9 +48,10 @@ class Membership extends Pivot
      * Get the role that the membership belongs to.
      *
      * @return BelongsTo
+     * @throws Exception
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Teams::model('role'), 'role_id', 'id');
+        return $this->belongsTo(TeamsFacade::model('role'), 'role_id', 'id');
     }
 }

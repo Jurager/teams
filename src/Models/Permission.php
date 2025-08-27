@@ -5,7 +5,7 @@ namespace Jurager\Teams\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
 
 class Permission extends Model
 {
@@ -34,7 +34,7 @@ class Permission extends Model
      */
     public function groups(): MorphToMany
     {
-        return $this->morphedByMany(Teams::model('group'), 'entity', 'entity_permission');
+        return $this->morphedByMany(TeamsFacade::model('group'), 'entity', 'entity_permission');
     }
 
     /**
@@ -42,6 +42,6 @@ class Permission extends Model
      */
     public function roles(): MorphToMany
     {
-        return $this->morphedByMany(Teams::model('role'), 'entity', 'entity_permission');
+        return $this->morphedByMany(TeamsFacade::model('role'), 'entity', 'entity_permission');
     }
 }

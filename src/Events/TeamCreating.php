@@ -4,7 +4,7 @@ namespace Jurager\Teams\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 
-class AddingTeam
+class TeamCreating
 {
     use Dispatchable;
 

@@ -4,13 +4,14 @@ namespace Jurager\Teams\Traits;
 
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Models\Owner;
+use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
-use Jurager\Teams\Models\Owner;
+use Exception;
 
 trait HasTeams
 {
@@ -39,10 +40,11 @@ trait HasTeams
      * Retrieve all teams the user owns.
      *
      * @return HasMany
+     * @throws Exception
      */
     public function ownedTeams(): HasMany
     {
-        return $this->hasMany(Teams::model('team'))->withoutGlobalScopes();
+        return $this->hasMany(TeamsFacade::model('team'))->withoutGlobalScopes();
     }
 
 
@@ -50,10 +52,11 @@ trait HasTeams
      * Retrieve all teams the user belongs to.
      *
      * @return BelongsToMany
+     * @throws Exception
      */
     public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::model('team'), Teams::model('membership'), 'user_id', Config::get('teams.foreign_keys.team_id'))
+        return $this->belongsToMany(TeamsFacade::model('team'), TeamsFacade::model('membership'), 'user_id', Config::get('teams.foreign_keys.team_id'))
             ->withoutGlobalScopes()
             ->withPivot('role_id')
             ->withTimestamps()
@@ -64,10 +67,11 @@ trait HasTeams
      * Retrieve abilities related to the user.
      *
      * @return MorphToMany
+     * @throws Exception
      */
     public function abilities(): MorphToMany
     {
-        return $this->morphToMany(Teams::model('ability'), 'entity', 'entity_ability')
+        return $this->morphToMany(TeamsFacade::model('ability'), 'entity', 'entity_ability')
             ->withPivot('forbidden')
             ->withTimestamps();
     }
@@ -76,10 +80,11 @@ trait HasTeams
      * Retrieve all groups the user belongs to.
      *
      * @return BelongsToMany
+     * @throws Exception
      */
     public function groups(): BelongsToMany
     {
-        return $this->belongsToMany(Teams::model('group'), 'group_user', 'user_id', 'group_id');
+        return $this->belongsToMany(TeamsFacade::model('group'), 'group_user', 'user_id', 'group_id');
     }
 
     /**
@@ -87,6 +92,7 @@ trait HasTeams
      *
      * @param object $team
      * @return bool
+     * @throws Exception
      */
     public function belongsToTeam(object $team): bool
     {
@@ -98,6 +104,7 @@ trait HasTeams
      *
      * @param object $team
      * @return mixed
+     * @throws Exception
      */
     public function teamRole(object $team): mixed
     {
@@ -118,6 +125,7 @@ trait HasTeams
      * @param string|array $roles
      * @param bool $require
      * @return bool
+     * @throws Exception
      */
     public function hasTeamRole(object $team, string|array $roles, bool $require = false): bool
     {
@@ -140,6 +148,7 @@ trait HasTeams
      * @param object $team
      * @param string|null $scope Scope of permissions to get (ex. 'role', 'group'), by default getting all permissions
      * @return array|string[]
+     * @throws Exception
      */
     public function teamPermissions(object $team, string|null $scope = null): array
     {
@@ -176,6 +185,7 @@ trait HasTeams
      * @param bool $require
      * @param string|null $scope Scope of permissions to check (ex. 'role', 'group'), by default checking all permissions
      * @return bool
+     * @throws Exception
      */
     public function hasTeamPermission(object $team, string|array $permissions, bool $require = false, string|null $scope = null): bool
     {
@@ -214,6 +224,7 @@ trait HasTeams
      * @param object $entity
      * @param bool $forbidden
      * @return mixed
+     * @throws Exception
      */
     public function teamAbilities(object $team, object $entity, bool $forbidden = false): mixed
     {
@@ -262,6 +273,7 @@ trait HasTeams
      * @param string $permission
      * @param object $action_entity
      * @return bool
+     * @throws Exception
      */
     public function hasTeamAbility(object $team, string $permission, object $action_entity): bool
     {
@@ -300,7 +312,7 @@ trait HasTeams
             return $segments->take($key + 1)->implode('.') . ($key + 1 === $segments->count() ? '' : '.*') ;
         });
 
-        $permission_ids = Teams::model('permission')::query()
+        $permission_ids = TeamsFacade::model('permission')::query()
             ->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)
             ->whereIn('code', $codes)
             ->pluck('id')
@@ -332,9 +344,9 @@ trait HasTeams
             foreach ($entity->abilities as $ability) {
 
                 if ($ability->pivot->forbidden) {
-                    $forbidden = max($forbidden, $entity::class === Teams::model('role') ? $ROLE_FORBIDDEN : ($entity::class === Teams::model('group') ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
+                    $forbidden = max($forbidden, $entity::class === TeamsFacade::model('role') ? $ROLE_FORBIDDEN : ($entity::class === TeamsFacade::model('group') ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
                 } else {
-                    $allowed = max($allowed, $entity::class === Teams::model('role') ? $ROLE_ALLOWED : ($entity::class === Teams::model('group') ? $GROUP_ALLOWED : $USER_ALLOWED));
+                    $allowed = max($allowed, $entity::class === TeamsFacade::model('role') ? $ROLE_ALLOWED : ($entity::class === TeamsFacade::model('group') ? $GROUP_ALLOWED : $USER_ALLOWED));
                 }
             }
         }
@@ -351,6 +363,7 @@ trait HasTeams
      * @param object $action_entity
      * @param object|null $target_entity
      * @return void
+     * @throws Exception
      */
     public function allowTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
     {
@@ -365,6 +378,7 @@ trait HasTeams
      * @param object $action_entity
      * @param object|null $target_entity
      * @return void
+     * @throws Exception
      */
     public function forbidTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
     {
@@ -379,6 +393,7 @@ trait HasTeams
      * @param object $action_entity
      * @param object|null $target_entity
      * @return void
+     * @throws Exception
      */
     public function deleteTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
     {
@@ -395,10 +410,11 @@ trait HasTeams
      * @param object|null $target_entity
      * @param bool $forbidden
      * @return void
+     * @throws Exception
      */
     private function updateAbilityOnEntity(object $team, string $method, string $permission, object $action_entity, object|null $target_entity = null, bool $forbidden = false): void
     {
-        $abilityModel = Teams::instance('ability')->firstOrCreate([
+        $abilityModel = TeamsFacade::instance('ability')->firstOrCreate([
             Config::get('teams.foreign_keys.team_id', 'team_id') => $team->id,
             'entity_id' => $action_entity->id,
             'entity_type' => $action_entity::class,

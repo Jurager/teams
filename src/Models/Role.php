@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
 
 class Role extends Model
 {
@@ -69,7 +69,7 @@ class Role extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Teams::model('team'));
+        return $this->belongsTo(TeamsFacade::model('team'));
     }
 
     /**
@@ -79,7 +79,7 @@ class Role extends Model
      */
     public function permissions(): MorphToMany
     {
-        return $this->morphToMany(Teams::model('permission'), 'entity', 'entity_permission');
+        return $this->morphToMany(TeamsFacade::model('permission'), 'entity', 'entity_permission');
     }
 
     /**
@@ -89,7 +89,7 @@ class Role extends Model
      */
     public function abilities(): MorphToMany
     {
-        return $this->morphToMany(Teams::model('ability'), 'entity', 'entity_ability')
+        return $this->morphToMany(TeamsFacade::model('ability'), 'entity', 'entity_ability')
             ->withPivot('forbidden')
             ->withTimestamps();
     }

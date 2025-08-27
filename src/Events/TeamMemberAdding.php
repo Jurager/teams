@@ -4,7 +4,7 @@ namespace Jurager\Teams\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 
-class RemovingTeamMember
+class TeamMemberAdding
 {
     use Dispatchable;
 
@@ -14,7 +14,7 @@ class RemovingTeamMember
     public mixed $team;
 
     /**
-     * The team member being removed.
+     * The team member being added.
      */
     public mixed $user;
 
