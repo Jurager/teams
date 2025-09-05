@@ -251,11 +251,11 @@ trait HasMembers
      */
     public function inviteAccept(int $invitation_id): void
     {
-        if(!$invitation = $this->invitations()->find($invitation_id)) {
+        if (!$invitation = $this->invitations()->find($invitation_id)) {
             throw new RuntimeException("Invitation not found.");
         }
 
-        if(!$user = $invitation->user){
+        if (!$user = $invitation->user) {
             throw new RuntimeException("Invited user not found.");
         }
 
