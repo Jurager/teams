@@ -95,7 +95,7 @@ return [
     | permission node(s) that allows a user to perform all actions on a team.
     */
     'wildcards' => [
-        'enabled' => true,
+        'enabled' => false,
         'nodes' => [
             '*',
             '*.*',
