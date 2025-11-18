@@ -283,6 +283,32 @@ To ensure that incoming requests initiated by a team member can be executed by t
 return $user->hasTeamPermission($team, 'server:update');
 ```
 
+### Wildcard Permissions
+
+You can choose to enable wildcard permissions in the config. Enabling wildcards will allow you to specify permission node(s) that grants a user all access if they have that permission attached to them.
+```php
+/*
+|--------------------------------------------------------------------------
+| Wildcard Permissions
+|--------------------------------------------------------------------------
+| Configure wildcard permission nodes, allowing you to specify super admin
+| permission node(s) that allows a user to perform all actions on a team.
+*/
+'wildcards' => [
+    'enabled' => false,
+    'nodes' => [
+        '*',
+        '*.*',
+        'all'
+    ]
+]
+```
+
+In the example configuration above, users with the permission nodes of "\*" or "\*.\*" or "all" would be allowed to perform all actions on their team.
+
+> [!NOTE]
+> This configuration does not grant global team access. It only allows you to grant all permissions to a user or role in the team 
+
 Abilities
 -------------------------------------------
 

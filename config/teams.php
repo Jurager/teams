@@ -86,4 +86,21 @@ return [
             'middleware' => 'web'
         ]
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Wildcard Permissions
+    |--------------------------------------------------------------------------
+    | Configure wildcard permission nodes, allowing you to specify super admin
+    | permission node(s) that allows a user to perform all actions on a team.
+    */
+    'wildcards' => [
+        'enabled' => false,
+        'nodes' => [
+            '*',
+            '*.*',
+            'all'
+        ]
+    ]
+
 ];
