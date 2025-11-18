@@ -463,9 +463,19 @@ trait HasTeams
     {
         // Generate all possible wildcards from the permission segments
         $segments = collect(explode('.', $permission));
+
         $codes = $segments->map(function ($item, $key) use ($segments) {
             return $segments->take($key + 1)->implode('.') . ($key + 1 === $segments->count() ? '' : '.*') ;
         });
+
+        // Add in the optional wildcard permissions
+        if(Config::get('teams.wildcards.enabled', false)) {
+            // Build the code collection
+            $wildcardCodes = collect(Config::get('teams.wildcards.nodes', []));
+
+            // Replace codes with the new codes
+            $codes = $wildcardCodes->merge($codes);
+        }
 
         return !empty(array_intersect($codes->all(), $userPermissions));
     }
