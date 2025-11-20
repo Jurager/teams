@@ -200,13 +200,17 @@ trait HasTeams
             return $this->determineTeamPermission($team, $permissions, $require, $scope);
         }
 
-        // Create a unique cache key for this request
-        $cacheKey = hash('sha256', serialize([
-            $team->id,
+        // Serialize the data
+        $serializedData = serialize([
+            $this->attributes['id'],
+            $team->attributes['id'],
             $permissions,
             $require,
             $scope
-        ]));
+        ]);
+
+        // Create a unique cache key for this request
+        $cacheKey = hash('sha256', $serializedData);
 
         // Check to see if the cache key exists, if not populate it
         if (!isset($this->decisionCache[$cacheKey])) {
@@ -230,7 +234,7 @@ trait HasTeams
      * @return bool
      * @throws Exception
      */
-    private function determineTeamPermission(object $team, string|array $permissions, bool $require = false, string|null $scope = null): bool
+    protected function determineTeamPermission(object $team, string|array $permissions, bool $require = false, string|null $scope = null): bool
     {
         if ($this->ownsTeam($team)) {
             return true;
