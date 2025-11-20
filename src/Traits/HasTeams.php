@@ -16,6 +16,11 @@ use Exception;
 trait HasTeams
 {
     /**
+     * @var array $decisionCache Used to hold decisions made
+     */
+    private array $decisionCache = [];
+
+    /**
      * Check if the user owns the given team.
      *
      * @param object $team
@@ -56,7 +61,8 @@ trait HasTeams
      */
     public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(TeamsFacade::model('team'), TeamsFacade::model('membership'), 'user_id', Config::get('teams.foreign_keys.team_id'))
+        return $this
+            ->belongsToMany(TeamsFacade::model('team'), TeamsFacade::model('membership'), 'user_id', Config::get('teams.foreign_keys.team_id'))
             ->withoutGlobalScopes()
             ->withPivot('role_id')
             ->withTimestamps()
@@ -175,7 +181,7 @@ trait HasTeams
     }
 
     /**
-     * Determine if the user has the given permission on the given team.
+     * Determine if the user has the given permission on the given team
      *
      * $require = true (all permissions in the array are required)
      * $require = false (only one or more permission in the array are required or $permissions is empty)
@@ -188,6 +194,43 @@ trait HasTeams
      * @throws Exception
      */
     public function hasTeamPermission(object $team, string|array $permissions, bool $require = false, string|null $scope = null): bool
+    {
+        // Check to see if the user has enabled request lifecycle caching
+        if (!Config::get('teams.request.cache_decisions', false)) {
+            return $this->determineTeamPermission($team, $permissions, $require, $scope);
+        }
+
+        // Create a unique cache key for this request
+        $cacheKey = hash('sha256', serialize([
+            $team->id,
+            $permissions,
+            $require,
+            $scope
+        ]));
+
+        // Check to see if the cache key exists, if not populate it
+        if (!isset($this->decisionCache[$cacheKey])) {
+            $this->decisionCache[$cacheKey] = $this->determineTeamPermission($team, $permissions, $require, $scope);
+        }
+
+        // Return the cache key
+        return $this->decisionCache[$cacheKey];
+    }
+
+    /**
+     * Determine if the user has the given permission on the given team.
+     *
+     * $require = true (all permissions in the array are required)
+     * $require = false (only one or more permission in the array are required or $permissions is empty)
+     *
+     * @param object $team
+     * @param string|array $permissions
+     * @param bool $require
+     * @param string|null $scope Scope of permissions to check (ex. 'role', 'group'), by default checking all permissions
+     * @return bool
+     * @throws Exception
+     */
+    private function determineTeamPermission(object $team, string|array $permissions, bool $require = false, string|null $scope = null): bool
     {
         if ($this->ownsTeam($team)) {
             return true;
