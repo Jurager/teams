@@ -202,7 +202,7 @@ trait HasTeams
 
         // Serialize the data
         $serializedData = serialize([
-            $this->attributes['id'],
+            $this->attributes[$this->primaryKey],
             $team->attributes['id'],
             $permissions,
             $require,
