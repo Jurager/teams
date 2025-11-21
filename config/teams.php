@@ -72,6 +72,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Request Lifecycle
+    |--------------------------------------------------------------------------
+    | Configure request lifecycle options
+    */
+    'request' => [
+        // Enabling this option caches the permission decision for the request
+        'cache_decisions' => false,
+    ],
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Invitations
     |--------------------------------------------------------------------------
     | Configures the team invitation feature, allowing users to be invited to join teams.
