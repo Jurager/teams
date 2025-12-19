@@ -4,9 +4,11 @@ namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Exception;
 
 class Role extends Model
 {
@@ -92,5 +94,16 @@ class Role extends Model
         return $this->morphToMany(TeamsFacade::model('ability'), 'entity', 'entity_ability')
             ->withPivot('forbidden')
             ->withTimestamps();
+    }
+
+    /**
+     * Get all users associated with the role.
+     *
+     * @return BelongsToMany
+     * @throws Exception
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(TeamsFacade::model('team'), Config::get('teams.tables.team_user', 'team_user'), 'role_id', Config::get('teams.foreign_keys.team_id', 'team_id'));
     }
 }
