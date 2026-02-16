@@ -23,6 +23,9 @@ $team->inviteAccept($invitationId);
 
 The method finds the invitation user by email, adds them to the team with invitation role, and deletes the invitation.
 
+> [!NOTE]
+> Invitation links are generated with `URL::signedRoute(...)` in `Jurager\Teams\Mail\Invitation`.
+
 ## Route Registration
 
 When both flags are enabled:
@@ -38,3 +41,6 @@ service provider registers route:
 
 > [!NOTE]
 > Route is loaded through package route group. If you use custom route prefix settings, verify final URL with `php artisan route:list`.
+
+> [!WARNING]
+> Package route file has optional `signed` middleware commented out. If you require strict signed-link validation, enable it in your route/controller implementation.

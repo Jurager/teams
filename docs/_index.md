@@ -23,6 +23,8 @@ This documentation explains how to install, configure, and use Jurager/Teams.
 - [Invitations](invitations.md) - Invitation flow and routes.
 - [Commands](commands.md) - Installation command and published assets.
 - [Events](events.md) - Team and membership lifecycle events.
+- [Facade & Service](facade-service.md) - Model resolver and runtime bindings.
+- [Validation](validation.md) - Built-in validation rules.
 
 ## Reference
 

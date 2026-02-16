@@ -16,12 +16,15 @@ Default model bindings are configured in `teams.models`.
 - `Ability`
 - `Membership`
 - `Invitation`
+- `Owner` (synthetic role object)
 
 ## Notable Behavior
 
 - `Team` loads `roles.permissions` and `groups.permissions` by default.
 - `Role` and `Group` detach related permissions/abilities on delete.
 - `Owner` is a synthetic role-like object with wildcard permissions (`*`).
+- `Membership` is a pivot model with eager-loaded `role` relation.
+- `Invitation::user()` resolves user by email (`email` -> `email`).
 
 ## Custom Models
 

@@ -57,6 +57,15 @@ When enabled, repeated `hasTeamPermission()` checks in one request can reuse cac
 > [!NOTE]
 > Invitation acceptance route is loaded only when both `enabled` and `routes.register` are `true`.
 
+## Route Group Options
+
+Service provider additionally reads:
+
+- `teams.routes.prefix`
+- `teams.routes.middleware`
+
+for the invitation route group wrapper.
+
 ## Wildcard Permissions
 
 ```php

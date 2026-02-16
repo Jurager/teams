@@ -26,3 +26,12 @@ weight: 140
 - `role:<roles>,<team_id>[,require]`
 - `permission:<permissions>,<team_id>[,require]`
 - `ability:<permission>,<modelClass>,<entityIdParam>`
+
+## Facade / Service
+
+- `Teams::model(string $key): string`
+- `Teams::instance(string $key): object`
+
+## Validation
+
+- `Jurager\Teams\Rules\Role`
