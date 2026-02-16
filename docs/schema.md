@@ -22,7 +22,7 @@ The package stores team access data in dedicated tables.
 
 ## Diagram
 
-![Schema](schema.png "Title")
+![Schema](https://raw.githubusercontent.com/jurager/teams/main/schema.png "Database Schema")
 
 > [!NOTE]
 > If you change `teams.tables.*` or `teams.foreign_keys.*`, apply it before publishing/running migrations.
