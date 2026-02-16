@@ -22,9 +22,7 @@ The package stores team access data in dedicated tables.
 
 ## Diagram
 
-The repository includes schema image:
-
-`schema.png`
+![Schema](schema.png "Title")
 
 > [!NOTE]
 > If you change `teams.tables.*` or `teams.foreign_keys.*`, apply it before publishing/running migrations.
