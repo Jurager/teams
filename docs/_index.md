@@ -1,5 +1,5 @@
 ---
-title: Documentation
+title: Teams
 weight: 1
 ---
 
