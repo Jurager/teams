@@ -5,22 +5,67 @@ weight: 30
 
 # Configuration
 
-Main configuration lives in `config/teams.php`. Publish it with `php artisan teams:install`.
+Main configuration lives in `config/teams.php`.
 
 ## Middleware
 
 ```php
 'middleware' => [
     'register' => true,
-    'handling' => 'abort', // or 'redirect'
-]
+    'handling' => 'abort',
+
+    'handlers' => [
+        'abort' => [
+            'code'    => 403,
+            'message' => 'User does not have any of the necessary access rights.',
+        ],
+        'redirect' => [
+            'url'     => '/home',
+            'message' => [
+                'key'     => 'error',
+                'content' => '',
+            ],
+        ],
+    ],
+],
 ```
 
-- `register`: auto-register `role`, `permission`, `ability` middleware aliases in the application.
-- `handling`: unauthorized response strategy — `'abort'` returns HTTP 403; `'redirect'` redirects to a configured URL.
+- `register` — automatically register middleware aliases in the application.
+- `handling` — one of the handler from `handlers`.
 
 > [!NOTE]
 > Set `register = false` if you need to bind the middleware under custom aliases in your own `bootstrap/app.php`.
+
+### Handler: `abort`
+
+```php
+'abort' => [
+    'code'    => 403,
+    'message' => 'User does not have any of the necessary access rights.',
+],
+```
+
+Calls `abort($code, $message)`. Set `code` to any HTTP status code and `message` to the response body text.
+
+### Handler: `redirect`
+
+```php
+'redirect' => [
+    'url'     => '/home',
+    'message' => [
+        'key'     => 'error',
+        'content' => '',
+    ],
+],
+```
+
+Redirects the request to the specified url. If both `message.key` and `message.content` are non-empty, flashes the message to the session, so it can be read in the next request with `session('error')`.
+
+> [!NOTE]
+> To use a flash message on redirect, set both `message.key` and `message.content` to non-empty values.
+
+> [!NOTE]
+> If `handling` is not set or does not match any key in `handlers`, the middleware falls back to `abort` with HTTP 403.
 
 ## Models
 

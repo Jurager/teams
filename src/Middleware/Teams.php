@@ -102,12 +102,14 @@ class Teams
      */
     protected function unauthorized(): RedirectResponse
     {
-        // Method to be called in the middleware return
-        $handling = Config::get('teams.middleware.handling');
-        $handler = Config::get('teams.middleware.handlers.' . $handling);
+        $handling = Config::get('teams.middleware.handling', 'abort');
+        $handler  = Config::get('teams.middleware.handlers.' . $handling);
 
-        if ($handling === 'abort') {
-            abort($handler['code'], $handler['message']);
+        // Fall back to abort when handler is missing or handling is 'abort'
+        if ($handling === 'abort' || $handler === null) {
+            $code    = $handler['code']    ?? 403;
+            $message = $handler['message'] ?? 'User does not have any of the necessary access rights.';
+            abort($code, $message);
         }
 
         // Prepare redirect response
