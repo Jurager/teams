@@ -51,6 +51,17 @@ trait HasMembers
     }
 
     /**
+     * Get all permissions linked to the team.
+     *
+     * @return HasMany
+     * @throws Exception
+     */
+    public function permissions(): HasMany
+    {
+        return $this->hasMany(TeamsFacade::model('permission'), config('teams.foreign_keys.team_id', 'team_id'), 'id');
+    }
+
+    /**
      * Get all abilities linked to the team.
      *
      * @return HasMany
