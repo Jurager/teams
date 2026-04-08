@@ -318,13 +318,18 @@ trait HasTeams
      *
      * @param object $team
      * @param string $permission
-     * @param object $action_entity
+     * @param object|string $action_entity
+     * @param int|string|null $action_entity_id
      * @return bool
      * @throws Exception
      */
-    public function hasTeamAbility(object $team, string $permission, object $action_entity): bool
+    public function hasTeamAbility(object $team, string $permission, object|string $action_entity, int|string|null $action_entity_id = null): bool
     {
-        if ($this->ownsTeam($team) || (method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this))) {
+        [$type, $id] = ($action_entity instanceof \Illuminate\Database\Eloquent\Model)
+            ? [$action_entity->getMorphClass(), $action_entity->getKey()]
+            : [$action_entity, $action_entity_id];
+
+        if ($this->ownsTeam($team) || (is_object($action_entity) && method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this))) {
             return true;
         }
 
@@ -355,9 +360,7 @@ trait HasTeams
 
         $segments = collect(explode('.', $permission));
 
-        $codes = $segments->map(function ($item, $key) use ($segments) {
-            return $segments->take($key + 1)->implode('.') . ($key + 1 === $segments->count() ? '' : '.*') ;
-        });
+        $codes = $segments->map(fn($item, $key) => $segments->take($key + 1)->implode('.') . ($key + 1 === $segments->count() ? '' : '.*'));
 
         $permission_ids = TeamsFacade::model('permission')::query()
             ->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)
@@ -365,31 +368,20 @@ trait HasTeams
             ->pluck('id')
             ->all();
 
-        $role = $this->teamRole($team)->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
+        $abilityLoader = function ($query) use ($type, $id, $permission_ids) {
             $query->where([
-                'abilities.entity_id' => $action_entity->id,
-                'abilities.entity_type' => get_class($action_entity),
+                'abilities.entity_id' => $id,
+                'abilities.entity_type' => $type,
             ])->whereIn('permission_id', $permission_ids);
-        }]);
+        };
 
-        $groups = $this->groups->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
-            $query->where([
-                'abilities.entity_id' => $action_entity->id,
-                'abilities.entity_type' => get_class($action_entity),
-            ])->whereIn('permission_id', $permission_ids);
-        }]);
-
-        $this->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
-            $query->where([
-                'abilities.entity_id' => $action_entity->id,
-                'abilities.entity_type' => get_class($action_entity),
-            ])->whereIn('permission_id', $permission_ids);
-        }]);
+        $role = $this->teamRole($team)->load(['abilities' => $abilityLoader]);
+        $groups = $this->groups()->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)->get()->load(['abilities' => $abilityLoader]);
+        $this->load(['abilities' => $abilityLoader]);
 
         foreach ([$role, ...$groups, $this] as $entity) {
-
+            if (!$entity) continue;
             foreach ($entity->abilities as $ability) {
-
                 if ($ability->pivot->forbidden) {
                     $forbidden = max($forbidden, $entity::class === TeamsFacade::model('role') ? $ROLE_FORBIDDEN : ($entity::class === TeamsFacade::model('group') ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
                 } else {
@@ -407,14 +399,15 @@ trait HasTeams
      *
      * @param object $team
      * @param string $permission
-     * @param object $action_entity
+     * @param object|string $action_entity
      * @param object|null $target_entity
+     * @param int|string|null $action_entity_id
      * @return void
      * @throws Exception
      */
-    public function allowTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
+    public function allowTeamAbility(object $team, string $permission, object|string $action_entity, object|null $target_entity = null, int|string|null $action_entity_id = null): void
     {
-        $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $target_entity);
+        $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $target_entity, false, $action_entity_id);
     }
 
     /**
@@ -422,14 +415,15 @@ trait HasTeams
      *
      * @param object $team
      * @param string $permission
-     * @param object $action_entity
+     * @param object|string $action_entity
      * @param object|null $target_entity
+     * @param int|string|null $action_entity_id
      * @return void
      * @throws Exception
      */
-    public function forbidTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
+    public function forbidTeamAbility(object $team, string $permission, object|string $action_entity, object|null $target_entity = null, int|string|null $action_entity_id = null): void
     {
-        $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $target_entity, true);
+        $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $target_entity, true, $action_entity_id);
     }
 
     /**
@@ -437,14 +431,15 @@ trait HasTeams
      *
      * @param object $team
      * @param string $permission
-     * @param object $action_entity
+     * @param object|string $action_entity
      * @param object|null $target_entity
+     * @param int|string|null $action_entity_id
      * @return void
      * @throws Exception
      */
-    public function deleteTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
+    public function deleteTeamAbility(object $team, string $permission, object|string $action_entity, object|null $target_entity = null, int|string|null $action_entity_id = null): void
     {
-        $this->updateAbilityOnEntity($team, 'detach', $permission, $action_entity, $target_entity);
+        $this->updateAbilityOnEntity($team, 'detach', $permission, $action_entity, $target_entity, false, $action_entity_id);
     }
 
     /**
@@ -453,18 +448,23 @@ trait HasTeams
      * @param object $team
      * @param string $method
      * @param string $permission
-     * @param object $action_entity
+     * @param object|string $action_entity
      * @param object|null $target_entity
      * @param bool $forbidden
+     * @param int|string|null $action_entity_id
      * @return void
      * @throws Exception
      */
-    private function updateAbilityOnEntity(object $team, string $method, string $permission, object $action_entity, object|null $target_entity = null, bool $forbidden = false): void
+    private function updateAbilityOnEntity(object $team, string $method, string $permission, object|string $action_entity, object|null $target_entity = null, bool $forbidden = false, int|string|null $action_entity_id = null): void
     {
+        [$type, $id] = ($action_entity instanceof \Illuminate\Database\Eloquent\Model)
+            ? [$action_entity->getMorphClass(), $action_entity->getKey()]
+            : [$action_entity, $action_entity_id];
+
         $abilityModel = TeamsFacade::instance('ability')->firstOrCreate([
             Config::get('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'entity_id' => $action_entity->id,
-            'entity_type' => $action_entity::class,
+            'entity_id'   => $id,
+            'entity_type' => $type,
             'permission_id' => $team->getPermissionIds([$permission])[0]
         ]);
 
