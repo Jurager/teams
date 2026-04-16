@@ -216,11 +216,16 @@ $user->teamAbilities($team, $server)
 // Determine if a user has a given ability on certain model...
 $user->hasTeamAbility($team, 'server:edit', $server)
 
+// Same, without loading the model — pass class name and ID
+$user->hasTeamAbility($team, 'server:edit', Server::class, $serverId)
+
 // Add an ability for user to action on certain model, if not found, will create a new one
 $user->allowTeamAbility($team, 'server:edit', $server)
+$user->allowTeamAbility($team, 'server:edit', Server::class, $serverId)
 
 // Forbid an ability for user to action on certain model, used in case if global ability or role allowing this action
 $user->forbidTeamAbility($team, 'server:edit', $server)
+$user->forbidTeamAbility($team, 'server:edit', Server::class, $serverId)
 ```
 
 These methods enable you to efficiently manage and inspect a user's teams, roles, permissions, and abilities within your application.
@@ -318,20 +323,30 @@ Abilities
 
 Adding abilities to users is easy — just pass the ability name, and it’ll be created automatically if it doesn’t exist.
 
-To grant a user the ability to edit an article within a team, simply provide the relevant entities, such as the article and team objects
+To grant a user the ability to edit an article within a team, simply provide the relevant entities, such as the article and team objects.
 
-If `$target_entity` is null, target for ability defaults to user:
+You can pass an Eloquent model or a class name string with an explicit ID (useful when you want to avoid a database query just to load the model):
 
 ```php
-$user->allowTeamAbility($team, $action, $action_entity, $target_entity)
+// Using a model
+$user->allowTeamAbility($team, 'articles.edit', $article);
+
+// Using a class name + ID (no model loaded)
+$user->allowTeamAbility($team, 'articles.edit', Article::class, $articleId);
 ```
+
+If `$target_entity` is `null`, the rule targets the user themselves.
 
 ### Checking an Ability
 
 To verify if a user has a specific ability within the context of a team, based on various permission levels (role, group, user, and global), you can use the following method:
     
 ```php
-User::hasTeamAbility($team, 'edit_post', $post);
+// Using a model
+$user->hasTeamAbility($team, 'articles.edit', $article);
+
+// Using a class name + ID
+$user->hasTeamAbility($team, 'articles.edit', Article::class, $articleId);
 ```
 
 This method checks if the user can perform the specified ability (e.g., 'edit_post') on the given entity (e.g., a post) within the context of the specified team. It takes into account the user's role, groups, global permissions, and any entity-specific access rules.
@@ -374,10 +389,15 @@ If the **allowed** value is greater than or equal to the **forbidden** value, th
 
 To prevent a user from having a specific ability (even if their role allows it), use the following method.
 
-If `$target_entity` is null, target for ability defaults to user:
 ```php
-User::forbidTeamAbility($team, $action, $action_entity,$target_entity)
+// Using a model
+$user->forbidTeamAbility($team, 'articles.edit', $article);
+
+// Using a class name + ID
+$user->forbidTeamAbility($team, 'articles.edit', Article::class, $articleId);
 ```
+
+If `$target_entity` is `null`, the rule targets the user themselves.
 
 Groups
 -------------------------------------------

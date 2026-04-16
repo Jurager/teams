@@ -10,17 +10,25 @@ Abilities are entity-level allow/forbid rules layered on top of team permissions
 ## Grant / Forbid / Delete
 
 ```php
-// Allow user to edit this specific article
+// Allow user to edit this specific article (passing a model)
 $user->allowTeamAbility($team, 'articles.edit', $article);
+
+// Same, but without loading the model — pass the class name and ID instead
+$user->allowTeamAbility($team, 'articles.edit', Article::class, $articleId);
 
 // Forbid user from editing this specific article
 $user->forbidTeamAbility($team, 'articles.edit', $article);
+$user->forbidTeamAbility($team, 'articles.edit', Article::class, $articleId);
 
 // Remove the ability rule entirely
 $user->deleteTeamAbility($team, 'articles.edit', $article);
+$user->deleteTeamAbility($team, 'articles.edit', Article::class, $articleId);
 ```
 
 The optional 4th argument `$target_entity` specifies the entity the rule is attached to. If omitted, the rule targets the user themselves.
+
+> [!NOTE]
+> When passing a class name string as `$action_entity`, the entity ID must be provided as the 4th argument. Omitting it will throw an `InvalidArgumentException`.
 
 > [!NOTE]
 > `allowTeamAbility()` creates the ability record if it does not exist yet. Subsequent calls update the existing record.
@@ -31,7 +39,11 @@ The optional 4th argument `$target_entity` specifies the entity the rule is atta
 ## Check Ability
 
 ```php
+// Passing a model
 $user->hasTeamAbility($team, 'articles.edit', $article);
+
+// Without loading the model — pass the class name and ID
+$user->hasTeamAbility($team, 'articles.edit', Article::class, $articleId);
 ```
 
 The evaluation order is:

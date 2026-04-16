@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Exception;
 
 trait HasTeams
@@ -322,9 +322,11 @@ trait HasTeams
      * @return bool
      * @throws Exception
      */
-    public function hasTeamAbility(object $team, string $permission, object $action_entity): bool
+    public function hasTeamAbility(object $team, string $permission, object|string $action_entity, int|string|null $action_entity_id = null): bool
     {
-        if ($this->ownsTeam($team) || (method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this))) {
+        [$entityType, $entityId] = $this->resolveEntity($action_entity, $action_entity_id);
+
+        if ($this->ownsTeam($team) || (is_object($action_entity) && method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this))) {
             return true;
         }
 
@@ -365,26 +367,16 @@ trait HasTeams
             ->pluck('id')
             ->all();
 
-        $role = $this->teamRole($team)->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
-            $query->where([
-                'abilities.entity_id' => $action_entity->id,
-                'abilities.entity_type' => get_class($action_entity),
-            ])->whereIn('permission_id', $permission_ids);
-        }]);
+        $loadAbilities = fn ($query) => $query->where([
+            'abilities.entity_id'   => $entityId,
+            'abilities.entity_type' => $entityType,
+        ])->whereIn('permission_id', $permission_ids);
 
-        $groups = $this->groups->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
-            $query->where([
-                'abilities.entity_id' => $action_entity->id,
-                'abilities.entity_type' => get_class($action_entity),
-            ])->whereIn('permission_id', $permission_ids);
-        }]);
+        $role = $this->teamRole($team)->load(['abilities' => $loadAbilities]);
 
-        $this->load(['abilities' => function ($query) use ($action_entity, $permission_ids) {
-            $query->where([
-                'abilities.entity_id' => $action_entity->id,
-                'abilities.entity_type' => get_class($action_entity),
-            ])->whereIn('permission_id', $permission_ids);
-        }]);
+        $groups = $this->groups->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)->load(['abilities' => $loadAbilities]);
+
+        $this->load(['abilities' => $loadAbilities]);
 
         foreach ([$role, ...$groups, $this] as $entity) {
 
@@ -412,7 +404,7 @@ trait HasTeams
      * @return void
      * @throws Exception
      */
-    public function allowTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
+    public function allowTeamAbility(object $team, string $permission, object|string $action_entity, object|null $target_entity = null): void
     {
         $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $target_entity);
     }
@@ -427,7 +419,7 @@ trait HasTeams
      * @return void
      * @throws Exception
      */
-    public function forbidTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
+    public function forbidTeamAbility(object $team, string $permission, object|string $action_entity, object|null $target_entity = null): void
     {
         $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $target_entity, true);
     }
@@ -442,7 +434,7 @@ trait HasTeams
      * @return void
      * @throws Exception
      */
-    public function deleteTeamAbility(object $team, string $permission, object $action_entity, object|null $target_entity = null): void
+    public function deleteTeamAbility(object $team, string $permission, object|string $action_entity, object|null $target_entity = null): void
     {
         $this->updateAbilityOnEntity($team, 'detach', $permission, $action_entity, $target_entity);
     }
@@ -459,13 +451,15 @@ trait HasTeams
      * @return void
      * @throws Exception
      */
-    private function updateAbilityOnEntity(object $team, string $method, string $permission, object $action_entity, object|null $target_entity = null, bool $forbidden = false): void
+    private function updateAbilityOnEntity(object $team, string $method, string $permission, object|string $action_entity, object|null $target_entity = null, bool $forbidden = false): void
     {
+        [$entityType, $entityId] = $this->resolveEntity($action_entity);
+
         $abilityModel = TeamsFacade::instance('ability')->firstOrCreate([
             Config::get('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'entity_id' => $action_entity->id,
-            'entity_type' => $action_entity::class,
-            'permission_id' => $team->getPermissionIds([$permission])[0]
+            'entity_id'    => $entityId,
+            'entity_type'  => $entityType,
+            'permission_id' => $team->getPermissionIds([$permission])[0],
         ]);
 
         // Ensure the ability model is successfully retrieved or created
@@ -489,14 +483,41 @@ trait HasTeams
     }
 
     /**
-     * Get relation name for ability
+     * Resolve entity type and ID from an Eloquent model or a plain class string + ID.
      *
-     * @param object|string $classname
+     * @param object|string $entity  Eloquent model or fully-qualified class name
+     * @param int|string|null $id    Required when $entity is a string
+     * @return array{string, int|string}
+     */
+    private function resolveEntity(object|string $entity, int|string|null $id = null): array
+    {
+        if (is_object($entity)) {
+            return [$entity->getMorphClass(), $entity->getKey()];
+        }
+
+        if ($id === null) {
+            throw new InvalidArgumentException("Entity ID is required when passing a class name string to ability methods.");
+        }
+
+        return [$entity, $id];
+    }
+
+    /**
+     * Resolve Ability relation name for the given target entity.
+     *
+     * @param object $entity
      * @return string
      */
-    private function getRelationName(object|string $classname): string
+    private function getRelationName(object $entity): string
     {
-        return  Str::plural(strtolower(class_basename(is_object($classname) ? $classname::class : $classname)));
+        $groupClass = TeamsFacade::model('group');
+        $roleClass  = TeamsFacade::model('role');
+
+        return match(true) {
+            $entity instanceof $groupClass => 'groups',
+            $entity instanceof $roleClass  => 'roles',
+            default                        => 'users',
+        };
     }
 
     /**
