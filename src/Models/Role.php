@@ -2,13 +2,13 @@
 
 namespace Jurager\Teams\Models;
 
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
-use Exception;
 
 class Role extends Model
 {
@@ -66,8 +66,6 @@ class Role extends Model
 
     /**
      * Get the team that the role belongs to.
-     *
-     * @return BelongsTo
      */
     public function team(): BelongsTo
     {
@@ -76,8 +74,6 @@ class Role extends Model
 
     /**
      * Get the permissions that belongs to role.
-     *
-     * @return MorphToMany
      */
     public function permissions(): MorphToMany
     {
@@ -86,8 +82,6 @@ class Role extends Model
 
     /**
      * Get the abilities that belongs to role.
-     *
-     * @return MorphToMany
      */
     public function abilities(): MorphToMany
     {
@@ -99,7 +93,6 @@ class Role extends Model
     /**
      * Get all users associated with the role.
      *
-     * @return BelongsToMany
      * @throws Exception
      */
     public function users(): BelongsToMany

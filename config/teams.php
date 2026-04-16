@@ -1,5 +1,14 @@
 <?php
 
+use App\Models\User;
+use Jurager\Teams\Models\Ability;
+use Jurager\Teams\Models\Group;
+use Jurager\Teams\Models\Invitation;
+use Jurager\Teams\Models\Membership;
+use Jurager\Teams\Models\Permission;
+use Jurager\Teams\Models\Role;
+use Jurager\Teams\Models\Team;
+
 return [
 
     /*
@@ -39,14 +48,14 @@ return [
     | Define the models used for team functionalities and role-based access.
     */
     'models' => [
-        'user' => App\Models\User::class,
-        'team' => Jurager\Teams\Models\Team::class,
-        'ability' => Jurager\Teams\Models\Ability::class,
-        'permission' => Jurager\Teams\Models\Permission::class,
-        'group' => Jurager\Teams\Models\Group::class,
-        'invitation' => Jurager\Teams\Models\Invitation::class,
-        'membership' => Jurager\Teams\Models\Membership::class,
-        'role' => Jurager\Teams\Models\Role::class,
+        'user' => User::class,
+        'team' => Team::class,
+        'ability' => Ability::class,
+        'permission' => Permission::class,
+        'group' => Group::class,
+        'invitation' => Invitation::class,
+        'membership' => Membership::class,
+        'role' => Role::class,
     ],
 
     /*
@@ -81,7 +90,6 @@ return [
         'cache_decisions' => false,
     ],
 
-
     /*
     |--------------------------------------------------------------------------
     | Invitations
@@ -97,7 +105,7 @@ return [
             'url' => '/invitation/{invitation_id}/accept',
             'prefix' => '/',
             'middleware' => 'web',
-        ]
+        ],
     ],
 
     /*
@@ -112,8 +120,8 @@ return [
         'nodes' => [
             '*',
             '*.*',
-            'all'
-        ]
-    ]
+            'all',
+        ],
+    ],
 
 ];

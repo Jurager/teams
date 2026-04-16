@@ -2,29 +2,35 @@
 
 namespace Jurager\Teams\Traits;
 
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Models\Owner;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Config;
 use InvalidArgumentException;
-use Exception;
+use Jurager\Teams\Models\Owner;
+use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
 
 trait HasTeams
 {
+    private const int LEVEL_DEFAULT         = 0;
+    private const int LEVEL_FORBIDDEN       = 1;
+    private const int LEVEL_ROLE_ALLOWED    = 2;
+    private const int LEVEL_ROLE_FORBIDDEN  = 3;
+    private const int LEVEL_GROUP_ALLOWED   = 4;
+    private const int LEVEL_GROUP_FORBIDDEN = 5;
+    private const int LEVEL_USER_ALLOWED    = 5;
+    private const int LEVEL_USER_FORBIDDEN  = 6;
+    private const int LEVEL_GLOBAL_ALLOWED  = 6;
+
     /**
-     * @var array $decisionCache Used to hold decisions made
+     * @var array Used to hold decisions made
      */
     private array $decisionCache = [];
 
     /**
      * Check if the user owns the given team.
-     *
-     * @param object $team
-     * @return bool
      */
     public function ownsTeam(object $team): bool
     {
@@ -33,8 +39,6 @@ trait HasTeams
 
     /**
      * Retrieve all teams the user owns or belongs to.
-     *
-     * @return Collection
      */
     public function allTeams(): Collection
     {
@@ -44,7 +48,6 @@ trait HasTeams
     /**
      * Retrieve all teams the user owns.
      *
-     * @return HasMany
      * @throws Exception
      */
     public function ownedTeams(): HasMany
@@ -52,11 +55,9 @@ trait HasTeams
         return $this->hasMany(TeamsFacade::model('team'))->withoutGlobalScopes();
     }
 
-
     /**
      * Retrieve all teams the user belongs to.
      *
-     * @return BelongsToMany
      * @throws Exception
      */
     public function teams(): BelongsToMany
@@ -72,7 +73,6 @@ trait HasTeams
     /**
      * Retrieve abilities related to the user.
      *
-     * @return MorphToMany
      * @throws Exception
      */
     public function abilities(): MorphToMany
@@ -85,7 +85,6 @@ trait HasTeams
     /**
      * Retrieve all groups the user belongs to.
      *
-     * @return BelongsToMany
      * @throws Exception
      */
     public function groups(): BelongsToMany
@@ -96,8 +95,6 @@ trait HasTeams
     /**
      * Check if the user belongs to the specified team.
      *
-     * @param object $team
-     * @return bool
      * @throws Exception
      */
     public function belongsToTeam(object $team): bool
@@ -108,8 +105,6 @@ trait HasTeams
     /**
      * Retrieve the user's role in a team.
      *
-     * @param object $team
-     * @return mixed
      * @throws Exception
      */
     public function teamRole(object $team): mixed
@@ -123,14 +118,9 @@ trait HasTeams
             : null;
     }
 
-
     /**
      * Check if the user has the specified role on the team.
      *
-     * @param object $team
-     * @param string|array $roles
-     * @param bool $require
-     * @return bool
      * @throws Exception
      */
     public function hasTeamRole(object $team, string|array $roles, bool $require = false): bool
@@ -144,19 +134,19 @@ trait HasTeams
         $roles = (array) $roles;
 
         return $require
-            ? !array_diff($roles, [$userRole])
+            ? ! array_diff($roles, [$userRole])
             : in_array($userRole, $roles, true);
     }
 
     /**
      * Get the user's permissions for the given team.
      *
-     * @param object $team
-     * @param string|null $scope Scope of permissions to get (ex. 'role', 'group'), by default getting all permissions
+     * @param  string|null  $scope  Scope of permissions to get (ex. 'role', 'group'), by default getting all permissions
      * @return array|string[]
+     *
      * @throws Exception
      */
-    public function teamPermissions(object $team, string|null $scope = null): array
+    public function teamPermissions(object $team, ?string $scope = null): array
     {
         if ($this->ownsTeam($team)) {
             return ['*'];
@@ -164,11 +154,11 @@ trait HasTeams
 
         $permissions = [];
 
-        if (!$scope || $scope === 'role') {
+        if (! $scope || $scope === 'role') {
             $permissions = array_merge($permissions, $this->teamRole($team)?->permissions?->pluck('code')?->toArray() ?? []);
         }
 
-        if (!$scope || $scope === 'group') {
+        if (! $scope || $scope === 'group') {
             $groupPermissions = $this->groups()->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)
                 ->with('permissions')
                 ->get()
@@ -181,60 +171,45 @@ trait HasTeams
     }
 
     /**
-     * Determine if the user has the given permission on the given team
+     * Determine if the user has the given permission on the given team.
      *
-     * $require = true (all permissions in the array are required)
-     * $require = false (only one or more permission in the array are required or $permissions is empty)
+     * $require = true  — all permissions in the array are required
+     * $require = false — only one or more permissions are required (or $permissions is empty)
      *
-     * @param object $team
-     * @param string|array $permissions
-     * @param bool $require
-     * @param string|null $scope Scope of permissions to check (ex. 'role', 'group'), by default checking all permissions
-     * @return bool
+     * @param  string|null  $scope  Scope of permissions to check (ex. 'role', 'group'), by default checking all permissions
+     *
      * @throws Exception
      */
-    public function hasTeamPermission(object $team, string|array $permissions, bool $require = false, string|null $scope = null): bool
+    public function hasTeamPermission(object $team, string|array $permissions, bool $require = false, ?string $scope = null): bool
     {
-        // Check to see if the user has enabled request lifecycle caching
-        if (!Config::get('teams.request.cache_decisions', false)) {
+        if (! Config::get('teams.request.cache_decisions', false)) {
             return $this->determineTeamPermission($team, $permissions, $require, $scope);
         }
 
-        // Serialize the data
-        $serializedData = serialize([
-            $this->attributes[$this->primaryKey],
-            $team->attributes['id'],
+        $cacheKey = hash('sha256', serialize([
+            $this->getKey(),
+            $team->getKey(),
             $permissions,
             $require,
-            $scope
-        ]);
+            $scope,
+        ]));
 
-        // Create a unique cache key for this request
-        $cacheKey = hash('sha256', $serializedData);
-
-        // Check to see if the cache key exists, if not populate it
-        if (!isset($this->decisionCache[$cacheKey])) {
+        if (! isset($this->decisionCache[$cacheKey])) {
             $this->decisionCache[$cacheKey] = $this->determineTeamPermission($team, $permissions, $require, $scope);
         }
 
-        // Return the cache key
         return $this->decisionCache[$cacheKey];
     }
 
     /**
      * Determine if the user has the given permission on the given team.
      *
-     * $require = true (all permissions in the array are required)
-     * $require = false (only one or more permission in the array are required or $permissions is empty)
+     * $require = true  — all permissions in the array are required
+     * $require = false — only one or more permissions are required (or $permissions is empty)
      *
-     * @param object $team
-     * @param string|array $permissions
-     * @param bool $require
-     * @param string|null $scope Scope of permissions to check (ex. 'role', 'group'), by default checking all permissions
-     * @return bool
      * @throws Exception
      */
-    protected function determineTeamPermission(object $team, string|array $permissions, bool $require = false, string|null $scope = null): bool
+    protected function determineTeamPermission(object $team, string|array $permissions, bool $require = false, ?string $scope = null): bool
     {
         if ($this->ownsTeam($team)) {
             return true;
@@ -249,14 +224,13 @@ trait HasTeams
         $userPermissions = $this->teamPermissions($team, $scope);
 
         foreach ($permissions as $permission) {
-
             $hasPermission = $this->checkPermissionWildcard($userPermissions, $permission);
 
-            if ($hasPermission && !$require) {
+            if ($hasPermission && ! $require) {
                 return true;
             }
 
-            if (!$hasPermission && $require) {
+            if (! $hasPermission && $require) {
                 return false;
             }
         }
@@ -265,43 +239,30 @@ trait HasTeams
     }
 
     /**
-     * Get all ability that specific entity within team
+     * Get all abilities for the user on a specific entity within a team.
      *
-     * @param object $team
-     * @param object $entity
-     * @param bool $forbidden
-     * @return mixed
      * @throws Exception
      */
     public function teamAbilities(object $team, object $entity, bool $forbidden = false): mixed
     {
-        // Start building the query to retrieve abilities
-        $abilities = $this->abilities()->where([
+        $query = $this->abilities()->where([
             Config::get('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'abilities.entity_id' => $entity->id,
-            'abilities.entity_type' => $entity::class
+            'abilities.entity_id' => $entity->getKey(),
+            'abilities.entity_type' => $entity->getMorphClass(),
         ]);
 
-        // If filtering by forbidden abilities, add the condition
         if ($forbidden) {
-            $abilities->wherePivot('forbidden', true);
+            $query->wherePivot('forbidden', true);
         }
 
-        // Retrieve the abilities
-        return $abilities->get();
+        return $query->get();
     }
 
     /**
-     * Determinate if user has global groups permissions
+     * Determine if the user has global group permissions for a given ability.
      *
-     * This function is to verify permissions within a universal group.
-     * Especially in cases where a team requires a group enabling user additions
-     * and removals without direct affiliation with the team.
-     *
-     * Example: Each team should have a global group of moderators.
-     *
-     * @param string $ability
-     * @return bool
+     * Used for universal groups that are not tied to a specific team —
+     * e.g. a global moderator group that spans all teams.
      */
     private function hasGlobalGroupPermissions(string $ability): bool
     {
@@ -314,78 +275,61 @@ trait HasTeams
     }
 
     /**
-     * Determinate if user can perform an action
+     * Determine if the user can perform an action on a specific entity within a team.
      *
-     * @param object $team
-     * @param string $permission
-     * @param object $action_entity
-     * @return bool
+     * @param  object|string  $action_entity  Eloquent model or fully-qualified class name
+     * @param  int|string|null  $action_entity_id  Required when $action_entity is a class name string
+     *
      * @throws Exception
      */
     public function hasTeamAbility(object $team, string $permission, object|string $action_entity, int|string|null $action_entity_id = null): bool
     {
-        [$entityType, $entityId] = $this->resolveEntity($action_entity, $action_entity_id);
-
         if ($this->ownsTeam($team) || (is_object($action_entity) && method_exists($action_entity, 'isOwner') && $action_entity->isOwner($this))) {
             return true;
         }
 
-        $DEFAULT = 0;
-        $FORBIDDEN = 1;
-        $ROLE_ALLOWED = 2;
-        $ROLE_FORBIDDEN = 3;
-        $GROUP_ALLOWED = 4;
-        $GROUP_FORBIDDEN = 5;
-        $USER_ALLOWED = 5;
-        $USER_FORBIDDEN = 6;
-        $GLOBAL_ALLOWED = 6;
+        [$entityType, $entityId] = $this->resolveEntity($action_entity, $action_entity_id);
 
-        $allowed = $DEFAULT;
-        $forbidden = $FORBIDDEN;
+        $allowed  = self::LEVEL_DEFAULT;
+        $forbidden = self::LEVEL_FORBIDDEN;
 
         if ($this->hasTeamPermission($team, $permission, scope: 'role')) {
-            $allowed = max($allowed, $ROLE_ALLOWED);
+            $allowed = max($allowed, self::LEVEL_ROLE_ALLOWED);
         }
 
         if ($this->hasTeamPermission($team, $permission, scope: 'group')) {
-            $allowed = max($allowed, $GROUP_ALLOWED);
+            $allowed = max($allowed, self::LEVEL_GROUP_ALLOWED);
         }
 
         if ($this->hasGlobalGroupPermissions($permission)) {
-            $allowed = max($allowed, $GLOBAL_ALLOWED);
+            $allowed = max($allowed, self::LEVEL_GLOBAL_ALLOWED);
         }
 
-        $segments = collect(explode('.', $permission));
-
-        $codes = $segments->map(function ($item, $key) use ($segments) {
-            return $segments->take($key + 1)->implode('.') . ($key + 1 === $segments->count() ? '' : '.*') ;
-        });
-
-        $permission_ids = TeamsFacade::model('permission')::query()
-            ->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)
-            ->whereIn('code', $codes)
-            ->pluck('id')
-            ->all();
+        $permissionIds = $this->resolvePermissionIds($team, $permission);
 
         $loadAbilities = fn ($query) => $query->where([
-            'abilities.entity_id'   => $entityId,
+            'abilities.entity_id' => $entityId,
             'abilities.entity_type' => $entityType,
-        ])->whereIn('permission_id', $permission_ids);
+        ])->whereIn('permission_id', $permissionIds);
 
-        $role = $this->teamRole($team)->load(['abilities' => $loadAbilities]);
+        $role = $this->teamRole($team);
 
+        if ($role === null) {
+            return false;
+        }
+
+        $role->load(['abilities' => $loadAbilities]);
         $groups = $this->groups->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)->load(['abilities' => $loadAbilities]);
-
         $this->load(['abilities' => $loadAbilities]);
 
         foreach ([$role, ...$groups, $this] as $entity) {
-
             foreach ($entity->abilities as $ability) {
+                [$allowedLevel, $forbiddenLevel] = $this->abilityLevels($entity);
 
                 if ($ability->pivot->forbidden) {
-                    $forbidden = max($forbidden, $entity::class === TeamsFacade::model('role') ? $ROLE_FORBIDDEN : ($entity::class === TeamsFacade::model('group') ? $GROUP_FORBIDDEN : $USER_FORBIDDEN));
+                    $forbidden = max($forbidden, $forbiddenLevel);
                 } else {
-                    $allowed = max($allowed, $entity::class === TeamsFacade::model('role') ? $ROLE_ALLOWED : ($entity::class === TeamsFacade::model('group') ? $GROUP_ALLOWED : $USER_ALLOWED));
+                    $allowed = max($allowed, $allowedLevel);
                 }
             }
         }
@@ -393,100 +337,79 @@ trait HasTeams
         return $allowed >= $forbidden;
     }
 
-
     /**
-     * Allow user to perform an ability on entity
+     * Allow the user to perform an ability on an entity.
      *
-     * @param object $team
-     * @param string $permission
-     * @param object $action_entity
-     * @param object|null $target_entity
-     * @return void
+     * @param  object|string  $action_entity  Eloquent model or fully-qualified class name
+     * @param  int|string|null  $action_entity_id  Required when $action_entity is a class name string
+     * @param  object|null  $target_entity  Defaults to the user if null
+     *
      * @throws Exception
      */
-    public function allowTeamAbility(object $team, string $permission, object|string $action_entity, object|null $target_entity = null): void
+    public function allowTeamAbility(object $team, string $permission, object|string $action_entity, int|string|null $action_entity_id = null, ?object $target_entity = null): void
     {
-        $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $target_entity);
+        $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $action_entity_id, $target_entity);
     }
 
     /**
-     * Forbid user to perform an ability on entity
+     * Forbid the user from performing an ability on an entity.
      *
-     * @param object $team
-     * @param string $permission
-     * @param object $action_entity
-     * @param object|null $target_entity
-     * @return void
+     * @param  object|string  $action_entity  Eloquent model or fully-qualified class name
+     * @param  int|string|null  $action_entity_id  Required when $action_entity is a class name string
+     * @param  object|null  $target_entity  Defaults to the user if null
+     *
      * @throws Exception
      */
-    public function forbidTeamAbility(object $team, string $permission, object|string $action_entity, object|null $target_entity = null): void
+    public function forbidTeamAbility(object $team, string $permission, object|string $action_entity, int|string|null $action_entity_id = null, ?object $target_entity = null): void
     {
-        $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $target_entity, true);
+        $this->updateAbilityOnEntity($team, 'syncWithoutDetaching', $permission, $action_entity, $action_entity_id, $target_entity, true);
     }
 
     /**
-     * Delete user ability on entity
+     * Remove an ability rule for the user on an entity.
      *
-     * @param object $team
-     * @param string $permission
-     * @param object $action_entity
-     * @param object|null $target_entity
-     * @return void
+     * @param  object|string  $action_entity  Eloquent model or fully-qualified class name
+     * @param  int|string|null  $action_entity_id  Required when $action_entity is a class name string
+     * @param  object|null  $target_entity  Defaults to the user if null
+     *
      * @throws Exception
      */
-    public function deleteTeamAbility(object $team, string $permission, object|string $action_entity, object|null $target_entity = null): void
+    public function deleteTeamAbility(object $team, string $permission, object|string $action_entity, int|string|null $action_entity_id = null, ?object $target_entity = null): void
     {
-        $this->updateAbilityOnEntity($team, 'detach', $permission, $action_entity, $target_entity);
+        $this->updateAbilityOnEntity($team, 'detach', $permission, $action_entity, $action_entity_id, $target_entity);
     }
 
     /**
-     * Helper method for attaching or detaching ability to entity
+     * Attach or detach an ability rule on an entity.
      *
-     * @param object $team
-     * @param string $method
-     * @param string $permission
-     * @param object $action_entity
-     * @param object|null $target_entity
-     * @param bool $forbidden
-     * @return void
+     * @param  string  $method  Eloquent relation method: 'syncWithoutDetaching' or 'detach'
+     *
      * @throws Exception
      */
-    private function updateAbilityOnEntity(object $team, string $method, string $permission, object|string $action_entity, object|null $target_entity = null, bool $forbidden = false): void
+    private function updateAbilityOnEntity(object $team, string $method, string $permission, object|string $action_entity, int|string|null $action_entity_id = null, ?object $target_entity = null, bool $forbidden = false): void
     {
-        [$entityType, $entityId] = $this->resolveEntity($action_entity);
+        [$entityType, $entityId] = $this->resolveEntity($action_entity, $action_entity_id);
 
         $abilityModel = TeamsFacade::instance('ability')->firstOrCreate([
             Config::get('teams.foreign_keys.team_id', 'team_id') => $team->id,
-            'entity_id'    => $entityId,
-            'entity_type'  => $entityType,
+            'entity_id' => $entityId,
+            'entity_type' => $entityType,
             'permission_id' => $team->getPermissionIds([$permission])[0],
         ]);
 
-        // Ensure the ability model is successfully retrieved or created
-        if (! $abilityModel) {
-            throw new ModelNotFoundException("Ability with permission '$permission' not found.");
-        }
-
-        // Target for ability defaults to user
         $targetEntity = $target_entity ?? $this;
-
-        // Get relation name for ability
         $relation = $this->getRelationName($targetEntity);
 
-        if (! method_exists($abilityModel, $relation)) {
-            throw new ModelNotFoundException("Relation '$relation' not found on ability model.");
-        }
-
-        $abilityModel->{$relation}()->{$method}([$targetEntity->id => [
+        $abilityModel->{$relation}()->{$method}([$targetEntity->getKey() => [
             'forbidden' => $forbidden,
         ]]);
     }
 
     /**
-     * Resolve entity type and ID from an Eloquent model or a plain class string + ID.
+     * Resolve entity type and ID from an Eloquent model or a class name string + ID.
      *
-     * @param object|string $entity  Eloquent model or fully-qualified class name
-     * @param int|string|null $id    Required when $entity is a string
+     * @param  object|string  $entity  Eloquent model or fully-qualified class name
+     * @param  int|string|null  $id  Required when $entity is a string
      * @return array{string, int|string}
      */
     private function resolveEntity(object|string $entity, int|string|null $id = null): array
@@ -496,55 +419,81 @@ trait HasTeams
         }
 
         if ($id === null) {
-            throw new InvalidArgumentException("Entity ID is required when passing a class name string to ability methods.");
+            throw new InvalidArgumentException('Entity ID is required when passing a class name string to ability methods.');
         }
 
         return [$entity, $id];
     }
 
     /**
-     * Resolve Ability relation name for the given target entity.
-     *
-     * @param object $entity
-     * @return string
+     * Resolve permission IDs for the given permission string within a team.
+     * Expands dot-notation into wildcard codes (e.g. 'a.b.c' → ['a.*', 'a.b.*', 'a.b.c']).
+     */
+    private function resolvePermissionIds(object $team, string $permission): array
+    {
+        return TeamsFacade::model('permission')::query()
+            ->where(Config::get('teams.foreign_keys.team_id', 'team_id'), $team->id)
+            ->whereIn('code', $this->permissionCodes($permission))
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * Resolve the Ability relation name for the given target entity.
      */
     private function getRelationName(object $entity): string
     {
         $groupClass = TeamsFacade::model('group');
-        $roleClass  = TeamsFacade::model('role');
+        $roleClass = TeamsFacade::model('role');
 
-        return match(true) {
+        return match (true) {
             $entity instanceof $groupClass => 'groups',
-            $entity instanceof $roleClass  => 'roles',
-            default                        => 'users',
+            $entity instanceof $roleClass => 'roles',
+            default => 'users',
         };
     }
 
     /**
-     * Check for wildcard permissions.
+     * Return [allowedLevel, forbiddenLevel] for an entity in the ability evaluation loop.
      *
-     * @param array $userPermissions
-     * @param string $permission
-     * @return bool
+     * @return array{int, int}
+     */
+    private function abilityLevels(object $entity): array
+    {
+        $roleClass = TeamsFacade::model('role');
+        $groupClass = TeamsFacade::model('group');
+
+        return match (true) {
+            $entity instanceof $roleClass  => [self::LEVEL_ROLE_ALLOWED,  self::LEVEL_ROLE_FORBIDDEN],
+            $entity instanceof $groupClass => [self::LEVEL_GROUP_ALLOWED, self::LEVEL_GROUP_FORBIDDEN],
+            default                        => [self::LEVEL_USER_ALLOWED,  self::LEVEL_USER_FORBIDDEN],
+        };
+    }
+
+    /**
+     * Build all permission codes for wildcard matching from a dot-notation permission string.
+     * e.g. 'articles.edit' → ['articles.*', 'articles.edit']
+     */
+    private function permissionCodes(string $permission): array
+    {
+        $segments = collect(explode('.', $permission));
+
+        $codes = $segments->map(
+            fn ($_, $key) => $segments->take($key + 1)->implode('.').($key + 1 === $segments->count() ? '' : '.*')
+        );
+
+        if (Config::get('teams.wildcards.enabled', false)) {
+            $codes = collect(Config::get('teams.wildcards.nodes', []))->merge($codes);
+        }
+
+        return $codes->all();
+    }
+
+    /**
+     * Check if a permission matches any of the user's permissions, including wildcards.
      */
     private function checkPermissionWildcard(array $userPermissions, string $permission): bool
     {
-        // Generate all possible wildcards from the permission segments
-        $segments = collect(explode('.', $permission));
-
-        $codes = $segments->map(function ($item, $key) use ($segments) {
-            return $segments->take($key + 1)->implode('.') . ($key + 1 === $segments->count() ? '' : '.*') ;
-        });
-
-        // Add in the optional wildcard permissions
-        if(Config::get('teams.wildcards.enabled', false)) {
-            // Build the code collection
-            $wildcardCodes = collect(Config::get('teams.wildcards.nodes', []));
-
-            // Replace codes with the new codes
-            $codes = $wildcardCodes->merge($codes);
-        }
-
-        return !empty(array_intersect($codes->all(), $userPermissions));
+        return ! empty(array_intersect($this->permissionCodes($permission), $userPermissions));
     }
 }

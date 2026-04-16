@@ -2,27 +2,20 @@
 
 namespace Jurager\Teams\Middleware;
 
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams as TeamFacade;
 use InvalidArgumentException;
-use Exception;
+use Jurager\Teams\Support\Facades\Teams as TeamFacade;
 
 class Teams
 {
     /**
      * Check if the request has authorization to continue.
      *
-     * @param Request $request
-     * @param string $method
-     * @param string|array $params
-     * @param string|null $teamId
-     * @param array|null $models
-     * @param bool $require
-     * @return bool
      * @throws Exception
      */
     protected function authorization(Request $request, string $method, string|array $params, ?string $teamId, ?array $models, bool $require = false): bool
@@ -60,17 +53,11 @@ class Teams
             return $this->checkTeamAbility($request, $team, reset($params), $models);
         }
 
-        return !Auth::guest() && Auth::user()?->$action($team, $params, $require);
+        return ! Auth::guest() && Auth::user()?->$action($team, $params, $require);
     }
 
     /**
      * Check user's ability for the team.
-     *
-     * @param Request $request
-     * @param $team
-     * @param string $ability
-     * @param array|null $models
-     * @return bool
      */
     protected function checkTeamAbility(Request $request, $team, string $ability, ?array $models): bool
     {
@@ -86,7 +73,7 @@ class Teams
         $entity = $entityClass::find($entityId);
 
         // @todo: Throw exception or something to know that entity not exists
-        if (!$entity) {
+        if (! $entity) {
             return false;
         }
 
@@ -94,20 +81,17 @@ class Teams
         return $request->user()->hasTeamAbility($team, $ability, $entity);
     }
 
-
     /**
      * The request is unauthorized, so it handles the aborting/redirecting.
-     *
-     * @return RedirectResponse
      */
     protected function unauthorized(): RedirectResponse
     {
         $handling = Config::get('teams.middleware.handling', 'abort');
-        $handler  = Config::get('teams.middleware.handlers.' . $handling);
+        $handler = Config::get('teams.middleware.handlers.'.$handling);
 
         // Fall back to abort when handler is missing or handling is 'abort'
         if ($handling === 'abort' || $handler === null) {
-            $code    = $handler['code']    ?? 403;
+            $code = $handler['code'] ?? 403;
             $message = $handler['message'] ?? 'User does not have any of the necessary access rights.';
             abort($code, $message);
         }
@@ -116,7 +100,7 @@ class Teams
         $redirect = redirect()->to($handler['url']);
 
         // If flash message key is provided, use it for session message
-        if (!empty($handler['message']['key']) && !empty($handler['message']['content'])) {
+        if (! empty($handler['message']['key']) && ! empty($handler['message']['content'])) {
             $redirect->with($handler['message']['key'], $handler['message']['content']);
         }
 
@@ -125,10 +109,6 @@ class Teams
 
     /**
      * Get the arguments parameters for the gate.
-     *
-     * @param Request $request
-     * @param array|null $models
-     * @return array
      */
     protected function getGateArguments(Request $request, ?array $models): array
     {
@@ -143,10 +123,6 @@ class Teams
 
     /**
      * Get the model to authorize.
-     *
-     * @param Request $request
-     * @param string $model
-     * @return string
      */
     protected function getModel(Request $request, string $model): string
     {

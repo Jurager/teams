@@ -15,8 +15,6 @@ class Teams extends Facade
 {
     /**
      * Gets the facade name.
-     *
-     * @return string
      */
     protected static function getFacadeAccessor(): string
     {

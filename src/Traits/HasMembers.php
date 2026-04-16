@@ -2,6 +2,7 @@
 
 namespace Jurager\Teams\Traits;
 
+use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -10,9 +11,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Jurager\Teams\Events\TeamMemberAdded;
 use Jurager\Teams\Events\TeamMemberAdding;
 use Jurager\Teams\Events\TeamMemberInvited;
-use Jurager\Teams\Events\TeamMemberAdded;
 use Jurager\Teams\Events\TeamMemberInviting;
 use Jurager\Teams\Events\TeamMemberRemoved;
 use Jurager\Teams\Events\TeamMemberRemoving;
@@ -21,14 +22,12 @@ use Jurager\Teams\Mail\Invitation;
 use Jurager\Teams\Models\Owner;
 use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
 use RuntimeException;
-use Exception;
 
 trait HasMembers
 {
     /**
      * Get the owner of the team.
      *
-     * @return BelongsTo
      * @throws Exception
      */
     public function owner(): BelongsTo
@@ -39,7 +38,6 @@ trait HasMembers
     /**
      * Get all users associated with the team.
      *
-     * @return BelongsToMany
      * @throws Exception
      */
     public function users(): BelongsToMany
@@ -53,7 +51,6 @@ trait HasMembers
     /**
      * Get all permissions linked to the team.
      *
-     * @return HasMany
      * @throws Exception
      */
     public function permissions(): HasMany
@@ -64,7 +61,6 @@ trait HasMembers
     /**
      * Get all abilities linked to the team.
      *
-     * @return HasMany
      * @throws Exception
      */
     public function abilities(): HasMany
@@ -75,7 +71,6 @@ trait HasMembers
     /**
      * Get all roles associated with the team.
      *
-     * @return HasMany
      * @throws Exception
      */
     public function roles(): HasMany
@@ -86,7 +81,6 @@ trait HasMembers
     /**
      * Get all groups associated with the team.
      *
-     * @return HasMany
      * @throws Exception
      */
     public function groups(): HasMany
@@ -97,7 +91,6 @@ trait HasMembers
     /**
      * Get all pending invitations for the team.
      *
-     * @return HasMany
      * @throws Exception
      */
     public function invitations(): HasMany
@@ -107,8 +100,6 @@ trait HasMembers
 
     /**
      * Retrieve all users in the team, including the owner.
-     *
-     * @return Collection
      */
     public function allUsers(): Collection
     {
@@ -117,9 +108,6 @@ trait HasMembers
 
     /**
      * Check if the team includes a given user.
-     *
-     * @param  object  $user
-     * @return bool
      */
     public function hasUser(object $user): bool
     {
@@ -129,10 +117,9 @@ trait HasMembers
     /**
      * Adds a user to the team with a specified role.
      *
-     * @param object $user The user model instance to be added to the team.
-     * @param string $role_keyword The role ID or code that will be assigned to the user within the team.
+     * @param  object  $user  The user model instance to be added to the team.
+     * @param  string  $role_keyword  The role ID or code that will be assigned to the user within the team.
      *
-     * @return void
      * @throws Exception
      */
     public function addUser(object $user, string $role_keyword): void
@@ -147,7 +134,7 @@ trait HasMembers
 
         $role = $this->getRole($role_keyword);
 
-        if (!$role) {
+        if (! $role) {
             throw new RuntimeException(__('Unable to find a role :role within team.', ['role' => $role_keyword]));
         }
 
@@ -164,9 +151,9 @@ trait HasMembers
     /**
      * Update the role of a specific user within the team.
      *
-     * @param object $user The user model instance to be updated in the team.
-     * @param string $role_keyword The role ID or code that will be assigned to the user within the team.
-     * @return void
+     * @param  object  $user  The user model instance to be updated in the team.
+     * @param  string  $role_keyword  The role ID or code that will be assigned to the user within the team.
+     *
      * @throws Exception
      */
     public function updateUser(object $user, string $role_keyword): void
@@ -175,13 +162,13 @@ trait HasMembers
             throw new RuntimeException(__('You may not change the team owner.'));
         }
 
-        if (!$this->hasUser($user)) {
+        if (! $this->hasUser($user)) {
             throw new RuntimeException(__('User not belongs to the team.'));
         }
 
         $role = $this->getRole($role_keyword);
 
-        if (!$role) {
+        if (! $role) {
             throw new RuntimeException(__('Unable to find a role :role within team.', ['role' => $role_keyword]));
         }
 
@@ -195,9 +182,8 @@ trait HasMembers
     /**
      * Remove a user from the team.
      *
-     * @param object $user The user instance to remove from the team.
+     * @param  object  $user  The user instance to remove from the team.
      *
-     * @return void
      * @throws Exception
      */
     public function deleteUser(object $user): void
@@ -206,7 +192,7 @@ trait HasMembers
             throw new RuntimeException(__('You may not remove the team owner.'));
         }
 
-        if (!$this->hasUser($user)) {
+        if (! $this->hasUser($user)) {
             throw new RuntimeException(__('User not belongs to the team.'));
         }
 
@@ -220,22 +206,18 @@ trait HasMembers
         TeamMemberRemoved::dispatch($this->fresh(), $user);
     }
 
-
     /**
      * Create an invitation and send a message with a link to accept it
      *
-     * @param string $email
-     * @param int|string $keyword
-     * @return void
      * @throws Exception
      */
     public function inviteUser(string $email, int|string $keyword): void
     {
         if ($this->hasUserWithEmail($email)) {
-            throw new RuntimeException("This user already belongs to the team.");
+            throw new RuntimeException('This user already belongs to the team.');
         }
 
-        if (!$role = $this->getRole($keyword)) {
+        if (! $role = $this->getRole($keyword)) {
             throw new RuntimeException("The role '.$keyword.' is not exists or not belongs to the team.");
         }
 
@@ -243,7 +225,7 @@ trait HasMembers
         TeamMemberInviting::dispatch($this, $email, $role);
 
         $invitation = $this->invitations()->create([
-            'email'   => $email,
+            'email' => $email,
             'role_id' => $role->id,
         ]);
 
@@ -256,18 +238,17 @@ trait HasMembers
 
     /**
      * Accept the invitation to the team
-     * @param int $invitation_id
-     * @return void
+     *
      * @throws Exception
      */
     public function inviteAccept(int $invitation_id): void
     {
-        if (!$invitation = $this->invitations()->find($invitation_id)) {
-            throw new RuntimeException("Invitation not found.");
+        if (! $invitation = $this->invitations()->find($invitation_id)) {
+            throw new RuntimeException('Invitation not found.');
         }
 
-        if (!$user = $invitation->user) {
-            throw new RuntimeException("Invited user not found.");
+        if (! $user = $invitation->user) {
+            throw new RuntimeException('Invited user not found.');
         }
 
         // Trying to add user to the team
@@ -279,9 +260,6 @@ trait HasMembers
 
     /**
      * Check if the team includes a user with a specific email.
-     *
-     * @param  string  $email
-     * @return bool
      */
     public function hasUserWithEmail(string $email): bool
     {
@@ -291,22 +269,15 @@ trait HasMembers
     /**
      * Get the role of a specific user within the team.
      *
-     * @param object $user
-     * @return object|null
      * @throws Exception
      */
-    public function userRole(object $user): object|null
+    public function userRole(object $user): ?object
     {
         return $this->owner === $user ? new Owner() : $this->getRole($this->users->firstWhere('id', $user->id)->membership->role->id ?? null);
     }
 
     /**
      * Check if a user has a specific permission in the team.
-     *
-     * @param  object       $user
-     * @param  string|array $permissions
-     * @param  bool         $require
-     * @return bool
      */
     public function userHasPermission(object $user, string|array $permissions, bool $require = false): bool
     {
@@ -316,8 +287,8 @@ trait HasMembers
     /**
      * Check if the team has a specific role by ID or code or any roles at all
      *
-     * @param int|string|null $keyword The role ID or code to check for. If null, checks for any roles.
-     * @return bool
+     * @param  int|string|null  $keyword  The role ID or code to check for. If null, checks for any roles.
+     *
      * @throws Exception
      */
     public function hasRole(int|string|null $keyword = null): bool
@@ -332,11 +303,11 @@ trait HasMembers
     /**
      * Retrieves a role by its ID or code.
      *
-     * @param int|string $keyword The ID or code of the role to search for.
-     * @return object|null
+     * @param  int|string  $keyword  The ID or code of the role to search for.
+     *
      * @throws Exception
      */
-    public function getRole(int|string $keyword): object|null
+    public function getRole(int|string $keyword): ?object
     {
         return $this->roles()->firstWhere((is_numeric($keyword) ? 'id' : 'code'), $keyword);
     }
@@ -344,14 +315,14 @@ trait HasMembers
     /**
      * Add a role to the team with specific permissions.
      *
-     * @param string $code Unique identifier for the role, used for retrieval and management.
-     * @param array $permissions List of permissions codes to associate with this role.
-     * @param string|null $name Optional name for the role. Defaults to a formatted version of `$code` if not provided.
-     * @param string|null $description Optional description for the role to provide additional context.
-     * @return object
+     * @param  string  $code  Unique identifier for the role, used for retrieval and management.
+     * @param  array  $permissions  List of permissions codes to associate with this role.
+     * @param  string|null  $name  Optional name for the role. Defaults to a formatted version of `$code` if not provided.
+     * @param  string|null  $description  Optional description for the role to provide additional context.
+     *
      * @throws Exception
      */
-    public function addRole(string $code, array $permissions, string|null $name = null, string|null $description = null): object
+    public function addRole(string $code, array $permissions, ?string $name = null, ?string $description = null): object
     {
         if ($this->hasRole($code)) {
             throw new RuntimeException("Role with code '$code' already exists.");
@@ -360,7 +331,7 @@ trait HasMembers
         $role = $this->roles()->create([
             'code' => $code,
             'name' => $name ?? Str::studly($code),
-            'description' => $description
+            'description' => $description,
         ]);
 
         $role->permissions()->sync($this->getPermissionIds($permissions));
@@ -371,25 +342,25 @@ trait HasMembers
     /**
      * Update an existing role with new permissions.
      *
-     * @param int|string $keyword The role ID or code to update
-     * @param array $permissions An array of permissions codes to assign to the role.
-     * @param string|null $name Optional name for the role. Defaults to a formatted version of `$code` if not provided.
-     * @param string|null $description Optional description for the role to provide additional context.
-     * @return object|bool
+     * @param  int|string  $keyword  The role ID or code to update
+     * @param  array  $permissions  An array of permissions codes to assign to the role.
+     * @param  string|null  $name  Optional name for the role. Defaults to a formatted version of `$code` if not provided.
+     * @param  string|null  $description  Optional description for the role to provide additional context.
+     *
      * @throws Exception
      */
-    public function updateRole(int|string $keyword, array $permissions, string|null $name = null, string|null $description = null): object|bool
+    public function updateRole(int|string $keyword, array $permissions, ?string $name = null, ?string $description = null): object|bool
     {
         $role = $this->getRole($keyword);
 
         // Throw an exception if the role is not found
-        if (!$role) {
+        if (! $role) {
             throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
         }
 
         $role->update([
             'name' => $name ?? $role->name,
-            'description' => $description ?? $role->description
+            'description' => $description ?? $role->description,
         ]);
 
         $role->permissions()->sync($this->getPermissionIds($permissions));
@@ -400,15 +371,15 @@ trait HasMembers
     /**
      * Delete a role from the team.
      *
-     * @param int|string $keyword The role ID or code to delete
-     * @return bool
+     * @param  int|string  $keyword  The role ID or code to delete
+     *
      * @throws Exception
      */
     public function deleteRole(int|string $keyword): bool
     {
         $role = $this->getRole($keyword);
 
-        if (!$role) {
+        if (! $role) {
             throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
         }
 
@@ -418,8 +389,8 @@ trait HasMembers
     /**
      * Check if the team has a specific group by ID or code or any groups at all
      *
-     * @param int|string|null $keyword The role ID or code to check for. If null, checks for any groups.
-     * @return bool
+     * @param  int|string|null  $keyword  The role ID or code to check for. If null, checks for any groups.
+     *
      * @throws Exception
      */
     public function hasGroup(int|string|null $keyword = null): bool
@@ -434,11 +405,11 @@ trait HasMembers
     /**
      * Get a group by id or code.
      *
-     * @param int|string $keyword The ID or code of the role to search for.
-     * @return object|null
+     * @param  int|string  $keyword  The ID or code of the role to search for.
+     *
      * @throws Exception
      */
-    public function getGroup(int|string $keyword): object|null
+    public function getGroup(int|string $keyword): ?object
     {
         return $this->groups()->firstWhere((is_numeric($keyword) ? 'id' : 'code'), $keyword);
     }
@@ -446,13 +417,13 @@ trait HasMembers
     /**
      * Add a new group to the team.
      *
-     * @param string $code The unique code of the group.
-     * @param array $permissions An array of permissions codes to assign to the group.
-     * @param string|null $name Optional name for the group. Defaults to a formatted version of `$code` if not provided.
-     * @return object
+     * @param  string  $code  The unique code of the group.
+     * @param  array  $permissions  An array of permissions codes to assign to the group.
+     * @param  string|null  $name  Optional name for the group. Defaults to a formatted version of `$code` if not provided.
+     *
      * @throws Exception
      */
-    public function addGroup(string $code, array $permissions = [], string|null $name = null): object
+    public function addGroup(string $code, array $permissions = [], ?string $name = null): object
     {
         if ($this->hasGroup($code)) {
             throw new RuntimeException("Group with code '$code' already exists.");
@@ -460,7 +431,7 @@ trait HasMembers
 
         $group = $this->groups()->create([
             'code' => $code,
-            'name' => $name ?? Str::studly($code)
+            'name' => $name ?? Str::studly($code),
         ]);
 
         $group->permissions()->sync($this->getPermissionIds($permissions));
@@ -471,24 +442,24 @@ trait HasMembers
     /**
      * Update an existing group with new permissions.
      *
-     * @param int|string $keyword The group ID or code to update
-     * @param array $permissions An array of permissions codes to assign to the group.
-     * @param string|null $name Optional name for the group. Defaults to a formatted version of `$code` if not provided.
-     * @return object|bool
+     * @param  int|string  $keyword  The group ID or code to update
+     * @param  array  $permissions  An array of permissions codes to assign to the group.
+     * @param  string|null  $name  Optional name for the group. Defaults to a formatted version of `$code` if not provided.
+     *
      * @throws Exception
      */
-    public function updateGroup(int|string $keyword, array $permissions = [], string|null $name = null): object|bool
+    public function updateGroup(int|string $keyword, array $permissions = [], ?string $name = null): object|bool
     {
         // Fetch the group by ID or code
         $group = $this->getGroup($keyword);
 
         // Throw an exception if the group is not found
-        if (!$group) {
+        if (! $group) {
             throw new ModelNotFoundException("Group with id/code '$keyword' not found.");
         }
 
         $group->update([
-            'name' => $name ?? $group->name
+            'name' => $name ?? $group->name,
         ]);
 
         $group->permissions()->sync($this->getPermissionIds($permissions));
@@ -499,15 +470,15 @@ trait HasMembers
     /**
      * Remove a group from the team by code.
      *
-     * @param int|string $keyword The ID or code of the group to delete.
-     * @return bool
+     * @param  int|string  $keyword  The ID or code of the group to delete.
+     *
      * @throws Exception
      */
     public function deleteGroup(int|string $keyword): bool
     {
         $group = $this->getGroup($keyword);
 
-        if (!$group) {
+        if (! $group) {
             throw new ModelNotFoundException("Group with id/code '$keyword' not found.");
         }
 
@@ -517,7 +488,6 @@ trait HasMembers
     /**
      * Purge all the team's resources.
      *
-     * @return void
      * @throws Exception
      */
     public function purge(): void
@@ -529,8 +499,8 @@ trait HasMembers
     /**
      * Get permissions IDs for a list of permissions.
      *
-     * @param array $codes An array of permission codes to retrieve or create IDs for.
-     * @return array
+     * @param  array  $codes  An array of permission codes to retrieve or create IDs for.
+     *
      * @throws Exception
      */
     public function getPermissionIds(array $codes): array
@@ -545,9 +515,9 @@ trait HasMembers
 
         $newPermissions = array_diff($codes, array_keys($permissions));
 
-        if (!empty($newPermissions)) {
+        if (! empty($newPermissions)) {
 
-            $items = array_map(fn ($code) => [$teamIdField => $this->id ,'code' => $code], $newPermissions);
+            $items = array_map(fn ($code) => [$teamIdField => $this->id, 'code' => $code], $newPermissions);
 
             TeamsFacade::model('permission')::query()->insert($items);
 

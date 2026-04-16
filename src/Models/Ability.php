@@ -26,8 +26,6 @@ class Ability extends Model
 
     /**
      * Get the team that the ability belongs to.
-     *
-     * @return BelongsTo
      */
     public function team(): BelongsTo
     {

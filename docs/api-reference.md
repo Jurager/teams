@@ -93,9 +93,9 @@ weight: 140
 | `abilities` | `abilities(): MorphToMany` | relation |
 | `teamAbilities` | `teamAbilities(object $team, object $entity): Collection` | Collection |
 | `hasTeamAbility` | `hasTeamAbility(object $team, string $permission, object\|string $action_entity, int\|string\|null $action_entity_id = null): bool` | bool |
-| `allowTeamAbility` | `allowTeamAbility(object $team, string $permission, object\|string $action_entity, object\|null $target_entity = null): void` | — |
-| `forbidTeamAbility` | `forbidTeamAbility(object $team, string $permission, object\|string $action_entity, object\|null $target_entity = null): void` | — |
-| `deleteTeamAbility` | `deleteTeamAbility(object $team, string $permission, object\|string $action_entity, object\|null $target_entity = null): void` | — |
+| `allowTeamAbility` | `allowTeamAbility(object $team, string $permission, object\|string $action_entity, int\|string\|null $action_entity_id = null, object\|null $target_entity = null): void` | — |
+| `forbidTeamAbility` | `forbidTeamAbility(object $team, string $permission, object\|string $action_entity, int\|string\|null $action_entity_id = null, object\|null $target_entity = null): void` | — |
+| `deleteTeamAbility` | `deleteTeamAbility(object $team, string $permission, object\|string $action_entity, int\|string\|null $action_entity_id = null, object\|null $target_entity = null): void` | — |
 
 ### Groups
 

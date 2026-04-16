@@ -6,10 +6,10 @@ use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use Jurager\Teams\Support\Services\TeamsService;
 use Jurager\Teams\Middleware\Ability as AbilityMiddleware;
 use Jurager\Teams\Middleware\Permission as PermissionMiddleware;
 use Jurager\Teams\Middleware\Role as RoleMiddleware;
+use Jurager\Teams\Support\Services\TeamsService;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
@@ -54,29 +54,29 @@ class TeamsServiceProvider extends ServiceProvider
         }
 
         $migrations = [
-            __DIR__ . '/../database/migrations/create_teams_table.php' => database_path('migrations/2019_12_14_000001_create_teams_table.php'),
-            __DIR__ . '/../database/migrations/create_permissions_table.php' => database_path('migrations/2019_12_14_000002_create_permissions_table.php'),
-            __DIR__ . '/../database/migrations/create_roles_table.php' => database_path('migrations/2019_12_14_000003_create_roles_table.php'),
-            __DIR__ . '/../database/migrations/create_team_user_table.php' => database_path('migrations/2019_12_14_000005_create_team_user_table.php'),
-            __DIR__ . '/../database/migrations/create_abilities_table.php' => database_path('migrations/2019_12_14_000006_create_abilities_table.php'),
-            __DIR__ . '/../database/migrations/create_entity_ability_table.php' => database_path('migrations/2019_12_14_000006_create_entity_ability_table.php'),
-            __DIR__ . '/../database/migrations/create_groups_table.php' => database_path('migrations/2019_12_14_000008_create_groups_table.php'),
-            __DIR__ . '/../database/migrations/create_group_user_table.php' => database_path('migrations/2019_12_14_000009_create_group_user_table.php'),
-            __DIR__ . '/../database/migrations/create_entity_permission_table.php' => database_path('migrations/2019_12_14_000010_create_entity_permission_table.php'),
+            __DIR__.'/../database/migrations/create_teams_table.php' => database_path('migrations/2019_12_14_000001_create_teams_table.php'),
+            __DIR__.'/../database/migrations/create_permissions_table.php' => database_path('migrations/2019_12_14_000002_create_permissions_table.php'),
+            __DIR__.'/../database/migrations/create_roles_table.php' => database_path('migrations/2019_12_14_000003_create_roles_table.php'),
+            __DIR__.'/../database/migrations/create_team_user_table.php' => database_path('migrations/2019_12_14_000005_create_team_user_table.php'),
+            __DIR__.'/../database/migrations/create_abilities_table.php' => database_path('migrations/2019_12_14_000006_create_abilities_table.php'),
+            __DIR__.'/../database/migrations/create_entity_ability_table.php' => database_path('migrations/2019_12_14_000006_create_entity_ability_table.php'),
+            __DIR__.'/../database/migrations/create_groups_table.php' => database_path('migrations/2019_12_14_000008_create_groups_table.php'),
+            __DIR__.'/../database/migrations/create_group_user_table.php' => database_path('migrations/2019_12_14_000009_create_group_user_table.php'),
+            __DIR__.'/../database/migrations/create_entity_permission_table.php' => database_path('migrations/2019_12_14_000010_create_entity_permission_table.php'),
         ];
 
         if (Config::get('teams.invitations.enabled')) {
-            $migrations[__DIR__ . '/../database/migrations/create_invitations_table.php'] = database_path('migrations/2019_12_14_000012_create_invitations_table.php');
+            $migrations[__DIR__.'/../database/migrations/create_invitations_table.php'] = database_path('migrations/2019_12_14_000012_create_invitations_table.php');
         }
 
         $this->publishes([
-            __DIR__.'/../config/teams.php' => config_path('teams.php')
+            __DIR__.'/../config/teams.php' => config_path('teams.php'),
         ], 'teams-config');
 
         $this->publishes($migrations, 'teams-migrations');
 
         $this->publishes([
-            __DIR__.'/../resources/views' => resource_path('views/vendor/teams')
+            __DIR__.'/../resources/views' => resource_path('views/vendor/teams'),
         ], 'teams-views');
     }
 
@@ -104,9 +104,6 @@ class TeamsServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * @return void
-     */
     protected function registerRoutes(): void
     {
         Route::group([

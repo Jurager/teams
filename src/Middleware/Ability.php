@@ -9,12 +9,6 @@ class Ability extends Teams
 {
     /**
      * Handle incoming request.
-     *
-     * @param Request $request
-     * @param Closure $next
-     * @param string $ability
-     * @param ...$models
-     * @return mixed
      */
     public function handle(Request $request, Closure $next, string $ability, ...$models): mixed
     {

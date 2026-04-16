@@ -51,8 +51,6 @@ class Group extends Model
 
     /**
      * Get the team that the group belongs to.
-     *
-     * @return BelongsTo
      */
     public function team(): BelongsTo
     {
@@ -61,8 +59,6 @@ class Group extends Model
 
     /**
      * Get all group users
-     *
-     * @return BelongsToMany
      */
     public function users(): BelongsToMany
     {
@@ -71,8 +67,6 @@ class Group extends Model
 
     /**
      * Get the permissions that belongs to group.
-     *
-     * @return MorphToMany
      */
     public function permissions(): MorphToMany
     {
@@ -81,8 +75,6 @@ class Group extends Model
 
     /**
      * Get the abilities that belongs to group.
-     *
-     * @return MorphToMany
      */
     public function abilities(): MorphToMany
     {
@@ -93,9 +85,6 @@ class Group extends Model
 
     /**
      * Attach user or users to a group
-     *
-     * @param Collection|Model $user
-     * @return bool
      */
     public function attachUser(Collection|Model $user): bool
     {
@@ -118,9 +107,9 @@ class Group extends Model
         $users = $user instanceof Collection ? $user : collect([$user]);
 
         // Filter only those users who are in the team
-        $filteredUserIds  = $users->filter(fn ($item) => $this->team->hasUser($item));
+        $filteredUserIds = $users->filter(fn ($item) => $this->team->hasUser($item));
 
         // If there are any users left after filtering, we execute detach and return the result
-        return $filteredUserIds ->isNotEmpty() && $this->users()->detach($filteredUserIds->pluck('id')) > 0;
+        return $filteredUserIds->isNotEmpty() && $this->users()->detach($filteredUserIds->pluck('id')) > 0;
     }
 }

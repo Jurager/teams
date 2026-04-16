@@ -2,10 +2,10 @@
 
 namespace Jurager\Teams\Support\Services;
 
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
 use RuntimeException;
-use Exception;
 
 class TeamsService
 {
@@ -24,8 +24,6 @@ class TeamsService
     /**
      * Returns object instance based on name.
      *
-     * @param string $model
-     * @return object
      * @throws Exception
      */
     public function instance(string $model): object
@@ -36,8 +34,6 @@ class TeamsService
     /**
      * Returns the model class based on name.
      *
-     * @param string $model
-     * @return string
      * @throws Exception
      */
     public function model(string $model): string
@@ -48,9 +44,6 @@ class TeamsService
     /**
      * Gets a model instance by name.
      *
-     * @param string $key
-     * @param bool $instance
-     * @return string|object
      * @throws Exception
      *
      * @template T of Model
@@ -59,7 +52,7 @@ class TeamsService
     {
         $modelClass = $this->models[$key] ?? null;
 
-        if (!$modelClass || !class_exists($modelClass)) {
+        if (! $modelClass || ! class_exists($modelClass)) {
             throw new RuntimeException("Model class for key $key not found.");
         }
 

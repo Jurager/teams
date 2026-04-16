@@ -2,11 +2,11 @@
 
 namespace Jurager\Teams\Models;
 
+use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
-use Exception;
 
 class Membership extends Pivot
 {
@@ -35,8 +35,6 @@ class Membership extends Pivot
 
     /**
      * Creates a new instance of the model.
-     *
-     * @param array $attributes
      */
     public function __construct(array $attributes = [])
     {
@@ -47,7 +45,6 @@ class Membership extends Pivot
     /**
      * Get the role that the membership belongs to.
      *
-     * @return BelongsTo
      * @throws Exception
      */
     public function role(): BelongsTo

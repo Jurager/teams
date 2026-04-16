@@ -10,7 +10,6 @@ class TeamPolicy
 
     /**
      * Determine whether the user can view any models.
-     * @return bool
      */
     public function viewAny(): bool
     {
@@ -19,10 +18,6 @@ class TeamPolicy
 
     /**
      * Determine whether the user can view the model.
-     *
-     * @param object $user
-     * @param object $team
-     * @return bool
      */
     public function view(object $user, object $team): bool
     {
@@ -39,10 +34,6 @@ class TeamPolicy
 
     /**
      * Determine whether the user can update the model.
-     *
-     * @param object $user
-     * @param object $team
-     * @return bool
      */
     public function update(object $user, object $team): bool
     {
@@ -51,10 +42,6 @@ class TeamPolicy
 
     /**
      * Determine whether the user can add team members.
-     *
-     * @param object $user
-     * @param object $team
-     * @return bool
      */
     public function addTeamMember(object $user, object $team): bool
     {
@@ -63,10 +50,6 @@ class TeamPolicy
 
     /**
      * Determine whether the user can update team member
-     *
-     * @param object $user
-     * @param object $team
-     * @return bool
      */
     public function updateTeamMember(object $user, object $team): bool
     {
@@ -75,10 +58,6 @@ class TeamPolicy
 
     /**
      * Determine whether the user can remove team members.
-     *
-     * @param object $user
-     * @param object $team
-     * @return bool
      */
     public function removeTeamMember(object $user, object $team): bool
     {
@@ -87,10 +66,6 @@ class TeamPolicy
 
     /**
      * Determine whether the user can delete the model.
-     *
-     * @param object $user
-     * @param object $team
-     * @return bool
      */
     public function delete(object $user, object $team): bool
     {

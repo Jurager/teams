@@ -2,22 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Routing\Redirector;
 use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
-use Exception;
 
 class InviteController extends Controller
 {
     /**
      * Accept the given invite.
      *
-     * @param Request $request
-     * @param $invitationId
-     * @return Application|\Illuminate\Foundation\Application|RedirectResponse|Redirector
      * @throws Exception
      */
     public function inviteAccept(Request $request, $invitationId): \Illuminate\Foundation\Application|Redirector|Application|RedirectResponse

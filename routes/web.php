@@ -6,5 +6,5 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(Config::get('teams.invitations.routes.middleware'))
     ->get(Config::get('teams.invitations.routes.url'), [InviteController::class, 'inviteAccept'])
-    //->middleware(['signed'])
+    // ->middleware(['signed'])
     ->name('teams.invitations.accept');
