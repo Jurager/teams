@@ -7,6 +7,12 @@ weight: 100
 
 If enabled (`teams.invitations.enabled = true`), invitations let you add users to a team by email before they have an account or without searching for their user ID.
 
+## List Invitations
+
+```php
+$team->invitations();
+```
+
 ## Send Invitation
 
 ```php

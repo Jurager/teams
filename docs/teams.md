@@ -45,7 +45,8 @@ $team->userRole($user);                // Role model or null
 $team->roles();
 $team->hasRole('admin');
 $team->getRole('admin');
-$team->addRole('admin', ['posts.*']);
+$team->addRole('admin', ['posts.*']); // code + permissions
+$team->addRole('admin', ['posts.*'], 'Administrator', 'Full access'); // optional name and description
 $team->updateRole('admin', ['posts.view']);
 $team->deleteRole('admin');
 
@@ -63,6 +64,12 @@ $team->deleteGroup('support');
 
 > [!WARNING]
 > `updateGroup()` with an empty permissions array detaches **all** existing permissions from the group. Pass only the permissions you want to keep.
+
+## Abilities
+
+```php
+$team->abilities();
+```
 
 ## Team Permission Proxy
 

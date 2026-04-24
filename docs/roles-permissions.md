@@ -16,6 +16,9 @@ $team->addRole('admin', [
     'team.edit',
 ]);
 
+// Optional: provide a display name and description
+$team->addRole('admin', ['employees.*'], 'Administrator', 'Full team access');
+
 $team->addRole('user', [
     'employees.view',
     'articles.view',

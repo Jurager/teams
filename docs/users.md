@@ -53,6 +53,15 @@ $user->hasTeamPermission($team, 'posts.view', false, 'role');          // scope
 > [!NOTE]
 > `teamRole()` returns an `Owner` pseudo-model (with wildcard permission `*`) when the user owns the team. For non-members it returns `null`.
 
+## Abilities
+
+```php
+$user->teamAbilities($team, $entity);            // Collection — allowed ability records for this user on the entity
+$user->teamAbilities($team, $entity, true);      // Collection — forbidden ability records only
+```
+
+For granting, forbidding, and checking abilities see [Abilities](abilities.md).
+
 ## Request-Lifecycle Cache
 
 When `teams.request.cache_decisions = true` in config, repeated calls to `hasTeamPermission()` with the same arguments within a single HTTP request reuse a cached result stored in `$user->decisionCache`.
