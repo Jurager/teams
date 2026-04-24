@@ -15,5 +15,5 @@ weight: 160
 
 ## Compatibility Notes
 
-- Package supports Laravel 8 through 12.
+- Package supports Laravel 8 through 13.
 - Validate custom model overrides after upgrade.
