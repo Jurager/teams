@@ -37,7 +37,7 @@ class Invitation extends Model
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('role'), Config::get('teams.foreign_keys.team_id'));
+        return $this->belongsTo(TeamsFacade::model('role'), 'role_id');
     }
 
     /**
