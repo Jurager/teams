@@ -44,6 +44,26 @@ $team->deleteRole('admin');
 > [!WARNING]
 > Deleting a role does **not** automatically unassign members that hold that role. Their `team_user.role_id` will become orphaned. Reassign or remove affected members before deleting the role.
 
+## Add or Remove Individual Permissions
+
+`updateRole()` replaces the **entire** permission set on a role. To add or remove specific permissions without touching the rest, use the role's `permissions()` relation directly:
+
+```php
+$role = $team->getRole('admin');
+
+// Add permissions, keeping existing ones intact
+$role->permissions()->attach($team->getPermissionIds(['posts.publish']));
+
+// Remove specific permissions, keeping the rest intact
+$role->permissions()->detach($team->getPermissionIds(['posts.publish']));
+
+// List permissions currently assigned to the role
+$role->permissions;
+```
+
+> [!NOTE]
+> `getPermissionIds()` resolves permission codes to IDs for the team, creating any codes that don't exist yet. Pass raw IDs directly to `attach()`/`detach()` if you already have them.
+
 ## Authorization Pattern
 
 Prefer granular permission checks in policies rather than role checks:
