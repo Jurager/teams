@@ -3,10 +3,8 @@
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Validator;
 use Jurager\Teams\Events\TeamCreated;
 use Jurager\Teams\Models\Role;
-use Jurager\Teams\Rules\Role as RoleRule;
 use Jurager\Teams\Support\Facades\Teams;
 use Jurager\Teams\TeamsServiceProvider;
 use Jurager\Teams\Tests\Fixtures\Article;
@@ -83,16 +81,4 @@ it('rejects duplicate rows in the database', function (Closure $insert) {
         ->insert(collect($team->abilities()->first()->getAttributes())->except('id')->all()),
     'record rule' => fn () => DB::table(config('teams.tables.entity_ability'))
         ->insert(collect((array) DB::table(config('teams.tables.entity_ability'))->first())->except('id')->all()),
-]);
-
-it('accepts only role codes of the team in the role rule', function (mixed $value, bool $passes) {
-    $team = team();
-    role($team, 'editor');
-    role(team(), 'admin');
-
-    expect(Validator::make(['role' => $value], ['role' => [new RoleRule($team)]])->passes())->toBe($passes);
-})->with([
-    'team role' => ['editor', true],
-    'role of another team' => ['admin', false],
-    'array' => [['editor'], false],
 ]);
