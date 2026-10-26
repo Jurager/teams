@@ -5,79 +5,85 @@ weight: 40
 
 # Teams
 
-Team APIs are provided by `Jurager\Teams\Traits\HasMembers` (used by the Team model).
+- [Creating Teams](#creating-teams)
+- [Managing Members](#managing-members)
+- [Inspecting Members](#inspecting-members)
+- [Authorization](#authorization)
+- [Deleting Teams](#deleting-teams)
 
-## Member Management
+## Creating Teams
+
+A team is created through its owner. Add at least one [role](roles-permissions.md) before adding members:
 
 ```php
-$team->addUser($user, 'admin');
-$team->updateUser($user, 'editor');
+$team = $user->ownedTeams()->create(['name' => 'Acme']);
+
+$team->addRole('editor', ['articles.view', 'articles.edit']);
+```
+
+## Managing Members
+
+Every member has one role in a team. Pass the role code or ID:
+
+```php
+$team->addUser($user, 'editor');
+$team->updateUser($user, 'admin');
 $team->deleteUser($user);
 ```
 
+Removing a member also removes their groups and personal [ability rules](abilities.md) in this team.
+
+A missing role throws `ModelNotFoundException`. Adding an existing member, or changing and removing a non-member, throws `RuntimeException`.
+
+> [!NOTE]
+> The owner is not a member, so these methods cannot be used on the owner.
+
+## Inspecting Members
+
+```php
+$team->owner;                    // the owner
+$team->users;                    // members, without the owner
+$team->allUsers();               // members and the owner
+
+$team->hasUser($user);           // member or owner
+$team->hasUserWithEmail($email); // member or owner
+$team->userRole($user);          // Role, Owner, or null
+$team->userHasPermission($user, 'articles.edit');
+```
+
+## Authorization
+
+The team methods do not check who calls them. Protect them with a policy:
+
+```php
+class TeamPolicy
+{
+    public function addMember(User $user, Team $team): bool
+    {
+        return $user->hasTeamPermission($team, 'members.add');
+    }
+}
+```
+
+Register it in the `boot` method of your `AppServiceProvider`, then authorize before calling the team method:
+
+```php
+Gate::policy(config('teams.models.team'), TeamPolicy::class);
+```
+
+```php
+Gate::authorize('addMember', $team);
+
+$team->addUser($user, 'editor');
+```
+
+## Deleting Teams
+
+```php
+$team->purge();
+```
+
+Purge removes all members and deletes the team with its roles, groups, permissions, and invitations.
+
 > [!WARNING]
-> Team owner cannot be removed or reassigned through `updateUser()` / `deleteUser()`. Both methods throw `RuntimeException` if the passed user is the team owner.
-
-> [!WARNING]
-> `addUser()` throws `RuntimeException` in three cases: user is the team owner, user is already a member, or the role code / ID does not exist in the team.
-
-> [!NOTE]
-> `addUser()` and `updateUser()` accept a role code (string) **or** role ID (int cast to string). The role must already exist inside the team before you call these methods.
-
-## Membership Checks
-
-```php
-$team->owner;                          // BelongsTo — lazy-loaded owner model
-$team->users();                        // BelongsToMany — members, excluding owner
-$team->allUsers();                     // Collection — members + owner merged
-$team->hasUser($user);                 // bool — true if member OR owner
-$team->hasUserWithEmail($email);       // bool — checks members by email
-$team->userRole($user);                // Role model or null
-```
-
-> [!NOTE]
-> `hasUser()` returns `true` for the team owner even though the owner is not stored in the `team_user` pivot table.
-
-## Roles and Groups
-
-```php
-// Roles
-$team->roles();
-$team->hasRole('admin');
-$team->getRole('admin');
-$team->addRole('admin', ['posts.*']); // code + permissions
-$team->addRole('admin', ['posts.*'], 'Administrator', 'Full access'); // optional name and description
-$team->updateRole('admin', ['posts.view']);
-$team->deleteRole('admin');
-
-// Groups
-$team->groups();
-$team->hasGroup('support');
-$team->getGroup('support');
-$team->addGroup('support', ['tickets.*']);
-$team->updateGroup('support', ['tickets.view']);
-$team->deleteGroup('support');
-```
-
-> [!NOTE]
-> `addRole()` / `addGroup()` auto-create missing permission codes for the current team via `getPermissionIds()`. Permissions that already exist are reused.
-
-> [!WARNING]
-> `updateGroup()` with an empty permissions array detaches **all** existing permissions from the group. Pass only the permissions you want to keep.
-
-## Abilities
-
-```php
-$team->abilities();
-```
-
-## Team Permission Proxy
-
-```php
-$team->userHasPermission($user, ['servers.update'], true);
-```
-
-This calls `$user->hasTeamPermission($team, ...)` internally. The third argument `$require = true` means **all** listed permissions must match.
-
-> [!NOTE]
-> If you already have a reference to the user object, calling `$user->hasTeamPermission()` directly is equivalent and avoids an extra indirection.
+> `$team->delete()` fails while the team has members. Use `purge()`.

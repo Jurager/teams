@@ -3,6 +3,7 @@
 namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
@@ -23,10 +24,30 @@ class Permission extends Model
      */
     public $timestamps = false;
 
+    /**
+     * Create a new model instance.
+     */
     public function __construct(array $attributes = [])
     {
+        $this->mergeFillable([Config::get('teams.foreign_keys.team_id')]);
+
         parent::__construct($attributes);
-        $this->fillable[] = Config::get('teams.foreign_keys.team_id');
+    }
+
+    /**
+     * Get the table associated with the model.
+     */
+    public function getTable(): string
+    {
+        return $this->table ?? Config::get('teams.tables.permissions', 'permissions');
+    }
+
+    /**
+     * Get the team that the permission belongs to.
+     */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(TeamsFacade::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
@@ -34,7 +55,7 @@ class Permission extends Model
      */
     public function groups(): MorphToMany
     {
-        return $this->morphedByMany(TeamsFacade::model('group'), 'entity', 'entity_permission');
+        return $this->morphedByMany(TeamsFacade::model('group'), 'entity', Config::get('teams.tables.entity_permission'), 'permission_id', 'entity_id');
     }
 
     /**
@@ -42,6 +63,6 @@ class Permission extends Model
      */
     public function roles(): MorphToMany
     {
-        return $this->morphedByMany(TeamsFacade::model('role'), 'entity', 'entity_permission');
+        return $this->morphedByMany(TeamsFacade::model('role'), 'entity', Config::get('teams.tables.entity_permission'), 'permission_id', 'entity_id');
     }
 }

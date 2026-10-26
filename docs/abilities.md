@@ -5,77 +5,66 @@ weight: 70
 
 # Abilities
 
-Abilities are entity-level allow/forbid rules layered on top of team permissions. They let you grant or restrict access to a **specific model instance** rather than the entire resource type.
+- [Allowing and Forbidding Actions](#allowing-and-forbidding-actions)
+- [Rules for Roles and Groups](#rules-for-roles-and-groups)
+- [Record Owners](#record-owners)
+- [How Access Is Decided](#how-access-is-decided)
 
-## Grant / Forbid / Delete
+Permissions apply to the whole team: an editor can edit every article. Abilities add exceptions for single records, such as "this editor may not edit article #42".
 
 ```php
-// Allow user to edit this specific article (passing a model)
-$user->allowTeamAbility($team, 'articles.edit', $article);
-
-// Same, but without loading the model — pass the class name and ID instead
-$user->allowTeamAbility($team, 'articles.edit', Article::class, $articleId);
-
-// Forbid user from editing this specific article
-$user->forbidTeamAbility($team, 'articles.edit', $article);
-$user->forbidTeamAbility($team, 'articles.edit', Article::class, $articleId);
-
-// Remove the ability rule entirely
-$user->deleteTeamAbility($team, 'articles.edit', $article);
-$user->deleteTeamAbility($team, 'articles.edit', Article::class, $articleId);
+$user->hasTeamAbility($team, 'articles.edit', $article);
 ```
 
-The optional 4th argument `$target_entity` specifies the entity the rule is attached to. If omitted, the rule targets the user themselves.
+Without any rules, `hasTeamAbility()` uses the user's role and group permissions.
 
-> [!NOTE]
-> When passing a class name string as `$action_entity`, the entity ID must be provided as the 4th argument. Omitting it will throw an `InvalidArgumentException`.
-
-> [!NOTE]
-> `allowTeamAbility()` creates the ability record if it does not exist yet. Subsequent calls update the existing record.
-
-> [!WARNING]
-> `deleteTeamAbility()` silently does nothing if the ability does not exist. It does **not** throw an exception.
-
-## Check Ability
+## Allowing and Forbidding Actions
 
 ```php
-// Passing a model
-$user->hasTeamAbility($team, 'articles.edit', $article);
+$user->allowTeamAbility($team, 'articles.edit', $article);
+$user->forbidTeamAbility($team, 'articles.edit', $article);
+$user->deleteTeamAbility($team, 'articles.edit', $article);
+```
 
-// Without loading the model — pass the class name and ID
+Instead of a model, you may pass its class and ID:
+
+```php
 $user->hasTeamAbility($team, 'articles.edit', Article::class, $articleId);
 ```
 
-The evaluation order is:
+To list the user's own rules for a record, use `$user->teamAbilities($team, $article)`.
 
-1. **Owner shortcut** — team owner is always granted access.
-2. **Team-level permission check** — role, group, and global group permissions.
-3. **Role abilities** — entity-specific rules attached to the user's role.
-4. **Group abilities** — entity-specific rules attached to the user's group(s).
-5. **User abilities** — entity-specific rules attached to the user directly.
-6. **Final decision** — `allowed >= forbidden` → access granted.
+## Rules for Roles and Groups
 
-> [!NOTE]
-> Steps 3–5 only run if the entity has at least one ability record. For entities without specific rules, the result is determined purely by team-level permissions.
+Pass `targetEntity` to attach the rule to a role or a group instead of the user:
 
-## Access Levels
+```php
+$user->forbidTeamAbility($team, 'articles.delete', $article, targetEntity: $team->getRole('editor'));
+```
 
-Permissions are governed by numeric access levels. Two counters are tracked — `allowed` and `forbidden` — and access is granted when `allowed >= forbidden`.
+## Record Owners
 
-| Level             | Value | Description                                                                               |
-|-------------------|-------|-------------------------------------------------------------------------------------------|
-| `DEFAULT`         | 0     | No explicit permission or restriction.                                                    |
-| `FORBIDDEN`       | 1     | Base denial (no permission at team level).                                                |
-| `ROLE_ALLOWED`    | 2     | Permission granted via the user's role.                                                   |
-| `ROLE_FORBIDDEN`  | 3     | Restriction applied via the user's role.                                                  |
-| `GROUP_ALLOWED`   | 4     | Permission granted via the user's group.                                                  |
-| `GROUP_FORBIDDEN` | 5     | Restriction applied via the user's group.                                                 |
-| `USER_ALLOWED`    | 5     | Permission granted specifically for this user on this entity.                             |
-| `USER_FORBIDDEN`  | 6     | Restriction applied specifically to this user on this entity.                             |
-| `GLOBAL_ALLOWED`  | 6     | Permission from a global group (team-independent).                                        |
+If a model has an `isOwner()` method, its owner always passes:
+
+```php
+class Article extends Model
+{
+    public function isOwner(User $user): bool
+    {
+        return $this->user_id === $user->id;
+    }
+}
+```
+
+## How Access Is Decided
+
+The team owner, the record owner, and members of a matching [global group](groups.md#global-groups) always pass. For other team members, the first matching step decides:
+
+1. The user's own rules.
+2. The rules and permissions of the user's groups.
+3. The rules and permissions of the user's role.
+
+At each step a forbid wins over an allow. When nothing matches, access is denied.
 
 > [!WARNING]
-> `GROUP_FORBIDDEN` and `USER_ALLOWED` share the same value **5**, and `USER_FORBIDDEN` and `GLOBAL_ALLOWED` both equal **6**. This means a group-forbidden rule ties with a user-allowed rule (neither wins), and a user-forbidden rule ties with a global-allowed rule. Design your ability assignments with these ties in mind and cover edge cases in tests.
-
-> [!NOTE]
-> The comparison is `allowed >= forbidden` (not strictly greater). A tie is resolved in favor of **granting** access. For example, `USER_ALLOWED (5) >= GROUP_FORBIDDEN (5)` → access granted.
+> `hasTeamAbility()` does not check that the record belongs to `$team`. Pass the record's own team, for example `$article->team`.

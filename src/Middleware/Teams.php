@@ -2,139 +2,110 @@
 
 namespace Jurager\Teams\Middleware;
 
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
-use InvalidArgumentException;
-use Jurager\Teams\Support\Facades\Teams as TeamFacade;
+use Illuminate\Support\Str;
+use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
 
-class Teams
+abstract class Teams
 {
-    /**
-     * Check if the request has authorization to continue.
-     *
-     * @throws Exception
-     */
-    protected function authorization(Request $request, string $method, string|array $params, ?string $teamId, ?array $models, bool $require = false): bool
-    {
-        // Mapping of method names
-        $methodTypes = [
-            'roles' => 'hasTeamRole',
-            'permission' => 'hasTeamPermission',
-            'ability' => 'hasTeamAbility',
-        ];
-
-        // Determine the action for checking the role or permissions
-        $action = $methodTypes[$method] ?? null;
-
-        // Ensure method is valid
-        if ($action === null) {
-            throw new InvalidArgumentException('Invalid method');
-        }
-
-        // Convert params to array if it's not already
-        $params = is_array($params) ? $params : explode('|', $params);
-
-        // Foreign key for team_id field
-        $foreignKey = Config::get('teams.foreign_keys.team_id', 'team_id');
-
-        // If team id not directly passed, get the id from request or route param
-        $foreignId = $teamId ?? $request->input($foreignKey) ?? $request->route($foreignKey);
-
-        // Get the team model
-        // @todo: Throw exception or something to know that team not found
-        $team = TeamFacade::instance('team')->findOrFail($foreignId);
-
-        // Check the ability
-        if ($action === 'hasTeamAbility') {
-            return $this->checkTeamAbility($request, $team, reset($params), $models);
-        }
-
-        return ! Auth::guest() && Auth::user()?->$action($team, $params, $require);
-    }
-
-    /**
-     * Check user's ability for the team.
-     */
-    protected function checkTeamAbility(Request $request, $team, string $ability, ?array $models): bool
-    {
-        // Get the models for ability check
-        [$entityClass, $entityId] = $this->getGateArguments($request, $models);
-
-        // Ensure entity id is provided
-        if ($entityId === null) {
-            return false;
-        }
-
-        // Fetch the entity model or return false if not found
-        $entity = $entityClass::find($entityId);
-
-        // @todo: Throw exception or something to know that entity not exists
-        if (! $entity) {
-            return false;
-        }
-
-        // Check the ability for the entity for the current user
-        return $request->user()->hasTeamAbility($team, $ability, $entity);
-    }
-
-    /**
-     * The request is unauthorized, so it handles the aborting/redirecting.
-     */
+    /** Rejects the request using the configured handling: abort or redirect. */
     protected function unauthorized(): RedirectResponse
     {
         $handling = Config::get('teams.middleware.handling', 'abort');
-        $handler = Config::get('teams.middleware.handlers.'.$handling);
+        $handler = Config::get("teams.middleware.handlers.{$handling}");
 
-        // Fall back to abort when handler is missing or handling is 'abort'
-        if ($handling === 'abort' || $handler === null) {
-            $code = $handler['code'] ?? 403;
-            $message = $handler['message'] ?? 'User does not have any of the necessary access rights.';
-            abort($code, $message);
+        if ($handling === 'abort' || ! is_array($handler)) {
+            abort(
+                $handler['code'] ?? 403,
+                $handler['message'] ?? 'User does not have any of the necessary access rights.',
+            );
         }
 
-        // Prepare redirect response
         $redirect = redirect()->to($handler['url']);
+        $message = $handler['message'] ?? [];
 
-        // If flash message key is provided, use it for session message
-        if (! empty($handler['message']['key']) && ! empty($handler['message']['content'])) {
-            $redirect->with($handler['message']['key'], $handler['message']['content']);
+        if (! empty($message['key']) && ! empty($message['content'])) {
+            $redirect->with($message['key'], $message['content']);
         }
 
         return $redirect;
     }
 
-    /**
-     * Get the arguments parameters for the gate.
-     */
-    protected function getGateArguments(Request $request, ?array $models): array
+    /** Finds a team based on a route parameter, a request field, or a provided identifier. */
+    protected function resolveTeam(Request $request, ?string $teamId): Model
     {
-        // Gate model not defined, return empty array
-        if ($models === null) {
-            return [];
+        $value = match (true) {
+            $teamId === null => $this->fromRequest($request, $this->teamForeignKey()),
+            is_numeric($teamId), Str::isUuid($teamId) => $teamId,
+            default => $this->fromRequest($request, $teamId),
+        };
+
+        $teamClass = TeamsFacade::model('team');
+
+        if (! $value instanceof $teamClass && ! is_int($value) && ! is_string($value)) {
+            abort(404);
         }
 
-        // Filter out invalid model instances and fetch actual model instances
-        return array_map(fn ($model) => $model instanceof Model ? $model : $this->getModel($request, $model), $models);
+        return $value instanceof $teamClass
+            ? $value
+            : $teamClass::query()->findOrFail($value);
     }
 
-    /**
-     * Get the model to authorize.
-     */
-    protected function getModel(Request $request, string $model): string
+    /** Finds an entity to check the ability: [Model] or [ModelClass, parameter|Model]. */
+    protected function resolveEntity(Request $request, array $models): ?Model
     {
-        // Trim the model name and ensure it is a fully qualified class name if not already
-        $trimmedModel = trim($model);
+        [$class, $parameter] = array_pad($models, 2, null);
 
-        // Return the model directly if it is a fully qualified class name
-        if (class_exists($trimmedModel)) {
-            return $trimmedModel;
+        if ($class instanceof Model) {
+            return $class;
         }
 
-        // Otherwise, retrieve the model from the request route, falling back to the original model name
-        return $request->route($trimmedModel) ?: $trimmedModel;
+        if (! is_string($class) || ! is_subclass_of($class, Model::class) || $parameter === null) {
+            return null;
+        }
+
+        $value = $parameter instanceof Model
+            ? $parameter
+            : $this->fromRequest($request, $parameter);
+
+        if (! $value instanceof $class && ! is_int($value) && ! is_string($value)) {
+            return null;
+        }
+
+        $entity = $value instanceof $class ? $value : $class::query()->find($value);
+
+        return $entity instanceof Model ? $entity : null;
+    }
+
+    /** An entity without a team field is considered to belong to any team. */
+    protected function belongsToTeam(Model $entity, Model $team): bool
+    {
+        $teamKey = $this->teamForeignKey();
+
+        return ! array_key_exists($teamKey, $entity->getAttributes()) || (string) $entity->getAttribute($teamKey) === (string) $team->getKey();
+    }
+
+    /** Splits a "a|b" middleware argument into a list. */
+    protected function parse(string|array $values): array
+    {
+        return is_array($values) ? $values : explode('|', $values);
+    }
+
+    protected function isRequired(bool|string $require): bool
+    {
+        return in_array($require, [true, 'require', 'true', '1'], true);
+    }
+
+    protected function fromRequest(Request $request, string $key): mixed
+    {
+        return $request->route($key) ?? $request->input($key);
+    }
+
+    protected function teamForeignKey(): string
+    {
+        return Config::get('teams.foreign_keys.team_id', 'team_id');
     }
 }

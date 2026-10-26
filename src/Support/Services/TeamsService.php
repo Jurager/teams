@@ -2,60 +2,73 @@
 
 namespace Jurager\Teams\Support\Services;
 
-use Exception;
+use Closure;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Facades\Config;
 use RuntimeException;
 
 class TeamsService
 {
     /**
-     * Array of models loaded from configuration.
+     * Permission decisions cached for the current request or job.
      *
-     * @var array<string, string>
+     * The service is a scoped binding, so Laravel discards it between
+     * HTTP requests, Octane requests and queued jobs.
+     *
+     * @var array<string, bool>
      */
-    protected array $models;
+    protected array $decisions = [];
 
-    public function __construct()
+    /**
+     * Resolve the permission decision once per request or job.
+     *
+     * @param  Closure(): mixed  $resolve
+     */
+    public function rememberPermission(string $key, Closure $resolve): bool
     {
-        $this->models = Config::get('teams.models');
+        return $this->decisions[$key] ??= (bool) $resolve();
     }
 
     /**
-     * Returns object instance based on name.
-     *
-     * @throws Exception
+     * Flush all cached permission decisions.
      */
-    public function instance(string $model): object
+    public function forgetCachedPermissions(): void
     {
-        return $this->getModel($model, true);
+        $this->decisions = [];
     }
 
     /**
-     * Returns the model class based on name.
+     * Create a new instance of the configured model.
+     */
+    public function instance(string $model): Model
+    {
+        $class = $this->model($model);
+
+        return new $class;
+    }
+
+    /**
+     * Get the configured model class.
      *
-     * @throws Exception
+     * @return class-string<Model>
      */
     public function model(string $model): string
     {
-        return $this->getModel($model);
-    }
+        $class = Config::get("teams.models.{$model}");
 
-    /**
-     * Gets a model instance by name.
-     *
-     * @throws Exception
-     *
-     * @template T of Model
-     */
-    private function getModel(string $key, bool $instance = false): string|object
-    {
-        $modelClass = $this->models[$key] ?? null;
-
-        if (! $modelClass || ! class_exists($modelClass)) {
-            throw new RuntimeException("Model class for key $key not found.");
+        if (! is_string($class) || ! is_subclass_of($class, Model::class)) {
+            throw new RuntimeException(sprintf(
+                'Config key [teams.models.%s] must be an Eloquent model class, %s given.',
+                $model,
+                is_string($class) ? "[{$class}]" : get_debug_type($class),
+            ));
         }
 
-        return $instance ? new $modelClass() : $modelClass;
+        if ($model === 'membership' && ! is_subclass_of($class, Pivot::class)) {
+            throw new RuntimeException('Config key [teams.models.membership] must extend Eloquent Pivot.');
+        }
+
+        return $class;
     }
 }

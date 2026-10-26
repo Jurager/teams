@@ -5,15 +5,16 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create('roles', static function (Blueprint $table) {
+        Schema::create(Config::get('teams.tables.roles', 'roles'), static function (Blueprint $table) {
             $table->id();
-            $table->foreignId(Config::get('teams.foreign_keys.team_id', 'team_id'))->constrained()->cascadeOnDelete();
+            $table->foreignId(Config::get('teams.foreign_keys.team_id', 'team_id'))->constrained(Config::get('teams.tables.teams'))->cascadeOnDelete();
             $table->string('code');
             $table->string('name')->nullable();
             $table->string('description')->nullable();
@@ -27,6 +28,6 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::dropIfExists(Config::get('teams.tables.roles', 'roles'));
     }
 };

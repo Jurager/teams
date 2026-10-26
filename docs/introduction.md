@@ -5,33 +5,43 @@ weight: 10
 
 # Introduction
 
-Jurager/Teams is a Laravel package for team-based access control with dynamic roles, groups, permissions, and entity-level abilities.
+- [Core Concepts](#core-concepts)
+- [Choosing the Right Check](#choosing-the-right-check)
+- [Requirements](#requirements)
 
-## Concepts
+Teams adds team-based access control to Laravel. A user can own teams, join other teams, and have different rights in each of them.
 
-- **Team** — isolated workspace with members, roles, and groups.
-- **Role** — baseline permission set assigned to a user inside a team (stored in `team_user.role_id`).
-- **Permission** — dot-notation code (e.g., `articles.edit`) attached to a role or group.
-- **Group** — optional permission layer for subsets of users within a team (or globally).
-- **Ability** — allow/forbid rule on a **specific model instance**, evaluated on top of role/group permissions.
+```php
+$team = $owner->ownedTeams()->create(['name' => 'Acme']);
 
-## Access Layers
+$team->addRole('editor', ['articles.view', 'articles.edit']);
+$team->addUser($user, 'editor');
 
-Permissions are resolved in the following order:
+$user->hasTeamPermission($team, 'articles.edit'); // true
+```
 
-1. **Role permissions** — applied to all team members with the role.
-2. **Group permissions** — overrides role access for members of the group.
-3. **Global group permissions** — cross-team permissions for members of global groups.
-4. **Entity abilities** — instance-level allow/forbid rules (role → group → user precedence).
+## Core Concepts
+
+| Concept | Description |
+|---|---|
+| Team | A workspace with one owner and any number of members. |
+| Role | Every member has one role in a team. The role grants permissions. |
+| Permission | A code such as `articles.edit`. `articles.*` grants all `articles.` permissions. |
+| Group | Extra permissions for some members, on top of their roles. |
+| Ability | An allow or forbid rule for one record, such as "edit article #42". |
 
 > [!NOTE]
-> Group and user entity rules can override role-level access for specific records. Only `hasTeamAbility()` evaluates all four layers. `hasTeamPermission()` only evaluates layers 1–2.
+> The team owner has no role and passes every check in their team.
+
+## Choosing the Right Check
+
+| Question | Method |
+|---|---|
+| Does the user have this role? | [`hasTeamRole()`](users.md#roles) |
+| Can the user edit articles in this team? | [`hasTeamPermission()`](users.md#permissions) |
+| Can the user edit this article? | [`hasTeamAbility()`](abilities.md) |
 
 ## Requirements
 
-- PHP >= 8.1
-- Laravel 8+
-- Composer
-
-> [!NOTE]
-> The package is tested against Laravel 8 through 12. Older Laravel versions are not supported.
+- PHP 8.3+
+- Laravel 10.30+, 11, 12, or 13

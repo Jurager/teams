@@ -2,27 +2,26 @@
 
 namespace Jurager\Teams\Events;
 
-use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 abstract class TeamEvent
 {
     use Dispatchable;
-    use InteractsWithSockets;
     use SerializesModels;
 
     /**
      * The team instance.
      */
-    public mixed $team;
+    public Model $team;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(mixed $team)
+    public function __construct(Model $team)
     {
         $this->team = $team;
     }

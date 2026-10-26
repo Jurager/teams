@@ -5,61 +5,33 @@ weight: 150
 
 # Troubleshooting
 
-## Middleware Always Denies
+- [Access Is Denied](#access-is-denied)
+- [The Middleware Returns 404](#the-middleware-returns-404)
+- [A Permission Change Is Not Visible](#a-permission-change-is-not-visible)
+- [An Invitation Link Returns 403](#an-invitation-link-returns-403)
 
-- Verify `team_id` is present in the route parameters or request input.
-- Check that `teams.middleware.handling` is set correctly (`abort` vs `redirect`).
-- Confirm the user has the expected role or group permissions in the selected team.
-- If using `ability` middleware, make sure the entity ID is also present in the route or request.
+## Access Is Denied
 
-> [!NOTE]
-> Run `php artisan route:list` to confirm that middleware aliases are registered and applied to the correct routes.
+Check what the user actually has:
 
-## Permission Seems Missing
+```php
+$team->hasUser($user);
+$user->teamRole($team);
+$user->teamPermissions($team);
+```
 
-- Ensure the user belongs to the same team.
-- Check the `scope` used in `hasTeamPermission()` (`'role'` / `'group'` / `null` for all).
-- If using wildcards, confirm `teams.wildcards.enabled = true` and the configured nodes match the stored permission codes.
-- Remember: team owners always return `true` from `hasTeamPermission()`.
+For record checks, a forbid rule may apply. See [how access is decided](abilities.md#how-access-is-decided).
 
-> [!WARNING]
-> With `teams.request.cache_decisions = true`, `hasTeamPermission()` returns cached results for the lifetime of the model instance. If you recently added a permission and the check still returns `false`, disable the cache or re-instantiate the user model.
+## The Middleware Returns 404
 
-## Ability Check Returns Wrong Result
+The team was not found. Make sure the route has a `team_id` parameter, or pass the parameter name: `permission:articles.view,team`.
 
-- Double-check the access level table in [Abilities](abilities.md). `GROUP_FORBIDDEN` and `USER_ALLOWED` share value 5, creating a tie resolved in favor of **granting** access.
-- Verify which ability records exist: inspect `entity_ability` directly in the database.
-- Confirm the entity passed to `hasTeamAbility()` is the same instance (same ID and model class) used when the ability was created.
+## A Permission Change Is Not Visible
 
-## Invitations Not Working
+If the [decision cache](configuration.md#decision-cache) is enabled and you changed a pivot table directly, call `Teams::forgetCachedPermissions()`. Relations loaded earlier keep their old values until you reload them.
 
-- Ensure `teams.invitations.enabled = true`.
-- Ensure `teams.invitations.routes.register = true` (or register the route manually).
-- Verify your mail transport (`MAIL_*` env vars) and `APP_URL` are correctly set — signed invitation URLs depend on `APP_URL`.
-- If `inviteAccept()` throws "Invited user not found", the user with that email does not exist in the `users` table yet. The invitation system requires the invitee to already have an account.
+## An Invitation Link Returns 403
 
-> [!WARNING]
-> The `signed` middleware is commented out in the package route. Without it, anyone who knows a valid invitation ID can accept it. Enable signed URL validation in production.
-
-## Broken Schema After Install
-
-- Re-check `tables.*` and `foreign_keys.*` in `config/teams.php`.
-- Apply config changes **before** publishing or running migrations.
-- If migrations already ran with wrong names, roll back with `php artisan migrate:rollback` and re-run after correcting the config.
-
-> [!WARNING]
-> `teams:install` publishes with `--force`. Running it on an existing project may overwrite `config/teams.php`, migrations, views, and stub files. Always create a backup first.
-
-## RuntimeException in addUser / updateUser / deleteUser
-
-These methods throw `RuntimeException` for predictable invalid inputs:
-
-| Method        | Throws when                                              |
-|---------------|----------------------------------------------------------|
-| `addUser()`   | User is owner, user already in team, role not found      |
-| `updateUser()`| User is owner, user not in team, role not found          |
-| `deleteUser()`| User is owner, user not in team                          |
-| `inviteUser()`| User already in team, role not found                     |
-| `inviteAccept()`| Invitation not found, invited user not found           |
-
-Wrap calls in `try/catch` when processing user input to return meaningful error messages.
+- The user must be signed in with the invited email.
+- The link must not be changed or expired.
+- `APP_URL` must match the domain the user opens.

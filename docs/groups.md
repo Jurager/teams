@@ -5,60 +5,65 @@ weight: 80
 
 # Groups
 
-Groups let you assign shared permissions and abilities to subsets of users within a team.
+- [Creating Groups](#creating-groups)
+- [Adding and Removing Members](#adding-and-removing-members)
+- [Updating and Deleting Groups](#updating-and-deleting-groups)
+- [Global Groups](#global-groups)
 
-## Usage Scope
+A group gives extra permissions to some members of a team, on top of their roles. A user can be in several groups.
 
-Groups work as an **override layer** on top of role permissions:
-
-- User **has** team permission, but the group **forbids** an entity action → entity action is denied.
-- User **lacks** team permission, but the group **allows** an entity action → entity action is allowed.
-
-> [!NOTE]
-> Group permissions participate in ability level comparison (see [Abilities](abilities.md)). Group rules only affect `hasTeamAbility()` checks, not plain `hasTeamPermission()` checks.
-
-## Team Groups
+## Creating Groups
 
 ```php
-// Create group — permissions array is required; name defaults to Str::studly($code)
-$group = $team->addGroup('support', ['tickets.reply']);
-
-// Replace group permissions (empty array removes all existing permissions)
-$team->updateGroup('support', ['tickets.*']);
-
-// Remove group and detach all permissions/abilities
-$team->deleteGroup('support');
+$team->addGroup('reviewers', ['articles.publish']);
 ```
 
-> [!WARNING]
-> `updateGroup()` with an empty array **removes all permissions** from the group. There is no partial-update mode — always pass the full desired permission list.
-
-> [!WARNING]
-> `addGroup()` throws `RuntimeException` if a group with the same code already exists in the team.
-
-## Group Membership
+The permissions and the name are optional. Groups are found by code or ID, like roles:
 
 ```php
-$group->attachUser($user);   // add user to the group
-$group->detachUser($user);   // remove user from the group
-$group->users();             // BelongsToMany — all group members
+$team->getGroup('reviewers');
+$team->hasGroup('reviewers');
 ```
 
-> [!NOTE]
-> A user can belong to multiple groups within the same team. All matching group rules are evaluated when `hasTeamAbility()` resolves access.
+## Adding and Removing Members
+
+```php
+$group->attachUser($user);
+$group->detachUser($user);
+```
+
+Both methods accept a user or a collection of users. Users outside the team are skipped.
+
+```php
+$team->addGroup('reviewers', ['articles.publish'])->attachUser($user);
+
+$user->hasTeamPermission($team, 'articles.publish'); // true
+```
+
+## Updating and Deleting Groups
+
+```php
+$team->updateGroup('reviewers', ['articles.*']);           // replace permissions
+$team->updateGroup('reviewers', name: 'Senior Reviewers');
+
+$team->deleteGroup('reviewers');
+```
 
 ## Global Groups
 
-A group with `team_id = null` is a **global group**. Its permissions are checked by `hasGlobalGroupPermissions()` during ability evaluation and apply across all teams.
+A group with an empty `team_id` is global. Its permissions pass [ability checks](abilities.md) in every team, even for users who are not members. This suits staff such as support agents.
 
 ```php
-// Creating a global group (no team scoping)
-$group = Group::create(['code' => 'support-global', 'team_id' => null]);
-$group->attachUser($user);
+use Jurager\Teams\Models\Group;
+
+$support = Group::create(['team_id' => null, 'code' => 'support', 'name' => 'Support']);
+
+$support->permissions()->sync($team->getPermissionIds(['tickets.*']));
+$support->attachUser($agent);
 ```
 
 > [!NOTE]
-> Global groups are useful for cross-team roles (e.g., platform support staff) without adding the user as a member of each individual team.
+> Global groups affect `hasTeamAbility()` only. They do not grant membership, a role, or `hasTeamPermission()`.
 
 > [!WARNING]
-> Global group permissions are evaluated only inside `hasTeamAbility()`. They are **not** returned by `$user->teamPermissions()` and do not affect `hasTeamPermission()` checks.
+> The permission codes are stored under the team passed to `getPermissionIds()` and are deleted with it. Use a team that is never deleted.

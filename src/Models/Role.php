@@ -2,7 +2,6 @@
 
 namespace Jurager\Teams\Models;
 
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -27,15 +26,6 @@ class Role extends Model
     public $timestamps = false;
 
     /**
-     * The relationships that should always be loaded.
-     *
-     * @var array
-     */
-    protected $with = [
-        'permissions',
-    ];
-
-    /**
      * The attributes that should be hidden for arrays.
      *
      * @var array<int, string>
@@ -44,24 +34,22 @@ class Role extends Model
         'permissions',
     ];
 
+    /**
+     * Create a new model instance.
+     */
     public function __construct(array $attributes = [])
     {
+        $this->mergeFillable([Config::get('teams.foreign_keys.team_id')]);
+
         parent::__construct($attributes);
-        $this->fillable[] = Config::get('teams.foreign_keys.team_id');
     }
 
     /**
-     * Bootstrap any application services.
+     * Get the table associated with the model.
      */
-    protected static function boot(): void
+    public function getTable(): string
     {
-        parent::boot();
-
-        static::deleting(static function ($role) {
-            $role->permissions()->detach();
-            $role->abilities()->detach();
-        });
-
+        return $this->table ?? Config::get('teams.tables.roles', 'roles');
     }
 
     /**
@@ -69,34 +57,32 @@ class Role extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('team'));
-    }
-
-    /**
-     * Get the permissions that belongs to role.
-     */
-    public function permissions(): MorphToMany
-    {
-        return $this->morphToMany(TeamsFacade::model('permission'), 'entity', 'entity_permission');
-    }
-
-    /**
-     * Get the abilities that belongs to role.
-     */
-    public function abilities(): MorphToMany
-    {
-        return $this->morphToMany(TeamsFacade::model('ability'), 'entity', 'entity_ability')
-            ->withPivot('forbidden')
-            ->withTimestamps();
+        return $this->belongsTo(TeamsFacade::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
      * Get all users associated with the role.
-     *
-     * @throws Exception
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(TeamsFacade::model('team'), Config::get('teams.tables.team_user', 'team_user'), 'role_id', Config::get('teams.foreign_keys.team_id', 'team_id'));
+        return $this->belongsToMany(TeamsFacade::model('user'), TeamsFacade::model('membership'), 'role_id', 'user_id');
+    }
+
+    /**
+     * Get all the permissions assigned to the role.
+     */
+    public function permissions(): MorphToMany
+    {
+        return $this->morphToMany(TeamsFacade::model('permission'), 'entity', Config::get('teams.tables.entity_permission'), 'entity_id', 'permission_id');
+    }
+
+    /**
+     * Get all the abilities assigned to the role.
+     */
+    public function abilities(): MorphToMany
+    {
+        return $this->morphToMany(TeamsFacade::model('ability'), 'entity', Config::get('teams.tables.entity_ability'), 'entity_id', 'ability_id')
+            ->withPivot('forbidden')
+            ->withTimestamps();
     }
 }

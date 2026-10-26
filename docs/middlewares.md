@@ -1,72 +1,59 @@
 ---
-title: Middlewares
+title: Middleware
 weight: 90
 ---
 
-# Middlewares
+# Middleware
 
-The package auto-registers the following middleware aliases when `teams.middleware.register = true`:
+- [Roles and Permissions](#roles-and-permissions)
+- [Selecting the Team](#selecting-the-team)
+- [Abilities](#abilities)
+- [Failed Checks](#failed-checks)
 
-- `role`
-- `permission`
-- `ability`
+The package registers three middleware: `permission`, `role`, and `ability`.
 
-## Unauthorized Handling
-
-The behavior on failed checks is controlled by `teams.middleware.handling`:
-
-- `'abort'` — returns HTTP 403 response.
-- `'redirect'` — redirects to the configured URL (useful for frontend apps).
-
-> [!NOTE]
-> The second middleware argument is treated as the team identifier source. It can be a direct team ID value, a route parameter name, or a request input key — the middleware resolves them in that order.
-
-## Role and Permission Middleware
+## Roles and Permissions
 
 ```php
-// Single role check
-Route::get('/users', fn () => 'ok')
-    ->middleware('role:admin,team_id');
+Route::get('/teams/{team_id}/articles', [ArticleController::class, 'index'])
+    ->middleware('permission:articles.view');
 
-// Multiple roles — OR logic (pipe separator)
-Route::get('/users', fn () => 'ok')
-    ->middleware('role:admin|root,team_id');
-
-// Multiple roles — AND logic (require flag)
-Route::get('/users', fn () => 'ok')
-    ->middleware('role:admin|root,team_id,require');
-
-// Permission OR
-Route::get('/posts', fn () => 'ok')
-    ->middleware('permission:posts.view|posts.edit,team_id');
-
-// Permission AND
-Route::get('/posts', fn () => 'ok')
-    ->middleware('permission:posts.view|posts.edit,team_id,require');
+Route::get('/teams/{team_id}/settings', [SettingsController::class, 'show'])
+    ->middleware('role:admin|manager');
 ```
 
-`team_id` can be resolved from:
-
-1. Middleware argument directly (literal value).
-2. Route parameter with the key matching `teams.foreign_keys.team_id` in config.
-3. Request input (GET/POST).
-
-> [!WARNING]
-> If the team cannot be resolved (no matching route parameter or request input), middleware authorization fails and returns the configured handling response.
-
-## Ability Middleware
+Separate values with `|`; any one of them is enough. Add `require` as the third argument to require all of them:
 
 ```php
-'middleware' => ['ability:articles.edit,App\\Models\\Article,article_id']
+->middleware('permission:articles.edit|articles.publish,team_id,require');
 ```
 
-The middleware:
-1. Resolves the model class from the second argument.
-2. Finds the entity by the ID provided via route parameter or request input (third argument).
-3. Calls `$user->hasTeamAbility($team, $permission, $entity)`.
+## Selecting the Team
 
-> [!WARNING]
-> If ability middleware cannot resolve the entity ID or the model instance (e.g., record not found), authorization **fails**. Make sure the entity ID is always present in the route or request for protected endpoints.
+The team is read from the `team_id` route parameter or request field. Pass a second argument to use another parameter name or a fixed team ID:
+
+```php
+Route::get('/teams/{team}/articles', ...)->middleware('permission:articles.view,team');
+
+Route::get('/admin', ...)->middleware('role:admin,1');
+```
+
+Route model binding is supported. A route parameter always wins over a request field with the same name.
+
+## Abilities
+
+The arguments are the ability, the model class, and the route parameter holding the record:
+
+```php
+Route::get('/teams/{team_id}/articles/{article}/edit', ...)
+    ->middleware('ability:articles.edit,'.Article::class.',article');
+```
+
+When the record has a `team_id` column, it must belong to the team from the route.
+
+## Failed Checks
+
+Guests and users without access get `403 Forbidden`. An unknown team returns `404 Not Found`. To redirect instead, set `middleware.handling` to `redirect` in the [configuration](configuration.md#middleware).
 
 > [!NOTE]
-> Disabling auto-registration (`teams.middleware.register = false`) lets you register the middleware under custom aliases in your application's `bootstrap/app.php`.
+> If the aliases clash with your own middleware, set `middleware.register` to `false` and register the `Jurager\Teams\Middleware` classes under other names.

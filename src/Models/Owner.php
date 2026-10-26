@@ -7,9 +7,9 @@ use JsonSerializable;
 class Owner implements JsonSerializable
 {
     /**
-     * The key identifier for the role.
+     * The key identifier for the role. The owner role is not stored, so it has none.
      */
-    public string|int $id = 1;
+    public string|int|null $id = null;
 
     /**
      * The code of the role.
@@ -29,7 +29,7 @@ class Owner implements JsonSerializable
     /**
      * The role's description.
      */
-    public string $description;
+    public string $description = '';
 
     /**
      * Describe the role.
@@ -50,6 +50,7 @@ class Owner implements JsonSerializable
     {
         return [
             'id' => $this->id,
+            'code' => $this->code,
             'name' => __($this->name),
             'description' => __($this->description),
             'permissions' => $this->permissions,

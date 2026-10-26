@@ -5,8 +5,4 @@ weight: 170
 
 # License
 
-This package is open-sourced software licensed under the MIT license.
-
-See:
-
-- `LICENSE.md`
+Teams is open-source software licensed under the [MIT license](https://github.com/jurager/teams/blob/main/LICENSE.md).

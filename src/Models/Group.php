@@ -20,33 +20,21 @@ class Group extends Model
     protected $fillable = ['code', 'name'];
 
     /**
-     * The relationships that should always be loaded.
-     *
-     * @var array
+     * Create a new model instance.
      */
-    protected $with = [
-        'permissions',
-    ];
-
     public function __construct(array $attributes = [])
     {
-        parent::__construct($attributes);
+        $this->mergeFillable([Config::get('teams.foreign_keys.team_id')]);
 
-        $this->fillable[] = Config::get('teams.foreign_keys.team_id');
+        parent::__construct($attributes);
     }
 
     /**
-     * Bootstrap any application services.
+     * Get the table associated with the model.
      */
-    protected static function boot(): void
+    public function getTable(): string
     {
-        parent::boot();
-
-        static::deleting(static function ($group) {
-            $group->permissions()->detach();
-            $group->abilities()->detach();
-
-        });
+        return $this->table ?? Config::get('teams.tables.groups', 'groups');
     }
 
     /**
@@ -58,58 +46,104 @@ class Group extends Model
     }
 
     /**
-     * Get all group users
+     * Get all the users that belong to the group.
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(TeamsFacade::model('user'), 'group_user', 'group_id', 'user_id');
+        return $this->belongsToMany(TeamsFacade::model('user'), Config::get('teams.tables.group_user'), 'group_id', 'user_id');
     }
 
     /**
-     * Get the permissions that belongs to group.
+     * Get all the permissions assigned to the group.
      */
     public function permissions(): MorphToMany
     {
-        return $this->morphToMany(TeamsFacade::model('permission'), 'entity', 'entity_permission');
+        return $this->morphToMany(TeamsFacade::model('permission'), 'entity', Config::get('teams.tables.entity_permission'), 'entity_id', 'permission_id');
     }
 
     /**
-     * Get the abilities that belongs to group.
+     * Get all the abilities assigned to the group.
      */
     public function abilities(): MorphToMany
     {
-        return $this->morphToMany(TeamsFacade::model('ability'), 'entity', 'entity_ability')
+        return $this->morphToMany(TeamsFacade::model('ability'), 'entity', Config::get('teams.tables.entity_ability'), 'entity_id', 'ability_id')
             ->withPivot('forbidden')
             ->withTimestamps();
     }
 
     /**
-     * Attach user or users to a group
+     * Attach the given users to the group, skipping users outside the group's team.
      */
     public function attachUser(Collection|Model $user): bool
     {
-        // Convert user to collection if it is the only model
-        $users = $user instanceof Collection ? $user : collect([$user]);
+        $users = Collection::wrap($user);
 
-        // Filter only those users who are in the team
-        $filteredUserIds = $users->filter(fn ($item) => $this->team->hasUser($item));
+        if ($users->isEmpty()) {
+            return false;
+        }
 
-        // If there are users left after filtering, synchronize and return the result
-        return $filteredUserIds->isNotEmpty() && $this->users()->syncWithoutDetaching($filteredUserIds->pluck('id')) > 0;
+        return $this->getConnection()->transaction(function () use ($users) {
+            $users = $this->eligibleMembers($users);
+
+            $this->lockForUpdate()->findOrFail($this->getKey());
+
+            $changes = $this->users()->syncWithoutDetaching($users->modelKeys());
+
+            $this->forgetMembershipRelations($users);
+
+            return $changes['attached'] !== [];
+        });
     }
 
     /**
-     * Detach user or users from group
+     * Detach the given users from the group.
      */
     public function detachUser(Collection|Model $user): bool
     {
-        // Convert user to collection if it is the only model
-        $users = $user instanceof Collection ? $user : collect([$user]);
+        $users = Collection::wrap($user);
 
-        // Filter only those users who are in the team
-        $filteredUserIds = $users->filter(fn ($item) => $this->team->hasUser($item));
+        if ($users->isEmpty()) {
+            return false;
+        }
 
-        // If there are any users left after filtering, we execute detach and return the result
-        return $filteredUserIds->isNotEmpty() && $this->users()->detach($filteredUserIds->pluck('id')) > 0;
+        $detached = $this->users()->detach($users->modelKeys());
+
+        $this->forgetMembershipRelations($users);
+
+        if ($this->getConnection()->transactionLevel() === 0) {
+            TeamsFacade::forgetCachedPermissions();
+        }
+
+        return $detached > 0;
+    }
+
+    /**
+     * Keep only the team owner and members among the given users.
+     */
+    protected function eligibleMembers(Collection $users): Collection
+    {
+        if ($this->getAttribute(Config::get('teams.foreign_keys.team_id')) === null) {
+            return $users;
+        }
+
+        $team = $this->team()->lockForUpdate()->firstOrFail();
+        $members = $team->users();
+        $userModel = $members->getRelated();
+
+        $memberIds = $members->whereKey($users->modelKeys())
+            ->pluck($userModel->getQualifiedKeyName())
+            ->push($team->user_id);
+
+        return $users->whereIn($userModel->getKeyName(), $memberIds);
+    }
+
+    /**
+     * Clear the loaded group relations on the group and the given users.
+     */
+    protected function forgetMembershipRelations(Collection $users): void
+    {
+        $this->unsetRelation('users');
+
+        $users->each->unsetRelation('groups');
     }
 }

@@ -5,24 +5,15 @@ weight: 126
 
 # Validation
 
-The package provides one built-in validation rule:
-
-- `Jurager\Teams\Rules\Role`
-
-## Usage
+The `Role` rule checks that the value is a role code of the given team:
 
 ```php
-use Jurager\Teams\Rules\Role as TeamRoleRule;
+use Jurager\Teams\Rules\Role;
 
 $request->validate([
-    'role' => ['required', new TeamRoleRule($team)],
+    'role' => ['required', 'string', new Role($team)],
 ]);
 ```
 
-The rule validates that the provided value exists in `$team->roles` by role **code** (not by ID).
-
-> [!NOTE]
-> The rule checks the `code` field of loaded team roles. Pass the team model instance — the rule loads `$team->roles` internally. If you pass a team that has no roles, any value will fail validation.
-
 > [!WARNING]
-> The rule does not validate that the user making the request is authorized to assign that role. Combine it with an authorization policy or gate check to prevent privilege escalation (e.g., a regular member assigning themselves `admin`).
+> The rule only checks that the role exists. Whether the current user may assign it is up to your [policy](teams.md#authorization).

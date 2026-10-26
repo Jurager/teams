@@ -8,11 +8,13 @@ use Illuminate\Http\Request;
 class Permission extends Teams
 {
     /**
-     * Handle incoming request.
+     * Handle an incoming request.
      */
-    public function handle(Request $request, Closure $next, string|array $permissions, ?string $teamId = null, bool $options = false): mixed
+    public function handle(Request $request, Closure $next, string|array $permissions, ?string $teamId = null, bool|string $options = false): mixed
     {
-        if (! $this->authorization($request, 'permission', $permissions, $teamId, [], $options)) {
+        $user = $request->user();
+
+        if ($user === null || ! $user->hasTeamPermission($this->resolveTeam($request, $teamId), $this->parse($permissions), $this->isRequired($options))) {
             return $this->unauthorized();
         }
 

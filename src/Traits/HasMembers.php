@@ -2,7 +2,7 @@
 
 namespace Jurager\Teams\Traits;
 
-use Exception;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -22,13 +22,12 @@ use Jurager\Teams\Mail\Invitation;
 use Jurager\Teams\Models\Owner;
 use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
 use RuntimeException;
+use Throwable;
 
 trait HasMembers
 {
     /**
      * Get the owner of the team.
-     *
-     * @throws Exception
      */
     public function owner(): BelongsTo
     {
@@ -36,500 +35,443 @@ trait HasMembers
     }
 
     /**
-     * Get all users associated with the team.
-     *
-     * @throws Exception
+     * Get all the users that belong to the team.
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(TeamsFacade::model('user'), TeamsFacade::model('membership'), Config::get('teams.foreign_keys.team_id', 'team_id'))
+        return $this->belongsToMany(TeamsFacade::model('user'), TeamsFacade::model('membership'), Config::get('teams.foreign_keys.team_id'), 'user_id')
             ->withPivot('role_id')
             ->withTimestamps()
             ->as('membership');
     }
 
     /**
-     * Get all permissions linked to the team.
-     *
-     * @throws Exception
+     * Get all the team's permissions.
      */
     public function permissions(): HasMany
     {
-        return $this->hasMany(TeamsFacade::model('permission'), config('teams.foreign_keys.team_id', 'team_id'), 'id');
+        return $this->hasMany(TeamsFacade::model('permission'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Get all abilities linked to the team.
-     *
-     * @throws Exception
+     * Get all the team's abilities.
      */
     public function abilities(): HasMany
     {
-        return $this->hasMany(TeamsFacade::model('ability'), Config::get('teams.foreign_keys.team_id', 'team_id'), 'id');
+        return $this->hasMany(TeamsFacade::model('ability'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Get all roles associated with the team.
-     *
-     * @throws Exception
+     * Get all the team's roles.
      */
     public function roles(): HasMany
     {
-        return $this->hasMany(TeamsFacade::model('role'), Config::get('teams.foreign_keys.team_id', 'team_id'), 'id');
+        return $this->hasMany(TeamsFacade::model('role'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Get all groups associated with the team.
-     *
-     * @throws Exception
+     * Get all the team's groups.
      */
     public function groups(): HasMany
     {
-        return $this->hasMany(TeamsFacade::model('group'), Config::get('teams.foreign_keys.team_id', 'team_id'), 'id');
+        return $this->hasMany(TeamsFacade::model('group'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Get all pending invitations for the team.
-     *
-     * @throws Exception
+     * Get all the pending invitations for the team.
      */
     public function invitations(): HasMany
     {
-        return $this->hasMany(TeamsFacade::model('invitation'), Config::get('teams.foreign_keys.team_id', 'team_id'), 'id');
+        return $this->hasMany(TeamsFacade::model('invitation'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Retrieve all users in the team, including the owner.
+     * Get all the team's users including its owner.
      */
     public function allUsers(): Collection
     {
-        return $this->users->merge([$this->owner]);
+        return $this->users->merge(array_filter([$this->owner]));
     }
 
     /**
-     * Check if the team includes a given user.
+     * Determine if the given user belongs to the team.
      */
-    public function hasUser(object $user): bool
+    public function hasUser(Model $user): bool
     {
-        return $this->users->contains($user) || $user->ownsTeam($this);
+        return $user->ownsTeam($this) || $this->users()->whereKey($user->getKey())->exists();
     }
 
     /**
-     * Adds a user to the team with a specified role.
-     *
-     * @param  object  $user  The user model instance to be added to the team.
-     * @param  string  $role_keyword  The role ID or code that will be assigned to the user within the team.
-     *
-     * @throws Exception
-     */
-    public function addUser(object $user, string $role_keyword): void
-    {
-        if ($user->id === $this->owner->id) {
-            throw new RuntimeException(__('Owner already belongs to the team.'));
-        }
-
-        if ($this->hasUser($user)) {
-            throw new RuntimeException(__('User already belongs to the team.'));
-        }
-
-        $role = $this->getRole($role_keyword);
-
-        if (! $role) {
-            throw new RuntimeException(__('Unable to find a role :role within team.', ['role' => $role_keyword]));
-        }
-
-        // Dispatch an event before adding the user
-        TeamMemberAdding::dispatch($this, $user);
-
-        // Attach the user to the team
-        $this->users()->attach($user, ['role_id' => $role->id]);
-
-        // Dispatch an event after user is added to the team
-        TeamMemberAdded::dispatch($this->fresh(), $user);
-    }
-
-    /**
-     * Update the role of a specific user within the team.
-     *
-     * @param  object  $user  The user model instance to be updated in the team.
-     * @param  string  $role_keyword  The role ID or code that will be assigned to the user within the team.
-     *
-     * @throws Exception
-     */
-    public function updateUser(object $user, string $role_keyword): void
-    {
-        if ($user->id === $this->owner->id) {
-            throw new RuntimeException(__('You may not change the team owner.'));
-        }
-
-        if (! $this->hasUser($user)) {
-            throw new RuntimeException(__('User not belongs to the team.'));
-        }
-
-        $role = $this->getRole($role_keyword);
-
-        if (! $role) {
-            throw new RuntimeException(__('Unable to find a role :role within team.', ['role' => $role_keyword]));
-        }
-
-        // Update the user role for the team
-        $this->users()->updateExistingPivot($user->id, ['role_id' => $role->id]);
-
-        // Dispatch event after updating the user role
-        TeamMemberUpdated::dispatch($this->fresh(), $user->fresh());
-    }
-
-    /**
-     * Remove a user from the team.
-     *
-     * @param  object  $user  The user instance to remove from the team.
-     *
-     * @throws Exception
-     */
-    public function deleteUser(object $user): void
-    {
-        if ($user->id === $this->owner->id) {
-            throw new RuntimeException(__('You may not remove the team owner.'));
-        }
-
-        if (! $this->hasUser($user)) {
-            throw new RuntimeException(__('User not belongs to the team.'));
-        }
-
-        // Dispatch event before removing the user
-        TeamMemberRemoving::dispatch($this, $user);
-
-        // Detach the user from the team
-        $this->users()->detach($user->id);
-
-        // Dispatch event after removing the user
-        TeamMemberRemoved::dispatch($this->fresh(), $user);
-    }
-
-    /**
-     * Create an invitation and send a message with a link to accept it
-     *
-     * @throws Exception
-     */
-    public function inviteUser(string $email, int|string $keyword): void
-    {
-        if ($this->hasUserWithEmail($email)) {
-            throw new RuntimeException('This user already belongs to the team.');
-        }
-
-        if (! $role = $this->getRole($keyword)) {
-            throw new RuntimeException("The role '.$keyword.' is not exists or not belongs to the team.");
-        }
-
-        // Dispatch event before inviting the user
-        TeamMemberInviting::dispatch($this, $email, $role);
-
-        $invitation = $this->invitations()->create([
-            'email' => $email,
-            'role_id' => $role->id,
-        ]);
-
-        // Dispatch event after inviting the user
-        TeamMemberInvited::dispatch($this, $email, $role);
-
-        // Send invitation email
-        Mail::to($email)->send(new Invitation($invitation));
-    }
-
-    /**
-     * Accept the invitation to the team
-     *
-     * @throws Exception
-     */
-    public function inviteAccept(int $invitation_id): void
-    {
-        if (! $invitation = $this->invitations()->find($invitation_id)) {
-            throw new RuntimeException('Invitation not found.');
-        }
-
-        if (! $user = $invitation->user) {
-            throw new RuntimeException('Invited user not found.');
-        }
-
-        // Trying to add user to the team
-        $this->addUser($user, $invitation->role_id);
-
-        // Remove the invitation
-        $invitation->delete();
-    }
-
-    /**
-     * Check if the team includes a user with a specific email.
+     * Determine if a user with the given email belongs to the team.
      */
     public function hasUserWithEmail(string $email): bool
     {
-        return $this->allUsers()->contains(fn ($user) => $user->email === $email);
+        return $this->owner()->where('email', $email)->exists() || $this->users()->where('email', $email)->exists();
     }
 
     /**
-     * Get the role of a specific user within the team.
-     *
-     * @throws Exception
+     * Add a user to the team with the given role.
      */
-    public function userRole(object $user): ?object
+    public function addUser(Model $user, int|string $roleKeyword): void
     {
-        return $this->owner === $user ? new Owner() : $this->getRole($this->users->firstWhere('id', $user->id)->membership->role->id ?? null);
+        $this->getConnection()->transaction(function () use ($user, $roleKeyword) {
+            $this->lockMemberships();
+
+            throw_if($this->hasUser($user), RuntimeException::class, 'User already belongs to the team.');
+
+            $role = $this->findOrFailByKeyword($this->roles(), $roleKeyword);
+
+            TeamMemberAdding::dispatch($this, $user);
+
+            $this->users()->attach($user, ['role_id' => $role->getKey()]);
+            $this->forgetMemberRelations($user);
+
+            TeamMemberAdded::dispatch($this, $user);
+        });
     }
 
     /**
-     * Check if a user has a specific permission in the team.
+     * Change the role of the given team member.
      */
-    public function userHasPermission(object $user, string|array $permissions, bool $require = false): bool
+    public function updateUser(Model $user, int|string $roleKeyword): void
+    {
+        $this->getConnection()->transaction(function () use ($user, $roleKeyword) {
+            $this->lockMemberships();
+            $this->ensureMutableMember($user);
+
+            $role = $this->findOrFailByKeyword($this->roles(), $roleKeyword);
+
+            $this->users()->updateExistingPivot($user->getKey(), ['role_id' => $role->getKey()]);
+            $this->forgetMemberRelations($user);
+
+            TeamMemberUpdated::dispatch($this, $user);
+        });
+    }
+
+    /**
+     * Remove the given user from the team, along with their team groups and abilities.
+     */
+    public function deleteUser(Model $user): void
+    {
+        $this->getConnection()->transaction(function () use ($user) {
+            $this->lockMemberships();
+            $this->ensureMutableMember($user);
+
+            TeamMemberRemoving::dispatch($this, $user);
+
+            $groups = $this->groups();
+            $abilities = $user->abilities();
+
+            $user->groups()->detach($groups->pluck($groups->getRelated()->getKeyName()));
+
+            $abilities->detach(
+                $abilities->whereBelongsTo($this, 'team')
+                    ->pluck($abilities->getRelated()->getQualifiedKeyName())
+            );
+
+            $this->users()->detach($user->getKey());
+            $this->forgetMemberRelations($user);
+
+            TeamMemberRemoved::dispatch($this, $user);
+        });
+    }
+
+    /**
+     * Get the role of the given user on the team.
+     */
+    public function userRole(Model $user): Model|Owner|null
+    {
+        return $user->teamRole($this);
+    }
+
+    /**
+     * Determine if the given user has the given permissions on the team.
+     */
+    public function userHasPermission(Model $user, string|array $permissions, bool $require = false): bool
     {
         return $user->hasTeamPermission($this, $permissions, $require);
     }
 
     /**
-     * Check if the team has a specific role by ID or code or any roles at all
-     *
-     * @param  int|string|null  $keyword  The role ID or code to check for. If null, checks for any roles.
-     *
-     * @throws Exception
+     * Invite a user to the team by email.
+     */
+    public function inviteUser(string $email, int|string $keyword): void
+    {
+        $this->ensureInvitationsEnabled();
+
+        $this->getConnection()->transaction(function () use ($email, $keyword) {
+            $this->lockMemberships();
+
+            throw_if($this->hasUserWithEmail($email), RuntimeException::class, 'This user already belongs to the team.');
+
+            $role = $this->findOrFailByKeyword($this->roles(), $keyword);
+
+            TeamMemberInviting::dispatch($this, $email, $role);
+
+            $invitation = $this->invitations()->updateOrCreate(['email' => $email], ['role_id' => $role->getKey()]);
+
+            TeamMemberInvited::dispatch($this, $email, $role);
+
+            $this->getConnection()->afterCommit(fn () => Mail::to($email)->send(new Invitation($invitation)));
+        });
+    }
+
+    /**
+     * Accept the given invitation and add the invited user to the team.
+     * @throws Throwable
+     */
+    public function inviteAccept(int|string $invitationId): void
+    {
+        $this->ensureInvitationsEnabled();
+
+        $this->getConnection()->transaction(function () use ($invitationId) {
+            $this->lockMemberships();
+
+            $invitation = $this->invitations()->lockForUpdate()->findOrFail($invitationId);
+            $user = $invitation->user ?? throw new RuntimeException('Invited user not found.');
+
+            if (! $this->hasUser($user)) {
+                $this->addUser($user, $invitation->role_id);
+            }
+
+            $invitation->delete();
+        });
+    }
+
+    /**
+     * Determine if the team has any role, or the role with the given id or code.
      */
     public function hasRole(int|string|null $keyword = null): bool
     {
-        if ($keyword === null) {
-            return $this->roles()->exists();
-        }
-
-        return $this->roles()->where((is_numeric($keyword) ? 'id' : 'code'), $keyword)->exists();
+        return $keyword === null
+            ? $this->roles()->exists()
+            : $this->whereKeyword($this->roles(), $keyword)->exists();
     }
 
     /**
-     * Retrieves a role by its ID or code.
-     *
-     * @param  int|string  $keyword  The ID or code of the role to search for.
-     *
-     * @throws Exception
+     * Find a team role by id or code.
      */
-    public function getRole(int|string $keyword): ?object
+    public function getRole(int|string $keyword): ?Model
     {
-        return $this->roles()->firstWhere((is_numeric($keyword) ? 'id' : 'code'), $keyword);
+        return $this->whereKeyword($this->roles(), $keyword)->first();
     }
 
     /**
-     * Add a role to the team with specific permissions.
-     *
-     * @param  string  $code  Unique identifier for the role, used for retrieval and management.
-     * @param  array  $permissions  List of permissions codes to associate with this role.
-     * @param  string|null  $name  Optional name for the role. Defaults to a formatted version of `$code` if not provided.
-     * @param  string|null  $description  Optional description for the role to provide additional context.
-     *
-     * @throws Exception
+     * Create a new team role with the given permissions.
      */
-    public function addRole(string $code, array $permissions, ?string $name = null, ?string $description = null): object
+    public function addRole(string $code, array $permissions, ?string $name = null, ?string $description = null): Model
     {
-        if ($this->hasRole($code)) {
-            throw new RuntimeException("Role with code '$code' already exists.");
-        }
+        return $this->getConnection()->transaction(function () use ($code, $permissions, $name, $description) {
+            throw_if($this->roles()->where('code', $code)->exists(), RuntimeException::class, "Role with code '{$code}' already exists.");
 
-        $role = $this->roles()->create([
-            'code' => $code,
-            'name' => $name ?? Str::studly($code),
-            'description' => $description,
-        ]);
+            $role = $this->roles()->create([
+                'code' => $code,
+                'name' => $name ?? Str::studly($code),
+                'description' => $description,
+            ]);
 
-        $role->permissions()->sync($this->getPermissionIds($permissions));
+            $role->permissions()->sync($this->getPermissionIds($permissions));
 
-        return $role;
+            $this->unsetRelation('roles');
+
+            return $role;
+        });
     }
 
     /**
-     * Update an existing role with new permissions.
-     *
-     * @param  int|string  $keyword  The role ID or code to update
-     * @param  array  $permissions  An array of permissions codes to assign to the role.
-     * @param  string|null  $name  Optional name for the role. Defaults to a formatted version of `$code` if not provided.
-     * @param  string|null  $description  Optional description for the role to provide additional context.
-     *
-     * @throws Exception
+     * Update the given team role. The description is only changed when passed explicitly.
      */
-    public function updateRole(int|string $keyword, array $permissions, ?string $name = null, ?string $description = null): object|bool
+    public function updateRole(int|string $keyword, ?array $permissions = null, ?string $name = null, ?string $description = null): Model
     {
-        $role = $this->getRole($keyword);
+        $updateDescription = func_num_args() >= 4;
 
-        // Throw an exception if the role is not found
-        if (! $role) {
-            throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
-        }
+        return $this->getConnection()->transaction(function () use ($keyword, $permissions, $name, $description, $updateDescription) {
+            $role = $this->findOrFailByKeyword($this->roles(), $keyword);
 
-        $role->update([
-            'name' => $name ?? $role->name,
-            'description' => $description ?? $role->description,
-        ]);
+            $attributes = ['name' => $name ?? $role->name];
 
-        $role->permissions()->sync($this->getPermissionIds($permissions));
+            if ($updateDescription) {
+                $attributes['description'] = $description;
+            }
 
-        return $role;
+            $role->update($attributes);
+
+            if ($permissions !== null) {
+                $role->permissions()->sync($this->getPermissionIds($permissions));
+            }
+
+            $this->unsetRelation('roles');
+
+            return $role->unsetRelation('permissions');
+        });
     }
 
     /**
-     * Delete a role from the team.
-     *
-     * @param  int|string  $keyword  The role ID or code to delete
-     *
-     * @throws Exception
+     * Delete the given team role.
      */
     public function deleteRole(int|string $keyword): bool
     {
-        $role = $this->getRole($keyword);
+        $role = $this->findOrFailByKeyword($this->roles(), $keyword);
 
-        if (! $role) {
-            throw new ModelNotFoundException("Role with id/code '$keyword' not found.");
-        }
-
-        return $role->delete();
+        return tap($role->deleteOrFail(), fn () => $this->unsetRelation('roles'));
     }
 
     /**
-     * Check if the team has a specific group by ID or code or any groups at all
-     *
-     * @param  int|string|null  $keyword  The role ID or code to check for. If null, checks for any groups.
-     *
-     * @throws Exception
+     * Determine if the team has any group, or the group with the given id or code.
      */
     public function hasGroup(int|string|null $keyword = null): bool
     {
-        if ($keyword === null) {
-            return $this->groups()->exists();
-        }
-
-        return $this->groups()->where((is_numeric($keyword) ? 'id' : 'code'), $keyword)->exists();
+        return $keyword === null
+            ? $this->groups()->exists()
+            : $this->whereKeyword($this->groups(), $keyword)->exists();
     }
 
     /**
-     * Get a group by id or code.
-     *
-     * @param  int|string  $keyword  The ID or code of the role to search for.
-     *
-     * @throws Exception
+     * Find a team group by id or code.
      */
-    public function getGroup(int|string $keyword): ?object
+    public function getGroup(int|string $keyword): ?Model
     {
-        return $this->groups()->firstWhere((is_numeric($keyword) ? 'id' : 'code'), $keyword);
+        return $this->whereKeyword($this->groups(), $keyword)->first();
     }
 
     /**
-     * Add a new group to the team.
-     *
-     * @param  string  $code  The unique code of the group.
-     * @param  array  $permissions  An array of permissions codes to assign to the group.
-     * @param  string|null  $name  Optional name for the group. Defaults to a formatted version of `$code` if not provided.
-     *
-     * @throws Exception
+     * Create a new team group with the given permissions.
      */
-    public function addGroup(string $code, array $permissions = [], ?string $name = null): object
+    public function addGroup(string $code, array $permissions = [], ?string $name = null): Model
     {
-        if ($this->hasGroup($code)) {
-            throw new RuntimeException("Group with code '$code' already exists.");
-        }
+        return $this->getConnection()->transaction(function () use ($code, $permissions, $name) {
+            throw_if($this->groups()->where('code', $code)->exists(), RuntimeException::class, "Group with code '{$code}' already exists.");
 
-        $group = $this->groups()->create([
-            'code' => $code,
-            'name' => $name ?? Str::studly($code),
-        ]);
+            $group = $this->groups()->create([
+                'code' => $code,
+                'name' => $name ?? Str::studly($code),
+            ]);
 
-        $group->permissions()->sync($this->getPermissionIds($permissions));
+            $group->permissions()->sync($this->getPermissionIds($permissions));
 
-        return $group;
+            $this->unsetRelation('groups');
+
+            return $group;
+        });
     }
 
     /**
-     * Update an existing group with new permissions.
-     *
-     * @param  int|string  $keyword  The group ID or code to update
-     * @param  array  $permissions  An array of permissions codes to assign to the group.
-     * @param  string|null  $name  Optional name for the group. Defaults to a formatted version of `$code` if not provided.
-     *
-     * @throws Exception
+     * Update the given team group.
      */
-    public function updateGroup(int|string $keyword, array $permissions = [], ?string $name = null): object|bool
+    public function updateGroup(int|string $keyword, ?array $permissions = null, ?string $name = null): Model
     {
-        // Fetch the group by ID or code
-        $group = $this->getGroup($keyword);
+        return $this->getConnection()->transaction(function () use ($keyword, $permissions, $name) {
+            $group = $this->findOrFailByKeyword($this->groups(), $keyword);
 
-        // Throw an exception if the group is not found
-        if (! $group) {
-            throw new ModelNotFoundException("Group with id/code '$keyword' not found.");
-        }
+            $group->update(['name' => $name ?? $group->name]);
 
-        $group->update([
-            'name' => $name ?? $group->name,
-        ]);
+            if ($permissions !== null) {
+                $group->permissions()->sync($this->getPermissionIds($permissions));
+            }
 
-        $group->permissions()->sync($this->getPermissionIds($permissions));
+            $this->unsetRelation('groups');
 
-        return $group;
+            return $group->unsetRelation('permissions');
+        });
     }
 
     /**
-     * Remove a group from the team by code.
-     *
-     * @param  int|string  $keyword  The ID or code of the group to delete.
-     *
-     * @throws Exception
+     * Delete the given team group.
      */
     public function deleteGroup(int|string $keyword): bool
     {
-        $group = $this->getGroup($keyword);
+        $group = $this->findOrFailByKeyword($this->groups(), $keyword);
 
-        if (! $group) {
-            throw new ModelNotFoundException("Group with id/code '$keyword' not found.");
-        }
-
-        return $group->delete();
+        return tap($group->deleteOrFail(), fn () => $this->unsetRelation('groups'));
     }
 
     /**
-     * Purge all the team's resources.
+     * Resolve permission codes to ids, creating any that are missing.
      *
-     * @throws Exception
-     */
-    public function purge(): void
-    {
-        $this->users()->detach();
-        $this->delete();
-    }
-
-    /**
-     * Get permissions IDs for a list of permissions.
-     *
-     * @param  array  $codes  An array of permission codes to retrieve or create IDs for.
-     *
-     * @throws Exception
+     * @param  list<string>  $codes
+     * @return list<int|string>
      */
     public function getPermissionIds(array $codes): array
     {
-        $teamIdField = Config::get('teams.foreign_keys.team_id', 'team_id');
+        $codes = array_values(array_unique($codes));
 
-        $permissions = TeamsFacade::model('permission')::query()
-            ->where($teamIdField, $this->id)
-            ->whereIn('code', $codes)
-            ->pluck('id', 'code')
-            ->all();
-
-        $newPermissions = array_diff($codes, array_keys($permissions));
-
-        if (! empty($newPermissions)) {
-
-            $items = array_map(fn ($code) => [$teamIdField => $this->id, 'code' => $code], $newPermissions);
-
-            TeamsFacade::model('permission')::query()->insert($items);
-
-            $permissions = TeamsFacade::model('permission')::query()
-                ->where($teamIdField, $this->id)
-                ->whereIn('code', $codes)
-                ->pluck('id', 'code')
-                ->all();
-
+        if ($codes === []) {
+            return [];
         }
 
-        return array_values($permissions);
+        $permissions = $this->permissions();
+        $teamKey = $permissions->getForeignKeyName();
 
+        $permissions->upsert(array_map(fn ($code) => [$teamKey => $this->getKey(), 'code' => $code], $codes), [$teamKey, 'code'], ['code']);
+
+        return $permissions->whereIn('code', $codes)->pluck($permissions->getRelated()->getKeyName())->all();
+    }
+
+    /**
+     * Remove all users from the team and delete it.
+     */
+    public function purge(): void
+    {
+        $this->getConnection()->transaction(function () {
+            $this->users()->detach();
+
+            $this->delete();
+        });
+    }
+
+    /**
+     * Constrain the relation to the record with the given id or code. Numeric keywords are ids.
+     */
+    protected function whereKeyword(HasMany $relation, int|string $keyword): HasMany
+    {
+        return $relation->where(is_numeric($keyword) ? $relation->getRelated()->getKeyName() : 'code', $keyword);
+    }
+
+    /**
+     * Find the related record with the given id or code, or throw an exception.
+     *
+     * @throws ModelNotFoundException
+     */
+    protected function findOrFailByKeyword(HasMany $relation, int|string $keyword): Model
+    {
+        return $this->whereKeyword($relation, $keyword)->first()
+            ?? throw (new ModelNotFoundException)->setModel($relation->getRelated()::class, [$keyword]);
+    }
+
+    /**
+     * Lock the team row so membership changes are serialized.
+     */
+    protected function lockMemberships(): void
+    {
+        $this->lockForUpdate()->findOrFail($this->getKey());
+    }
+
+    /**
+     * Ensure the given user is a team member other than the owner.
+     * @throws Throwable
+     */
+    protected function ensureMutableMember(Model $user): void
+    {
+        throw_if($user->ownsTeam($this), RuntimeException::class, 'The team owner cannot be changed or removed.');
+        throw_unless($this->hasUser($user), RuntimeException::class, 'User does not belong to the team.');
+    }
+
+    /**
+     * Ensure team invitations are enabled.
+     * @throws Throwable
+     */
+    protected function ensureInvitationsEnabled(): void
+    {
+        throw_unless(Config::get('teams.invitations.enabled'), RuntimeException::class, 'Team invitations are disabled.');
+    }
+
+    /**
+     * Clear the cached membership relations on the team and the given user.
+     */
+    protected function forgetMemberRelations(Model $user): void
+    {
+        $this->unsetRelation('users');
+
+        $user->unsetRelation('teams')->unsetRelation('groups')->unsetRelation('abilities');
     }
 }

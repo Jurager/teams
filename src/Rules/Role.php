@@ -4,11 +4,16 @@ namespace Jurager\Teams\Rules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Eloquent\Model;
 
 class Role implements ValidationRule
 {
-    public function __construct(private $team)
+    /**
+     * Create a new rule instance.
+     */
+    public function __construct(protected Model $team)
     {
+        //
     }
 
     /**
@@ -16,7 +21,7 @@ class Role implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (! $this->team->roles->contains('code', $value)) {
+        if (! is_scalar($value) || ! $this->team->roles()->where('code', (string) $value)->exists()) {
             $fail('The :attribute must be a valid role.');
         }
     }

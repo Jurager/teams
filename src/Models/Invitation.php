@@ -2,7 +2,6 @@
 
 namespace Jurager\Teams\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Config;
@@ -15,13 +14,24 @@ class Invitation extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['team_id', 'role_id', 'email'];
+    protected $fillable = ['role_id', 'email'];
 
+    /**
+     * Create a new model instance.
+     */
     public function __construct(array $attributes = [])
     {
-        parent::__construct($attributes);
+        $this->mergeFillable([Config::get('teams.foreign_keys.team_id')]);
 
-        $this->fillable[] = Config::get('teams.foreign_keys.team_id');
+        parent::__construct($attributes);
+    }
+
+    /**
+     * Get the table associated with the model.
+     */
+    public function getTable(): string
+    {
+        return $this->table ?? Config::get('teams.tables.invitations', 'invitations');
     }
 
     /**

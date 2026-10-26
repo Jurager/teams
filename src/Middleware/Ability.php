@@ -8,14 +8,31 @@ use Illuminate\Http\Request;
 class Ability extends Teams
 {
     /**
-     * Handle incoming request.
+     * Handle an incoming request.
+     *
+     * Passes when the user has any of the given abilities ("edit|delete") on the entity.
      */
-    public function handle(Request $request, Closure $next, string $ability, ...$models): mixed
+    public function handle(Request $request, Closure $next, string $abilities, ...$models): mixed
     {
-        if (! $this->authorization($request, 'ability', $ability, null, $models)) {
+        $user = $request->user();
+
+        if ($user === null) {
             return $this->unauthorized();
         }
 
-        return $next($request);
+        $team = $this->resolveTeam($request, null);
+        $entity = $this->resolveEntity($request, $models);
+
+        if ($entity === null || ! $this->belongsToTeam($entity, $team)) {
+            return $this->unauthorized();
+        }
+
+        foreach ($this->parse($abilities) as $ability) {
+            if ($user->hasTeamAbility($team, $ability, $entity)) {
+                return $next($request);
+            }
+        }
+
+        return $this->unauthorized();
     }
 }

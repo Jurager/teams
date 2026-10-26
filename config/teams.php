@@ -13,24 +13,69 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Middleware Configuration
+    | Models
     |--------------------------------------------------------------------------
-    | Customize middleware behavior and handling of unauthorized requests.
+    |
+    | Eloquent models used by the teams package.
+    |
     */
+
+    'models' => [
+        'user' => User::class,
+        'team' => Team::class,
+        'membership' => Membership::class,
+        'invitation' => Invitation::class,
+        'role' => Role::class,
+        'permission' => Permission::class,
+        'ability' => Ability::class,
+        'group' => Group::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Database
+    |--------------------------------------------------------------------------
+    |
+    | Table names and foreign keys used by the package.
+    |
+    */
+
+    'tables' => [
+        'teams' => 'teams',
+        'team_user' => 'team_user',
+        'invitations' => 'invitations',
+        'roles' => 'roles',
+        'permissions' => 'permissions',
+        'abilities' => 'abilities',
+        'groups' => 'groups',
+        'group_user' => 'group_user',
+        'entity_permission' => 'entity_permission',
+        'entity_ability' => 'entity_ability',
+    ],
+
+    'foreign_keys' => [
+        'team_id' => 'team_id',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Middleware
+    |--------------------------------------------------------------------------
+    |
+    | Middleware registration and unauthorized access handling.
+    |
+    */
+
     'middleware' => [
-
-        // Whether to automatically register team middleware in the service provider.
         'register' => true,
-
-        // Response method upon unauthorized access: abort or redirect.
         'handling' => 'abort',
 
-        // Handlers for unauthorized access, aligned with the handling method.
         'handlers' => [
             'abort' => [
                 'code' => 403,
                 'message' => 'User does not have any of the necessary access rights.',
             ],
+
             'redirect' => [
                 'url' => '/home',
                 'message' => [
@@ -43,84 +88,54 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Model Bindings
+    | Request
     |--------------------------------------------------------------------------
-    | Define the models used for team functionalities and role-based access.
+    |
+    | Permission decision caching within a single execution context.
+    |
     */
-    'models' => [
-        'user' => User::class,
-        'team' => Team::class,
-        'ability' => Ability::class,
-        'permission' => Permission::class,
-        'group' => Group::class,
-        'invitation' => Invitation::class,
-        'membership' => Membership::class,
-        'role' => Role::class,
-    ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Database Tables
-    |--------------------------------------------------------------------------
-    | Specify table names linked to team-related models.
-    */
-    'tables' => [
-        'teams' => 'teams',
-        'team_user' => 'team_user',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Foreign Keys
-    |--------------------------------------------------------------------------
-    | Foreign keys for table relationships in package models.
-    */
-    'foreign_keys' => [
-        'team_id' => 'team_id',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Request Lifecycle
-    |--------------------------------------------------------------------------
-    | Configure request lifecycle options
-    */
     'request' => [
-        // Enabling this option caches the permission decision for the request
         'cache_decisions' => false,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Invitations
-    |--------------------------------------------------------------------------
-    | Configures the team invitation feature, allowing users to be invited to join teams.
-    */
-    'invitations' => [
-
-        'enabled' => true,
-
-        'routes' => [
-            'register' => true,
-            'url' => '/invitation/{invitation_id}/accept',
-            'prefix' => '/',
-            'middleware' => 'web',
-        ],
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Wildcard Permissions
     |--------------------------------------------------------------------------
-    | Configure wildcard permission nodes, allowing you to specify super admin
-    | permission node(s) that allows a user to perform all actions on a team.
+    |
+    | Permission patterns that grant unrestricted team access.
+    |
     */
+
     'wildcards' => [
         'enabled' => false,
+
         'nodes' => [
             '*',
             '*.*',
             'all',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Invitations
+    |--------------------------------------------------------------------------
+    |
+    | Team invitations, expiration and route registration.
+    |
+    */
+
+    'invitations' => [
+        'enabled' => true,
+        'expire' => 7 * 24 * 60,
+
+        'routes' => [
+            'register' => true,
+            'url' => '/invitation/{invitation_id}/accept',
+            'prefix' => '/',
+            'middleware' => ['web', 'auth'],
         ],
     ],
 

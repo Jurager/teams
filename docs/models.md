@@ -5,43 +5,57 @@ weight: 130
 
 # Models
 
-Default model bindings are configured in `teams.models`.
+- [Package Models](#package-models)
+- [Custom Models](#custom-models)
+- [The Owner Role](#the-owner-role)
 
-## Core Models
+## Package Models
 
-| Model        | Purpose                                                                 |
-|--------------|-------------------------------------------------------------------------|
-| `Team`       | Team record; loads `roles.permissions` and `groups.permissions` by default |
-| `Role`       | Role with code, name, description; detaches permissions/abilities on delete |
-| `Permission` | Permission code scoped to a team                                        |
-| `Group`      | User group within a team (or global if `team_id = null`)                |
-| `Ability`    | Entity-level allow/forbid rule                                          |
-| `Membership` | Pivot model for `team_user`; eager-loads `role` relation                |
-| `Invitation` | Pending invite record; resolves `user()` relation by email              |
-| `Owner`      | Synthetic pseudo-model returned by `teamRole()` for team owners         |
+| Model        | Relations                                                                      |
+|--------------|--------------------------------------------------------------------------------|
+| `Team`       | `owner`, `users`, `roles`, `groups`, `permissions`, `abilities`, `invitations` |
+| `Role`       | `team`, `users`, `permissions`, `abilities`                                    |
+| `Group`      | `team`, `users`, `permissions`, `abilities`                                    |
+| `Permission` | `team`, `roles`, `groups`                                                      |
+| `Ability`    | `team`, `entity`, `users`, `roles`, `groups`                                   |
+| `Invitation` | `team`, `role`, `user`                                                         |
+| `Membership` | `team`, `user`, `role`                                                         |
 
-> [!NOTE]
-> `Owner` is not an Eloquent model and is not stored in the database. It is a lightweight object with wildcard permission `['*']` returned whenever the queried user is the team owner. Check `$role instanceof Owner` if you need to distinguish owners in your code.
-
-> [!WARNING]
-> `Role` and `Group` run `detach` on related permissions and abilities before deleting. If you override these models, ensure the `boot` / `deleting` hooks are preserved, otherwise orphaned records accumulate in `entity_permission` and `entity_ability`.
-
-> [!NOTE]
-> `Membership` eager-loads the `role` relation. Accessing `$user->teams` returns `Membership` pivot instances, so `$user->teams->first()->membership->role` resolves without an extra query when teams are loaded with their pivot.
+All models live in the `Jurager\Teams\Models` namespace.
 
 ## Custom Models
 
-Override any model in config:
+Extend the package model and register your class in the [configuration](configuration.md#models):
 
 ```php
-// config/teams.php
+namespace App\Models;
+
+use Jurager\Teams\Models\Team as BaseTeam;
+
+class Team extends BaseTeam
+{
+    protected $fillable = ['user_id', 'name', 'slug'];
+}
+```
+
+```php
 'models' => [
     'team' => App\Models\Team::class,
 ],
 ```
 
-> [!WARNING]
-> When replacing a default model, keep the same relationships and method contracts. Missing relations (e.g., `roles()`, `groups()`, `owner()`) will cause `RuntimeException` or silent failures in trait methods that depend on them.
+If your team model must extend another class, use the `Jurager\Teams\Traits\HasMembers` trait instead. A custom membership model must extend `Membership` or Eloquent's `Pivot`.
 
-> [!WARNING]
-> Custom models must use the same table names defined in `teams.tables.*`, or explicitly override `getTable()`. Mismatched table names are a common source of "table not found" errors after customization.
+> [!NOTE]
+> Delete roles and groups with `deleteOrFail()`, so their permissions and rules are removed in the same transaction. `deleteRole()` and `deleteGroup()` already do this.
+
+## The Owner Role
+
+For the team owner, `teamRole()` returns an `Owner` object instead of a `Role` model. It is not stored in the database:
+
+```php
+$role = $owner->teamRole($team);
+
+$role->code;        // 'owner'
+$role->permissions; // ['*']
+```

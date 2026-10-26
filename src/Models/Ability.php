@@ -4,6 +4,7 @@ namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
@@ -15,13 +16,24 @@ class Ability extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['id', 'permission_id', 'title', 'entity_id', 'entity_type'];
+    protected $fillable = ['permission_id', 'title', 'entity_id', 'entity_type'];
 
+    /**
+     * Create a new model instance.
+     */
     public function __construct(array $attributes = [])
     {
-        parent::__construct($attributes);
+        $this->mergeFillable([Config::get('teams.foreign_keys.team_id')]);
 
-        $this->fillable[] = Config::get('teams.foreign_keys.team_id', 'team_id');
+        parent::__construct($attributes);
+    }
+
+    /**
+     * Get the table associated with the model.
+     */
+    public function getTable(): string
+    {
+        return $this->table ?? Config::get('teams.tables.abilities', 'abilities');
     }
 
     /**
@@ -29,7 +41,7 @@ class Ability extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('team'));
+        return $this->belongsTo(TeamsFacade::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
@@ -37,7 +49,7 @@ class Ability extends Model
      */
     public function users(): MorphToMany
     {
-        return $this->morphedByMany(TeamsFacade::model('user'), 'entity', 'entity_ability')
+        return $this->morphedByMany(TeamsFacade::model('user'), 'entity', Config::get('teams.tables.entity_ability'), 'ability_id', 'entity_id')
             ->withPivot('forbidden')
             ->withTimestamps();
     }
@@ -47,7 +59,7 @@ class Ability extends Model
      */
     public function groups(): MorphToMany
     {
-        return $this->morphedByMany(TeamsFacade::model('group'), 'entity', 'entity_ability')
+        return $this->morphedByMany(TeamsFacade::model('group'), 'entity', Config::get('teams.tables.entity_ability'), 'ability_id', 'entity_id')
             ->withPivot('forbidden')
             ->withTimestamps();
     }
@@ -57,8 +69,16 @@ class Ability extends Model
      */
     public function roles(): MorphToMany
     {
-        return $this->morphedByMany(TeamsFacade::model('role'), 'entity', 'entity_ability')
+        return $this->morphedByMany(TeamsFacade::model('role'), 'entity', Config::get('teams.tables.entity_ability'), 'ability_id', 'entity_id')
             ->withPivot('forbidden')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the record that the ability applies to.
+     */
+    public function entity(): MorphTo
+    {
+        return $this->morphTo();
     }
 }

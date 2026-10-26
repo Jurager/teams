@@ -5,42 +5,24 @@ weight: 20
 
 # Installation
 
-Install the package, publish assets, and run migrations.
+- [Installing the Package](#installing-the-package)
+- [Preparing the User Model](#preparing-the-user-model)
 
-## Install
+## Installing the Package
 
-```bash
+```shell
 composer require jurager/teams
-```
 
-## Publish Package Files
-
-```bash
-php artisan teams:install
-```
-
-The command publishes:
-
-- `config/teams.php`
-- package migrations
-- package views
-- stubs into `app/Actions/Teams`, `app/Policies`, `app/Http/Controllers`
-
-> [!WARNING]
-> `teams:install` uses `--force` publishing. Make a backup before running it in existing projects.
-
-## Run Migrations
-
-```bash
+php artisan vendor:publish --tag=teams-migrations
 php artisan migrate
 ```
 
-> [!NOTE]
-> If you need custom table names or foreign keys, edit `config/teams.php` before migration.
+> [!WARNING]
+> To change table names or the team foreign key, publish the [configuration](configuration.md) with `php artisan vendor:publish --tag=teams-config` and edit it **before** running the migrations.
 
-## Add User Trait
+## Preparing the User Model
 
-Add `HasTeams` to your existing User model:
+Add the `HasTeams` trait to your user model:
 
 ```php
 use Jurager\Teams\Traits\HasTeams;
@@ -50,3 +32,5 @@ class User extends Authenticatable
     use HasTeams;
 }
 ```
+
+The package expects `App\Models\User` with an `email` column. To use another class, set `models.user` in the [configuration](configuration.md#models).

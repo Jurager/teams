@@ -2,33 +2,37 @@
 
 namespace Jurager\Teams\Events;
 
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
 
-class TeamMemberInvited
+class TeamMemberInvited implements ShouldDispatchAfterCommit
 {
     use Dispatchable;
+    use SerializesModels;
 
     /**
      * The team instance.
      */
-    public mixed $team;
+    public Model $team;
 
     /**
      * The email address of the invitee.
      */
-    public mixed $email;
+    public string $email;
 
     /**
      * The role of the invitee.
      */
-    public mixed $role;
+    public Model $role;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(mixed $team, mixed $email, mixed $role)
+    public function __construct(Model $team, string $email, Model $role)
     {
         $this->team = $team;
         $this->email = $email;

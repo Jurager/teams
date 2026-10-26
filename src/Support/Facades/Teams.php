@@ -7,7 +7,9 @@ use Jurager\Teams\Support\Services\TeamsService;
 
 /**
  * @method static string model(string $model)
- * @method static object instance(string $model)
+ * @method static \Illuminate\Database\Eloquent\Model instance(string $model)
+ * @method static bool rememberPermission(string $key, \Closure $resolve)
+ * @method static void forgetCachedPermissions()
  *
  * @see TeamsService
  */
