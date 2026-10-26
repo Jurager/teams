@@ -3,8 +3,12 @@
 namespace Jurager\Teams\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 
 class Invitation extends Mailable
@@ -13,29 +17,40 @@ class Invitation extends Mailable
     use SerializesModels;
 
     /**
-     * The team invitation instance.
-     */
-    public object $invitation;
-
-    /**
      * Create a new message instance.
-     *
-     * @return void
      */
-    public function __construct(object $invitation)
+    public function __construct(public Model $invitation)
     {
-        $this->invitation = $invitation;
+        //
     }
 
     /**
-     * Build the message.
-     *
-     * @return $this
+     * Get the message envelope.
      */
-    public function build(): static
+    public function envelope(): Envelope
     {
-        return $this->markdown('teams::emails.invitation', ['url' => URL::signedRoute('teams.invitations.accept', [
-            'invitation' => $this->invitation,
-        ])])->subject(__('Team Invitation'));
+        return new Envelope(subject: __('Team Invitation'));
+    }
+
+    /**
+     * Get the message content definition.
+     */
+    public function content(): Content
+    {
+        return new Content(markdown: 'teams::emails.invitation', with: ['url' => $this->acceptUrl()]);
+    }
+
+    /**
+     * Get the signed URL for accepting the invitation.
+     */
+    protected function acceptUrl(): string
+    {
+        $parameters = ['invitation_id' => $this->invitation->getKey()];
+
+        $expire = Config::get('teams.invitations.expire');
+
+        return $expire
+            ? URL::temporarySignedRoute('teams.invitations.accept', now()->addMinutes((int) $expire), $parameters)
+            : URL::signedRoute('teams.invitations.accept', $parameters);
     }
 }

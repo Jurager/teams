@@ -2,7 +2,9 @@
 
 namespace Jurager\Teams\Events;
 
-class TeamCreated extends TeamEvent
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+
+class TeamCreated extends TeamEvent implements ShouldDispatchAfterCommit
 {
     //
 }

@@ -5,47 +5,50 @@ weight: 120
 
 # Events
 
-The package dispatches lifecycle events for teams and membership changes. Use listeners or subscribers to add audit logging, notifications, or external sync logic.
+## Available Events
 
-## Team Events
+The package dispatches the following events. All of them live in the `Jurager\Teams\Events` namespace:
 
-| Event           | Payload properties | Dispatched when             |
-|-----------------|--------------------|-----------------------------|
-| `TeamCreating`  | `owner`            | Before team is saved        |
-| `TeamCreated`   | `team`             | After team is saved         |
-| `TeamUpdating`  | `team`             | Before team update is saved |
-| `TeamUpdated`   | `team`             | After team update is saved  |
-| `TeamDeleted`   | `team`             | After team is deleted       |
+| Event                | Properties              | Dispatched                                             |
+|----------------------|-------------------------|--------------------------------------------------------|
+| `TeamCreating`       | `team`                  | Before a team is created                               |
+| `TeamCreated`        | `team`                  | After a team is created                                |
+| `TeamUpdating`       | `team`                  | Before a team is updated                               |
+| `TeamUpdated`        | `team`                  | After a team is updated                                |
+| `TeamDeleted`        | `team`                  | After a team is deleted                                |
+| `TeamMemberAdding`   | `team`, `user`          | Before a member is added                               |
+| `TeamMemberAdded`    | `team`, `user`          | After a member is added                                |
+| `TeamMemberUpdated`  | `team`, `user`          | After a member's role is changed                       |
+| `TeamMemberRemoving` | `team`, `user`          | Before a member is removed                             |
+| `TeamMemberRemoved`  | `team`, `user`          | After a member is removed                              |
+| `TeamMemberInviting` | `team`, `email`, `role` | Before an invitation is saved                          |
+| `TeamMemberInvited`  | `team`, `email`, `role` | After an invitation is saved, before the email is sent |
 
-> [!NOTE]
-> `TeamCreating` carries `owner` (the user creating the team), not `team`, because the team record does not exist yet at that point.
+## Listening for Events
 
-## Member Events
-
-| Event                | Payload properties        | Dispatched when                   |
-|----------------------|---------------------------|-----------------------------------|
-| `TeamMemberAdding`   | `team`, `user`            | Before user is attached to team   |
-| `TeamMemberAdded`    | `team` (fresh), `user`    | After user is attached to team    |
-| `TeamMemberRemoving` | `team`, `user`            | Before user is detached from team |
-| `TeamMemberRemoved`  | `team` (fresh), `user`    | After user is detached from team  |
-| `TeamMemberUpdated`  | `team` (fresh), `user` (fresh) | After user role is updated   |
-| `TeamMemberInviting` | `team`, `email`, `role`   | Before invitation record is created |
-| `TeamMemberInvited`  | `team`, `email`, `role`   | After invitation email is sent    |
-
-> [!NOTE]
-> Events with `team (fresh)` reload the team from the database after the mutation, so listeners always receive up-to-date relationship data.
-
-> [!WARNING]
-> `TeamMemberAdding` and `TeamMemberRemoving` fire **before** the database mutation. If a listener throws an exception, the user will not be added/removed. Do not rely on these events for post-mutation logic — use `TeamMemberAdded` / `TeamMemberRemoved` instead.
-
-## Listening to Events
+You may register listeners in the `boot` method of your `AppServiceProvider`:
 
 ```php
-// app/Providers/AppServiceProvider.php
+use Illuminate\Support\Facades\Event;
 use Jurager\Teams\Events\TeamMemberAdded;
 
-Event::listen(TeamMemberAdded::class, function (TeamMemberAdded $event) {
-    // $event->team, $event->user
-    \Log::info("User {$event->user->id} joined team {$event->team->id}");
+Event::listen(function (TeamMemberAdded $event) {
+    $event->user->notify(new WelcomeToTeam($event->team));
+});
+```
+
+The "after" events are dispatched once the database transaction is committed, and not at all if it is rolled back, so they are safe for sending emails and notifications.
+
+## Cancelling an Action
+
+The "before" events run inside the operation. To cancel the operation, throw an exception from the listener:
+
+```php
+use Jurager\Teams\Events\TeamMemberAdding;
+
+Event::listen(function (TeamMemberAdding $event) {
+    if ($event->team->members()->count() >= 10) {
+        throw new TeamIsFullException;
+    }
 });
 ```

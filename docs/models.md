@@ -5,43 +5,54 @@ weight: 130
 
 # Models
 
-Default model bindings are configured in `teams.models`.
+## Package Models
 
-## Core Models
+All models live in the `Jurager\Teams\Models` namespace and have the following relationships:
 
-| Model        | Purpose                                                                 |
-|--------------|-------------------------------------------------------------------------|
-| `Team`       | Team record; loads `roles.permissions` and `groups.permissions` by default |
-| `Role`       | Role with code, name, description; detaches permissions/abilities on delete |
-| `Permission` | Permission code scoped to a team                                        |
-| `Group`      | User group within a team (or global if `team_id = null`)                |
-| `Ability`    | Entity-level allow/forbid rule                                          |
-| `Membership` | Pivot model for `team_user`; eager-loads `role` relation                |
-| `Invitation` | Pending invite record; resolves `user()` relation by email              |
-| `Owner`      | Synthetic pseudo-model returned by `teamRole()` for team owners         |
-
-> [!NOTE]
-> `Owner` is not an Eloquent model and is not stored in the database. It is a lightweight object with wildcard permission `['*']` returned whenever the queried user is the team owner. Check `$role instanceof Owner` if you need to distinguish owners in your code.
-
-> [!WARNING]
-> `Role` and `Group` run `detach` on related permissions and abilities before deleting. If you override these models, ensure the `boot` / `deleting` hooks are preserved, otherwise orphaned records accumulate in `entity_permission` and `entity_ability`.
-
-> [!NOTE]
-> `Membership` eager-loads the `role` relation. Accessing `$user->teams` returns `Membership` pivot instances, so `$user->teams->first()->membership->role` resolves without an extra query when teams are loaded with their pivot.
+| Model        | Relationships                                                                    |
+|--------------|----------------------------------------------------------------------------------|
+| `Team`       | `owner`, `members`, `roles`, `groups`, `permissions`, `abilities`, `invitations` |
+| `Role`       | `team`, `members`, `permissions`, `abilities`                                    |
+| `Group`      | `team`, `members`, `permissions`, `abilities`                                    |
+| `Ability`    | `team`, `permission`, `entity`                                                   |
+| `Invitation` | `team`, `role`, `user`                                                           |
+| `Membership` | `team`, `user`, `role`                                                           |
+| `Permission` | —                                                                                |
 
 ## Custom Models
 
-Override any model in config:
+To customize a model, extend the package model:
 
 ```php
-// config/teams.php
+namespace App\Models;
+
+use Jurager\Teams\Models\Team as BaseTeam;
+
+class Team extends BaseTeam
+{
+    protected $fillable = ['user_id', 'name', 'slug'];
+}
+```
+
+Then register your class in the [configuration](configuration.md#models):
+
+```php
 'models' => [
     'team' => App\Models\Team::class,
 ],
 ```
 
-> [!WARNING]
-> When replacing a default model, keep the same relationships and method contracts. Missing relations (e.g., `roles()`, `groups()`, `owner()`) will cause `RuntimeException` or silent failures in trait methods that depend on them.
+Every model except `user` and `team` must extend its package model, otherwise a `RuntimeException` is thrown.
 
-> [!WARNING]
-> Custom models must use the same table names defined in `teams.tables.*`, or explicitly override `getTable()`. Mismatched table names are a common source of "table not found" errors after customization.
+If your team model must extend another class, use the `Jurager\Teams\Traits\HasMembers` trait instead.
+
+## The Owner Role
+
+The team owner has no role in the database. Instead, `$team->member($owner)->role()` returns an `Owner` object:
+
+```php
+$role = $team->member($owner)->role();
+
+$role->code; // 'owner'
+$role->name; // 'Owner'
+```

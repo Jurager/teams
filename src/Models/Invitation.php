@@ -2,11 +2,11 @@
 
 namespace Jurager\Teams\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Jurager\Teams\Support\Facades\Teams;
+use RuntimeException;
 
 class Invitation extends Model
 {
@@ -15,13 +15,24 @@ class Invitation extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['team_id', 'role_id', 'email'];
+    protected $fillable = ['role_id', 'email'];
 
+    /**
+     * Create a new model instance.
+     */
     public function __construct(array $attributes = [])
     {
-        parent::__construct($attributes);
+        $this->mergeFillable([Config::get('teams.foreign_keys.team_id')]);
 
-        $this->fillable[] = Config::get('teams.foreign_keys.team_id');
+        parent::__construct($attributes);
+    }
+
+    /**
+     * Get the table associated with the model.
+     */
+    public function getTable(): string
+    {
+        return $this->table ?? Config::get('teams.tables.invitations', 'invitations');
     }
 
     /**
@@ -29,22 +40,46 @@ class Invitation extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('team'), Config::get('teams.foreign_keys.team_id'));
+        return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Get the team role that the invitation belongs to.
+     * Get the role the invited user will get.
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('role'), 'role_id');
+        return $this->belongsTo(Teams::model('role'), 'role_id');
     }
 
     /**
-     * Get the user that the invitation belongs to.
+     * Get the invited user, found by email.
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('user'), 'email', 'email');
+        return $this->belongsTo(Teams::model('user'), 'email', 'email');
+    }
+
+    /**
+     * Add the invited user to the team and delete the invitation.
+     *
+     * A user who already belongs to the team keeps their role.
+     */
+    public function accept(): void
+    {
+        if (! Config::get('teams.invitations.enabled')) {
+            throw new RuntimeException('Team invitations are disabled.');
+        }
+
+        $this->getConnection()->transaction(function () {
+            $team = $this->team()->lockForUpdate()->firstOrFail();
+            $invitation = $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+            $user = $invitation->user ?? throw new RuntimeException('Invited user not found.');
+
+            if (! $user->in($team)) {
+                $team->add($user)->as($invitation->role);
+            }
+
+            $this->delete();
+        });
     }
 }

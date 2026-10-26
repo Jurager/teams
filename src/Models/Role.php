@@ -2,22 +2,31 @@
 
 namespace Jurager\Teams\Models;
 
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Traits\HasPermissions;
+use RuntimeException;
 
 class Role extends Model
 {
+    use HasPermissions;
+
     /**
      * The attributes that are mass assignable.
      *
      * @var array<string>
      */
     protected $fillable = ['code', 'name', 'description'];
+
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = ['permissions'];
 
     /**
      * Indicates if the model should be timestamped.
@@ -27,41 +36,21 @@ class Role extends Model
     public $timestamps = false;
 
     /**
-     * The relationships that should always be loaded.
-     *
-     * @var array
+     * Create a new model instance.
      */
-    protected $with = [
-        'permissions',
-    ];
-
-    /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'permissions',
-    ];
-
     public function __construct(array $attributes = [])
     {
+        $this->mergeFillable([Config::get('teams.foreign_keys.team_id')]);
+
         parent::__construct($attributes);
-        $this->fillable[] = Config::get('teams.foreign_keys.team_id');
     }
 
     /**
-     * Bootstrap any application services.
+     * Get the table associated with the model.
      */
-    protected static function boot(): void
+    public function getTable(): string
     {
-        parent::boot();
-
-        static::deleting(static function ($role) {
-            $role->permissions()->detach();
-            $role->abilities()->detach();
-        });
-
+        return $this->table ?? Config::get('teams.tables.roles', 'roles');
     }
 
     /**
@@ -69,34 +58,28 @@ class Role extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('team'));
+        return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Get the permissions that belongs to role.
+     * Get the team members with this role.
      */
-    public function permissions(): MorphToMany
+    public function members(): BelongsToMany
     {
-        return $this->morphToMany(TeamsFacade::model('permission'), 'entity', 'entity_permission');
+        return $this->belongsToMany(Teams::model('user'), Teams::model('membership'), 'role_id', 'user_id');
     }
 
     /**
-     * Get the abilities that belongs to role.
+     * Delete the role with its permissions and rules. A role that members still have cannot be deleted.
      */
-    public function abilities(): MorphToMany
+    public function delete(): ?bool
     {
-        return $this->morphToMany(TeamsFacade::model('ability'), 'entity', 'entity_ability')
-            ->withPivot('forbidden')
-            ->withTimestamps();
-    }
+        return $this->getConnection()->transaction(function () {
+            if ($this->members()->exists()) {
+                throw new RuntimeException('Reassign or remove team members before deleting their role.');
+            }
 
-    /**
-     * Get all users associated with the role.
-     *
-     * @throws Exception
-     */
-    public function users(): BelongsToMany
-    {
-        return $this->belongsToMany(TeamsFacade::model('team'), Config::get('teams.tables.team_user', 'team_user'), 'role_id', Config::get('teams.foreign_keys.team_id', 'team_id'));
+            return parent::delete();
+        });
     }
 }

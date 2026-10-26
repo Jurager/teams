@@ -5,60 +5,47 @@ weight: 80
 
 # Groups
 
-Groups let you assign shared permissions and abilities to subsets of users within a team.
+A group gives extra permissions to some members of a team, on top of their role. A user may belong to several groups.
 
-## Usage Scope
+## Creating Groups
 
-Groups work as an **override layer** on top of role permissions:
-
-- User **has** team permission, but the group **forbids** an entity action → entity action is denied.
-- User **lacks** team permission, but the group **allows** an entity action → entity action is allowed.
-
-> [!NOTE]
-> Group permissions participate in ability level comparison (see [Abilities](abilities.md)). Group rules only affect `hasTeamAbility()` checks, not plain `hasTeamPermission()` checks.
-
-## Team Groups
+Groups work just like [roles](roles-permissions.md). They are created using the team's `groups` relationship and found by their code:
 
 ```php
-// Create group — permissions array is required; name defaults to Str::studly($code)
-$group = $team->addGroup('support', ['tickets.reply']);
+$team->groups()->create(['code' => 'reviewers'])->grant('articles.publish');
 
-// Replace group permissions (empty array removes all existing permissions)
-$team->updateGroup('support', ['tickets.*']);
+$group = $team->group('reviewers');
 
-// Remove group and detach all permissions/abilities
-$team->deleteGroup('support');
+$group->revoke('articles.publish');
+
+$group->delete();
 ```
 
-> [!WARNING]
-> `updateGroup()` with an empty array **removes all permissions** from the group. There is no partial-update mode — always pass the full desired permission list.
+## Adding and Removing Members
 
-> [!WARNING]
-> `addGroup()` throws `RuntimeException` if a group with the same code already exists in the team.
-
-## Group Membership
+To add users to a group or remove them, use the `add` and `remove` methods. Both accept a user or a collection of users:
 
 ```php
-$group->attachUser($user);   // add user to the group
-$group->detachUser($user);   // remove user from the group
-$group->users();             // BelongsToMany — all group members
+$team->group('reviewers')->add($user);
+
+$team->group('reviewers')->remove($user);
 ```
 
-> [!NOTE]
-> A user can belong to multiple groups within the same team. All matching group rules are evaluated when `hasTeamAbility()` resolves access.
+Users who aren't in the team are skipped. The users of a group are available through `$group->members`.
 
 ## Global Groups
 
-A group with `team_id = null` is a **global group**. Its permissions are checked by `hasGlobalGroupPermissions()` during ability evaluation and apply across all teams.
+A group without a team is global.
+
+Its permissions pass [record checks](abilities.md) in every team, even for users who aren't members. Global groups are useful for staff such as support agents:
 
 ```php
-// Creating a global group (no team scoping)
-$group = Group::create(['code' => 'support-global', 'team_id' => null]);
-$group->attachUser($user);
+use Jurager\Teams\Models\Group;
+
+Group::create(['code' => 'support'])->grant('tickets.*')->add($agent);
+
+$agent->can('tickets.reply', $ticket); // true, in any team
 ```
 
 > [!NOTE]
-> Global groups are useful for cross-team roles (e.g., platform support staff) without adding the user as a member of each individual team.
-
-> [!WARNING]
-> Global group permissions are evaluated only inside `hasTeamAbility()`. They are **not** returned by `$user->teamPermissions()` and do not affect `hasTeamPermission()` checks.
+> Global groups only affect record checks. They don't give membership, a role, or team-wide permissions, and they can't have [ability rules](abilities.md).

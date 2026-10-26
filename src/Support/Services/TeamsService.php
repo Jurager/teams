@@ -2,60 +2,51 @@
 
 namespace Jurager\Teams\Support\Services;
 
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
+use Jurager\Teams\Models\Ability;
+use Jurager\Teams\Models\Group;
+use Jurager\Teams\Models\Invitation;
+use Jurager\Teams\Models\Membership;
+use Jurager\Teams\Models\Permission;
+use Jurager\Teams\Models\Role;
 use RuntimeException;
 
 class TeamsService
 {
     /**
-     * Array of models loaded from configuration.
+     * The package classes that configured models must extend.
      *
-     * @var array<string, string>
+     * @var array<string, class-string<Model>>
      */
-    protected array $models;
-
-    public function __construct()
-    {
-        $this->models = Config::get('teams.models');
-    }
+    protected const BASES = [
+        'membership' => Membership::class,
+        'invitation' => Invitation::class,
+        'role' => Role::class,
+        'permission' => Permission::class,
+        'ability' => Ability::class,
+        'group' => Group::class,
+    ];
 
     /**
-     * Returns object instance based on name.
+     * Get the configured model class.
      *
-     * @throws Exception
-     */
-    public function instance(string $model): object
-    {
-        return $this->getModel($model, true);
-    }
-
-    /**
-     * Returns the model class based on name.
-     *
-     * @throws Exception
+     * @return class-string<Model>
      */
     public function model(string $model): string
     {
-        return $this->getModel($model);
-    }
+        $class = Config::get("teams.models.{$model}");
+        $base = self::BASES[$model] ?? Model::class;
 
-    /**
-     * Gets a model instance by name.
-     *
-     * @throws Exception
-     *
-     * @template T of Model
-     */
-    private function getModel(string $key, bool $instance = false): string|object
-    {
-        $modelClass = $this->models[$key] ?? null;
-
-        if (! $modelClass || ! class_exists($modelClass)) {
-            throw new RuntimeException("Model class for key $key not found.");
+        if (! is_string($class) || ! is_a($class, $base, true)) {
+            throw new RuntimeException(sprintf(
+                'Config key [teams.models.%s] must be a class that extends [%s], %s given.',
+                $model,
+                $base,
+                is_string($class) ? "[{$class}]" : get_debug_type($class),
+            ));
         }
 
-        return $instance ? new $modelClass() : $modelClass;
+        return $class;
     }
 }

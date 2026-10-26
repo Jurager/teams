@@ -18,18 +18,10 @@ class Team extends Model
     protected $fillable = ['user_id', 'name'];
 
     /**
-     * The relationships that should always be loaded.
-     *
-     * @var array
+     * Get the table associated with the model.
      */
-    protected $with = ['roles.permissions', 'groups.permissions'];
-
-    /**
-     * Creates a new instance of the model.
-     */
-    public function __construct(array $attributes = [])
+    public function getTable(): string
     {
-        parent::__construct($attributes);
-        $this->table = Config::get('teams.tables.teams', 'teams');
+        return $this->table ?? Config::get('teams.tables.teams', 'teams');
     }
 }

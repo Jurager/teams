@@ -4,10 +4,13 @@ namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Jurager\Teams\Support\Facades\Teams;
 
+/**
+ * A permission on one record of a team, allowed or forbidden to users, roles and groups.
+ */
 class Ability extends Model
 {
     /**
@@ -15,13 +18,24 @@ class Ability extends Model
      *
      * @var array<string>
      */
-    protected $fillable = ['id', 'permission_id', 'title', 'entity_id', 'entity_type'];
+    protected $fillable = ['permission_id', 'entity_id', 'entity_type'];
 
+    /**
+     * Create a new model instance.
+     */
     public function __construct(array $attributes = [])
     {
-        parent::__construct($attributes);
+        $this->mergeFillable([Config::get('teams.foreign_keys.team_id')]);
 
-        $this->fillable[] = Config::get('teams.foreign_keys.team_id', 'team_id');
+        parent::__construct($attributes);
+    }
+
+    /**
+     * Get the table associated with the model.
+     */
+    public function getTable(): string
+    {
+        return $this->table ?? Config::get('teams.tables.abilities', 'abilities');
     }
 
     /**
@@ -29,36 +43,22 @@ class Ability extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('team'));
+        return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Get all the users that are assigned this ability.
+     * Get the permission that the ability applies.
      */
-    public function users(): MorphToMany
+    public function permission(): BelongsTo
     {
-        return $this->morphedByMany(TeamsFacade::model('user'), 'entity', 'entity_ability')
-            ->withPivot('forbidden')
-            ->withTimestamps();
+        return $this->belongsTo(Teams::model('permission'), 'permission_id');
     }
 
     /**
-     * Get all the groups that are assigned this ability.
+     * Get the record that the ability applies to.
      */
-    public function groups(): MorphToMany
+    public function entity(): MorphTo
     {
-        return $this->morphedByMany(TeamsFacade::model('group'), 'entity', 'entity_ability')
-            ->withPivot('forbidden')
-            ->withTimestamps();
-    }
-
-    /**
-     * Get all the roles that are assigned this ability.
-     */
-    public function roles(): MorphToMany
-    {
-        return $this->morphedByMany(TeamsFacade::model('role'), 'entity', 'entity_ability')
-            ->withPivot('forbidden')
-            ->withTimestamps();
+        return $this->morphTo();
     }
 }

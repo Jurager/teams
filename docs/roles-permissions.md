@@ -1,98 +1,73 @@
 ---
-title: Roles & Permissions
+title: Roles and Permissions
 weight: 60
 ---
 
-# Roles & Permissions
+# Roles and Permissions
 
-Roles group permissions per team and are assigned in the membership pivot (`team_user.role_id`).
+A permission is a code such as `articles.edit`. Permissions belong to a team and are created automatically the first time you grant them.
 
-## Create Team Roles
+## Creating Roles
+
+Roles are Eloquent models, created using the team's `roles` relationship:
 
 ```php
-$team->addRole('admin', [
-    'employees.*',
-    'articles.*',
-    'team.edit',
-]);
+$team->roles()->create(['code' => 'editor'])->grant('articles.view', 'articles.edit');
 
-// Optional: provide a display name and description
-$team->addRole('admin', ['employees.*'], 'Administrator', 'Full team access');
-
-$team->addRole('user', [
-    'employees.view',
-    'articles.view',
-]);
+$team->roles()->create([
+    'code' => 'admin',
+    'name' => 'Administrator',
+    'description' => 'Manages all articles',
+])->grant('articles.*');
 ```
+
+Role codes are unique within a team. If you don't give a name, it is made from the code, so `content-editor` becomes `Content Editor`.
+
+## Granting Permissions
+
+To change the permissions of a role, use the `grant`, `revoke`, and `sync` methods:
+
+```php
+$role = $team->role('editor');
+
+$role->grant('articles.publish');
+$role->revoke('articles.delete');
+
+// Replace all permissions...
+$role->sync('articles.view', 'articles.edit');
+
+// Remove all permissions...
+$role->sync();
+```
+
+Each method accepts any number of codes or an array, and returns the role, so calls may be chained.
+
+## Finding, Updating, and Deleting Roles
+
+The `role` method finds a role by its code. If the role doesn't exist, a `ModelNotFoundException` is thrown:
+
+```php
+$role = $team->role('editor');
+
+$role->update(['name' => 'Content Editor']);
+
+$role->delete();
+```
+
+All roles of a team are available through `$team->roles`.
 
 > [!NOTE]
-> Permission codes use dot-notation (e.g., `articles.edit`, `posts.*`). The second argument is an array of permission code strings. Codes are created in the `permissions` table scoped to the team if they don't exist yet.
+> A role that is assigned to members can't be deleted, so move them to another role first. Deleting a role also deletes its permissions and [ability rules](abilities.md).
 
-> [!WARNING]
-> `addRole()` throws `RuntimeException` if a role with the same code already exists in the team. Use `updateRole()` to modify an existing role's permissions.
+## Wildcards
 
-## Update and Delete Roles
-
-```php
-// Replace all permissions on an existing role
-$team->updateRole('admin', ['posts.view', 'posts.edit'], 'Administrator', 'Full access');
-
-// Remove a role entirely (detaches permissions and abilities first)
-$team->deleteRole('admin');
-```
-
-> [!WARNING]
-> Deleting a role does **not** automatically unassign members that hold that role. Their `team_user.role_id` will become orphaned. Reassign or remove affected members before deleting the role.
-
-## Add or Remove Individual Permissions
-
-`updateRole()` replaces the **entire** permission set on a role. To add or remove specific permissions without touching the rest, use the role's `permissions()` relation directly:
+A code that ends with `.*` grants every permission below it:
 
 ```php
-$role = $team->getRole('admin');
+$team->role('editor')->sync('articles.*');
 
-// Add permissions, keeping existing ones intact
-$role->permissions()->attach($team->getPermissionIds(['posts.publish']));
-
-// Remove specific permissions, keeping the rest intact
-$role->permissions()->detach($team->getPermissionIds(['posts.publish']));
-
-// List permissions currently assigned to the role
-$role->permissions;
+$user->can('articles.edit', $team);          // true
+$user->can('articles.comments.edit', $team); // true
 ```
 
-> [!NOTE]
-> `getPermissionIds()` resolves permission codes to IDs for the team, creating any codes that don't exist yet. Pass raw IDs directly to `attach()`/`detach()` if you already have them.
-
-## Authorization Pattern
-
-Prefer granular permission checks in policies rather than role checks:
-
-```php
-// Preferred — policy method
-$user->hasTeamPermission($team, 'server:update');
-
-// Avoid where possible — role check
-$user->hasTeamRole($team, 'admin');
-```
-
-> [!NOTE]
-> Checking roles couples your authorization logic to role names. Checking permissions is more resilient — you can rename or restructure roles without touching policy code.
-
-## Wildcard Matching
-
-If wildcard support is enabled in config, checks include generated wildcard nodes (e.g., `posts.*` matches `posts.edit`, `posts.view`, etc.) and optional custom nodes from `teams.wildcards.nodes`.
-
-```php
-// config/teams.php
-'wildcards' => [
-    'enabled' => true,
-    'nodes' => ['*', '*.*', 'all'],
-],
-```
-
-> [!NOTE]
-> Wildcard matching applies to the **permission code stored on the role or group**, not to the permission being checked. A user with `posts.*` passes a check for `posts.edit`. A user with `posts.edit` does **not** pass a check for `posts.*`.
-
-> [!WARNING]
-> Wildcard nodes (`*`, `*.*`, `all`) grant full access within the team. Keep the list minimal and never assign wildcard permissions automatically based on user input.
+To let a code such as `*` grant every permission, enable [wildcards](configuration.md#wildcards) in the configuration.

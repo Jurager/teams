@@ -2,21 +2,13 @@
 
 namespace Jurager\Teams\Models;
 
-use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Jurager\Teams\Support\Facades\Teams;
 
 class Membership extends Pivot
 {
-    /**
-     * The table associated with the pivot model.
-     *
-     * @var string
-     */
-    protected $table;
-
     /**
      * Indicates if the IDs are auto-incrementing.
      *
@@ -25,30 +17,34 @@ class Membership extends Pivot
     public $incrementing = true;
 
     /**
-     * The relationships that should always be loaded.
-     *
-     * @var array
+     * Get the table associated with the model.
      */
-    protected $with = [
-        'role',
-    ];
-
-    /**
-     * Creates a new instance of the model.
-     */
-    public function __construct(array $attributes = [])
+    public function getTable(): string
     {
-        parent::__construct($attributes);
-        $this->table = Config::get('teams.tables.team_user', 'team_user');
+        return $this->table ?? Config::get('teams.tables.team_user', 'team_user');
     }
 
     /**
      * Get the role that the membership belongs to.
-     *
-     * @throws Exception
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('role'), 'role_id', 'id');
+        return $this->belongsTo(Teams::model('role'), 'role_id');
+    }
+
+    /**
+     * Get the team that the membership belongs to.
+     */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
+    }
+
+    /**
+     * Get the user that the membership belongs to.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(Teams::model('user'), 'user_id');
     }
 }

@@ -5,7 +5,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -15,7 +16,7 @@ return new class () extends Migration {
             $table->id();
             $table->foreignId(Config::get('teams.foreign_keys.team_id', 'team_id'))->constrained(Config::get('teams.tables.teams'))->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('role_id')->constrained('roles')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('role_id')->constrained(Config::get('teams.tables.roles'))->cascadeOnUpdate()->restrictOnDelete();
             $table->timestamps();
 
             $table->unique([Config::get('teams.foreign_keys.team_id', 'team_id'), 'user_id']);
@@ -27,6 +28,6 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('team_user');
+        Schema::dropIfExists(Config::get('teams.tables.team_user', 'team_user'));
     }
 };

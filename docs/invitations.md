@@ -5,61 +5,61 @@ weight: 100
 
 # Invitations
 
-If enabled (`teams.invitations.enabled = true`), invitations let you add users to a team by email before they have an account or without searching for their user ID.
+## Sending Invitations
 
-## List Invitations
-
-```php
-$team->invitations();
-```
-
-## Send Invitation
+To invite someone to a team, call the `invite` method with their email and pass the role to `as`:
 
 ```php
-$team->inviteUser('member@example.com', 'editor');
+$invitation = $team->invite('jane@example.com')->as('editor');
 ```
 
-This creates an `Invitation` record and dispatches `Jurager\Teams\Mail\Invitation` to the provided email.
+The user receives an email with a signed link. Inviting the same email again updates the role and sends the email again.
+
+Pending invitations are available through `$team->invitations`.
+
+Inviting the owner or an existing member throws a `RuntimeException`.
+
+## Accepting Invitations
+
+The link in the email leads to the built-in route, which adds the user to the team with the invited role when:
+
+- the user is signed in with the invited email;
+- the link hasn't been changed and is not older than `invitations.expire`, 7 days by default.
+
+Otherwise, the route returns a `403` response. After accepting, the user is redirected to `/`.
 
 > [!WARNING]
-> `inviteUser()` throws `RuntimeException` if the email address already belongs to a current team member, or if the specified role code / ID does not exist in the team.
+> Keep `auth` in `invitations.routes.middleware`. It stops mail scanners, which open links automatically, from accepting invitations.
 
 > [!NOTE]
-> The invitation email is sent immediately via `Mail::to()->send()` — it is **not** queued by default. If you want queued delivery, swap the `Invitation` mailable for a queued mailable in a custom implementation.
+> The invited user must already have an account. A user who is already in the team keeps their role.
 
-## Accept Invitation
+## Using Your Own Route
+
+To handle invitations yourself, set `invitations.routes.register` to `false` and define a route with the same name. The email will link to your route:
 
 ```php
-$team->inviteAccept($invitationId);
+Route::get('/invitations/{invitation_id}', function (Request $request, int $invitation_id) {
+
+    $invitation = Invitation::findOrFail($invitation_id);
+
+    abort_unless($invitation->user?->is($request->user()), 403);
+
+    $invitation->accept();
+
+    return redirect('/dashboard');
+    
+})->middleware(['auth', 'signed'])->name('teams.invitations.accept');
 ```
 
-The method:
-1. Finds the invitation record by ID (scoped to the team).
-2. Resolves the user by the invitation's `email` field.
-3. Calls `$team->addUser($user, $invitation->role_id)`.
-4. Deletes the invitation record.
+## Customizing the Email
 
-> [!WARNING]
-> `inviteAccept()` throws `RuntimeException` if the invitation is not found, if no user with the invitation's email exists in the database, or if `addUser()` itself fails (e.g., user already in the team).
+To change the email, publish the views:
 
-> [!NOTE]
-> Invitation links are generated with `URL::signedRoute(...)` in `Jurager\Teams\Mail\Invitation`. The link signature is not validated automatically — see the warning below.
+```shell
+php artisan vendor:publish --tag=teams-views
+```
 
-## Route Registration
+Then edit `resources/views/vendor/teams/emails/invitation.blade.php`.
 
-When both flags are enabled:
-
-- `teams.invitations.enabled = true`
-- `teams.invitations.routes.register = true`
-
-the service provider registers:
-
-- **Name**: `teams.invitations.accept`
-- **URL**: from `teams.invitations.routes.url`
-- **Middleware**: from `teams.invitations.routes.middleware`
-
-> [!NOTE]
-> The route is loaded through the package route group. If you use custom prefix settings, verify the final URL with `php artisan route:list`.
-
-> [!WARNING]
-> The package route file has the `signed` middleware **commented out**. If you require strict signed-link validation (recommended for production), enable it in your route or controller implementation to prevent invitation link forgery.
+The view receives the `$invitation` and the link as `$url`.

@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Traits\HasPermissions;
 
 class Group extends Model
 {
+    use HasPermissions;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -20,96 +22,99 @@ class Group extends Model
     protected $fillable = ['code', 'name'];
 
     /**
-     * The relationships that should always be loaded.
-     *
-     * @var array
+     * Create a new model instance.
      */
-    protected $with = [
-        'permissions',
-    ];
-
     public function __construct(array $attributes = [])
     {
+        $this->mergeFillable([Config::get('teams.foreign_keys.team_id')]);
+
         parent::__construct($attributes);
-
-        $this->fillable[] = Config::get('teams.foreign_keys.team_id');
     }
 
     /**
-     * Bootstrap any application services.
+     * Get the table associated with the model.
      */
-    protected static function boot(): void
+    public function getTable(): string
     {
-        parent::boot();
-
-        static::deleting(static function ($group) {
-            $group->permissions()->detach();
-            $group->abilities()->detach();
-
-        });
+        return $this->table ?? Config::get('teams.tables.groups', 'groups');
     }
 
     /**
-     * Get the team that the group belongs to.
+     * Get the team that the group belongs to. Global groups have none.
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('team'), Config::get('teams.foreign_keys.team_id'));
+        return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Get all group users
+     * Get the users in the group.
      */
-    public function users(): BelongsToMany
+    public function members(): BelongsToMany
     {
-        return $this->belongsToMany(TeamsFacade::model('user'), 'group_user', 'group_id', 'user_id');
+        return $this->belongsToMany(Teams::model('user'), Config::get('teams.tables.group_user'), 'group_id', 'user_id');
     }
 
     /**
-     * Get the permissions that belongs to group.
+     * Add users to the group. Users outside the group's team are skipped.
      */
-    public function permissions(): MorphToMany
+    public function add(Model|Collection $users): static
     {
-        return $this->morphToMany(TeamsFacade::model('permission'), 'entity', 'entity_permission');
+        $users = Collection::wrap($users);
+
+        $this->getConnection()->transaction(function () use ($users) {
+            $this->members()->syncWithoutDetaching($this->eligible($users)->modelKeys());
+        });
+
+        return $this->forgetMembers($users);
     }
 
     /**
-     * Get the abilities that belongs to group.
+     * Remove users from the group.
      */
-    public function abilities(): MorphToMany
+    public function remove(Model|Collection $users): static
     {
-        return $this->morphToMany(TeamsFacade::model('ability'), 'entity', 'entity_ability')
-            ->withPivot('forbidden')
-            ->withTimestamps();
+        $users = Collection::wrap($users);
+
+        $this->members()->detach($users->modelKeys());
+
+        return $this->forgetMembers($users);
     }
 
     /**
-     * Attach user or users to a group
+     * Delete the group with its permissions and rules.
      */
-    public function attachUser(Collection|Model $user): bool
+    public function delete(): ?bool
     {
-        // Convert user to collection if it is the only model
-        $users = $user instanceof Collection ? $user : collect([$user]);
-
-        // Filter only those users who are in the team
-        $filteredUserIds = $users->filter(fn ($item) => $this->team->hasUser($item));
-
-        // If there are users left after filtering, synchronize and return the result
-        return $filteredUserIds->isNotEmpty() && $this->users()->syncWithoutDetaching($filteredUserIds->pluck('id')) > 0;
+        return $this->getConnection()->transaction(fn () => parent::delete());
     }
 
     /**
-     * Detach user or users from group
+     * Keep the team owner and members among the users. A global group accepts anyone.
      */
-    public function detachUser(Collection|Model $user): bool
+    protected function eligible(Collection $users): Collection
     {
-        // Convert user to collection if it is the only model
-        $users = $user instanceof Collection ? $user : collect([$user]);
+        if ($this->getAttribute(Config::get('teams.foreign_keys.team_id')) === null) {
+            return $users;
+        }
 
-        // Filter only those users who are in the team
-        $filteredUserIds = $users->filter(fn ($item) => $this->team->hasUser($item));
+        $team = $this->team()->lockForUpdate()->firstOrFail();
+        $members = $team->members();
 
-        // If there are any users left after filtering, we execute detach and return the result
-        return $filteredUserIds->isNotEmpty() && $this->users()->detach($filteredUserIds->pluck('id')) > 0;
+        $ids = $members->whereKey($users->modelKeys())
+            ->pluck($members->getRelated()->getQualifiedKeyName())
+            ->push($team->user_id);
+
+        return $users->whereIn($members->getRelated()->getKeyName(), $ids);
+    }
+
+    /**
+     * Clear the loaded membership relations on the group and the users.
+     */
+    protected function forgetMembers(Collection $users): static
+    {
+        $users->each->unsetRelation('groups');
+
+        return $this->unsetRelation('members');
     }
 }

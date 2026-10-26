@@ -1,10 +1,9 @@
 <?php
 
-use App\Http\Controllers\InviteController;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
+use Jurager\Teams\Http\Controllers\InviteController;
 
-Route::middleware(Config::get('teams.invitations.routes.middleware'))
-    ->get(Config::get('teams.invitations.routes.url'), [InviteController::class, 'inviteAccept'])
-    // ->middleware(['signed'])
+Route::get(Config::get('teams.invitations.routes.url'), InviteController::class)
+    ->middleware(['signed'])
     ->name('teams.invitations.accept');

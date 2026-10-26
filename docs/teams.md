@@ -5,79 +5,88 @@ weight: 40
 
 # Teams
 
-Team APIs are provided by `Jurager\Teams\Traits\HasMembers` (used by the Team model).
+## Creating Teams
 
-## Member Management
+Teams are created using the `teams` relationship of the user who will own the team:
 
 ```php
-$team->addUser($user, 'admin');
-$team->updateUser($user, 'editor');
-$team->deleteUser($user);
+$team = $user->teams()->create(['name' => 'Acme']);
+```
+
+Before adding members, create at least one [role](roles-permissions.md):
+
+```php
+$team->roles()->create(['code' => 'editor'])->grant('articles.view', 'articles.edit');
+```
+
+## Managing Members
+
+### Adding Members
+
+To add a user to a team, call the `add` method and pass the role code or a `Role` model to `as`:
+
+```php
+$team->add($user)->as('editor');
+```
+
+### Changing Roles
+
+To give a member another role, use the `assign` method:
+
+```php
+$team->member($user)->assign('admin');
+```
+
+### Removing Members
+
+To remove a member, use the `remove` method. Their groups and [ability rules](abilities.md) in the team are removed too:
+
+```php
+$team->remove($user);
+```
+
+An unknown role throws a `ModelNotFoundException`. Adding a user who is already a member, or changing or removing a user who isn't, throws a `RuntimeException`.
+
+> [!NOTE]
+> The team owner isn't a member, so the owner can't be added, reassigned, or removed.
+
+## Retrieving Teams and Members
+
+The `owner` and `members` relationships return the team's owner and members. The owner is never part of `members`:
+
+```php
+$team->owner;
+$team->members;
+```
+
+On the user, `teams` returns the teams the user owns, and `memberships` returns the teams the user has joined:
+
+```php
+$user->teams;
+$user->memberships;
+```
+
+Each team returned by `memberships` has a `membership` attribute with the member's `role_id` and timestamps.
+
+To determine if a user owns a team or belongs to it, use the `owns` and `in` methods. The `in` method returns `true` for the owner as well:
+
+```php
+if ($user->owns($team)) {
+    // ...
+}
+
+if ($user->in($team)) {
+    // ...
+}
+```
+
+## Deleting Teams
+
+To delete a team together with its members, roles, groups, permissions, and invitations, use the `purge` method:
+
+```php
+$team->purge();
 ```
 
 > [!WARNING]
-> Team owner cannot be removed or reassigned through `updateUser()` / `deleteUser()`. Both methods throw `RuntimeException` if the passed user is the team owner.
-
-> [!WARNING]
-> `addUser()` throws `RuntimeException` in three cases: user is the team owner, user is already a member, or the role code / ID does not exist in the team.
-
-> [!NOTE]
-> `addUser()` and `updateUser()` accept a role code (string) **or** role ID (int cast to string). The role must already exist inside the team before you call these methods.
-
-## Membership Checks
-
-```php
-$team->owner;                          // BelongsTo — lazy-loaded owner model
-$team->users();                        // BelongsToMany — members, excluding owner
-$team->allUsers();                     // Collection — members + owner merged
-$team->hasUser($user);                 // bool — true if member OR owner
-$team->hasUserWithEmail($email);       // bool — checks members by email
-$team->userRole($user);                // Role model or null
-```
-
-> [!NOTE]
-> `hasUser()` returns `true` for the team owner even though the owner is not stored in the `team_user` pivot table.
-
-## Roles and Groups
-
-```php
-// Roles
-$team->roles();
-$team->hasRole('admin');
-$team->getRole('admin');
-$team->addRole('admin', ['posts.*']); // code + permissions
-$team->addRole('admin', ['posts.*'], 'Administrator', 'Full access'); // optional name and description
-$team->updateRole('admin', ['posts.view']);
-$team->deleteRole('admin');
-
-// Groups
-$team->groups();
-$team->hasGroup('support');
-$team->getGroup('support');
-$team->addGroup('support', ['tickets.*']);
-$team->updateGroup('support', ['tickets.view']);
-$team->deleteGroup('support');
-```
-
-> [!NOTE]
-> `addRole()` / `addGroup()` auto-create missing permission codes for the current team via `getPermissionIds()`. Permissions that already exist are reused.
-
-> [!WARNING]
-> `updateGroup()` with an empty permissions array detaches **all** existing permissions from the group. Pass only the permissions you want to keep.
-
-## Abilities
-
-```php
-$team->abilities();
-```
-
-## Team Permission Proxy
-
-```php
-$team->userHasPermission($user, ['servers.update'], true);
-```
-
-This calls `$user->hasTeamPermission($team, ...)` internally. The third argument `$require = true` means **all** listed permissions must match.
-
-> [!NOTE]
-> If you already have a reference to the user object, calling `$user->hasTeamPermission()` directly is equivalent and avoids an extra indirection.
+> Calling `delete` on a team that still has members fails. Use `purge` instead.

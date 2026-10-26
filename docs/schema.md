@@ -1,33 +1,34 @@
 ---
-title: Schema
+title: Database Schema
 weight: 35
 ---
 
-# Schema
+# Database Schema
 
-The package stores team access data in dedicated tables.
+## Tables
 
-## Core Tables
+The package creates the following tables. See the [migration files](https://github.com/jurager/teams/tree/main/database/migrations) for their full definitions.
 
-| Table               | Purpose                                              |
-|---------------------|------------------------------------------------------|
-| `teams`             | Team records with `user_id` (owner reference)        |
-| `team_user`         | Membership pivot with `role_id`                      |
-| `roles`             | Team roles (code, name, description)                 |
-| `permissions`       | Permission codes scoped to a team                    |
-| `groups`            | User groups (`team_id = null` for global groups)     |
-| `group_user`        | Group membership pivot                               |
-| `abilities`         | Entity-level ability definitions                     |
-| `entity_permission` | Polymorphic junction: roles/groups ↔ permissions     |
-| `entity_ability`    | Polymorphic junction: roles/groups/users ↔ abilities (with `forbidden` flag) |
-| `invitations`       | Pending team invitations (when `invitations.enabled = true`) |
+| Table               | Contents                                    |
+|---------------------|---------------------------------------------|
+| `teams`             | Teams and their owners                      |
+| `team_user`         | Team members and their roles                |
+| `invitations`       | Pending invitations                         |
+| `roles`             | Team roles                                  |
+| `permissions`       | Permission codes of teams and global groups |
+| `abilities`         | Permissions applied to single records       |
+| `groups`            | Team groups and global groups               |
+| `group_user`        | Group members                               |
+| `entity_permission` | Permissions of roles and groups             |
+| `entity_ability`    | Ability rules of users, roles, and groups   |
 
-## Diagram
+## Deleting Records
 
-![Schema](https://raw.githubusercontent.com/jurager/teams/main/schema.png "Database Schema")
+Some records can't be deleted while other records depend on them:
 
-> [!NOTE]
-> If you change `teams.tables.*` or `teams.foreign_keys.*` in config, apply those changes **before** publishing or running migrations. Post-migration changes require manual schema alterations.
-
-> [!WARNING]
-> The `invitations` table is always created by the migration regardless of the `invitations.enabled` config value. The config flag only controls route registration and the `inviteUser()` / `inviteAccept()` behavior at the application level.
+| Deleted       | Result                                                                 |
+|---------------|------------------------------------------------------------------------|
+| Team          | Rejected while it has members. Use [`purge`](teams.md#deleting-teams). |
+| Role          | Rejected while it has members.                                         |
+| User          | Rejected while they are a team member.                                 |
+| Role or group | Its permissions and ability rules are deleted with it.                 |

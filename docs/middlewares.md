@@ -1,72 +1,65 @@
 ---
-title: Middlewares
+title: Middleware
 weight: 90
 ---
 
-# Middlewares
+# Middleware
 
-The package auto-registers the following middleware aliases when `teams.middleware.register = true`:
+Routes may be protected using Laravel's `can` middleware, just like any other [permission check](authorization.md#checking-permissions).
 
-- `role`
-- `permission`
-- `ability`
+## Protecting Routes
 
-## Unauthorized Handling
-
-The behavior on failed checks is controlled by `teams.middleware.handling`:
-
-- `'abort'` — returns HTTP 403 response.
-- `'redirect'` — redirects to the configured URL (useful for frontend apps).
-
-> [!NOTE]
-> The second middleware argument is treated as the team identifier source. It can be a direct team ID value, a route parameter name, or a request input key — the middleware resolves them in that order.
-
-## Role and Permission Middleware
+The second argument of `can` is the name of the route parameter that holds the team or the record:
 
 ```php
-// Single role check
-Route::get('/users', fn () => 'ok')
-    ->middleware('role:admin,team_id');
+Route::get('/teams/{team}/articles', [ArticleController::class, 'index'])
+    ->can('articles.view', 'team');
 
-// Multiple roles — OR logic (pipe separator)
-Route::get('/users', fn () => 'ok')
-    ->middleware('role:admin|root,team_id');
-
-// Multiple roles — AND logic (require flag)
-Route::get('/users', fn () => 'ok')
-    ->middleware('role:admin|root,team_id,require');
-
-// Permission OR
-Route::get('/posts', fn () => 'ok')
-    ->middleware('permission:posts.view|posts.edit,team_id');
-
-// Permission AND
-Route::get('/posts', fn () => 'ok')
-    ->middleware('permission:posts.view|posts.edit,team_id,require');
+Route::put('/articles/{article}', [ArticleController::class, 'update'])
+    ->can('articles.edit', 'article');
 ```
 
-`team_id` can be resolved from:
-
-1. Middleware argument directly (literal value).
-2. Route parameter with the key matching `teams.foreign_keys.team_id` in config.
-3. Request input (GET/POST).
-
 > [!WARNING]
-> If the team cannot be resolved (no matching route parameter or request input), middleware authorization fails and returns the configured handling response.
+> The parameter must be bound to a model. A plain ID isn't a team, so the check fails with a `403` response.
 
-## Ability Middleware
+## Checking Roles
+
+In routes, it is better to check permissions than roles.
+
+Grant a permission such as `settings.manage` to the roles that need it, then check that permission:
 
 ```php
-'middleware' => ['ability:articles.edit,App\\Models\\Article,article_id']
+$team->role('admin')->grant('settings.manage');
+
+Route::get('/teams/{team}/settings', [SettingsController::class, 'show'])
+    ->can('settings.manage', 'team');
 ```
 
-The middleware:
-1. Resolves the model class from the second argument.
-2. Finds the entity by the ID provided via route parameter or request input (third argument).
-3. Calls `$user->hasTeamAbility($team, $permission, $entity)`.
+If a route must depend on the role itself, define a gate in the `boot` method of your `AppServiceProvider`:
 
-> [!WARNING]
-> If ability middleware cannot resolve the entity ID or the model instance (e.g., record not found), authorization **fails**. Make sure the entity ID is always present in the route or request for protected endpoints.
+```php
+Gate::define('team-admin', function (User $user, Team $team) {
+    return $team->member($user)->is('admin', 'manager');
+});
+```
 
-> [!NOTE]
-> Disabling auto-registration (`teams.middleware.register = false`) lets you register the middleware under custom aliases in your application's `bootstrap/app.php`.
+```php
+Route::get('/teams/{team}/billing', [BillingController::class, 'show'])
+    ->can('team-admin', 'team');
+```
+
+The team owner passes every role check.
+
+## Failed Checks
+
+When a check fails, Laravel throws an `AuthorizationException`, which becomes a `403` response. To redirect the user instead, render the exception yourself in your application's `bootstrap/app.php` file:
+
+```php
+use Illuminate\Auth\Access\AuthorizationException;
+
+->withExceptions(function (Exceptions $exceptions) {
+    $exceptions->render(function (AuthorizationException $e) {
+        return redirect('/home')->with('error', 'No access.');
+    });
+})
+```
