@@ -5,7 +5,7 @@ weight: 126
 
 # Validation
 
-The `Role` rule checks that the value is a role code of the given team:
+To make sure a value is a role code of a team, use the `Role` rule:
 
 ```php
 use Jurager\Teams\Rules\Role;
@@ -16,4 +16,4 @@ $request->validate([
 ```
 
 > [!WARNING]
-> The rule only checks that the role exists. Whether the current user may assign it is up to your [policy](teams.md#authorization).
+> The rule only checks that the role exists. Whether the current user may assign it is up to your [policy](authorization.md#protecting-team-changes).

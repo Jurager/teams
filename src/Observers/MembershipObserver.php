@@ -2,25 +2,26 @@
 
 namespace Jurager\Teams\Observers;
 
-use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Jurager\Teams\Models\Membership;
 use RuntimeException;
 
 class MembershipObserver
 {
-    public function saving(Pivot $membership): void
+    /**
+     * Keep the owner out of the members and the role inside the membership's team.
+     */
+    public function saving(Membership $membership): void
     {
-        $teamKey = Config::get('teams.foreign_keys.team_id');
-        $team = $membership->belongsTo(TeamsFacade::model('team'), $teamKey)->firstOrFail();
+        $team = $membership->team()->firstOrFail();
 
         if ((string) $team->user_id === (string) $membership->user_id) {
             throw new RuntimeException('The team owner cannot be a member.');
         }
 
-        $role = $membership->belongsTo(TeamsFacade::model('role'), 'role_id');
+        $roles = $membership->role();
 
-        if (! $role->where($role->getRelated()->qualifyColumn($teamKey), $team->getKey())->exists()) {
+        if (! $roles->where($roles->getRelated()->qualifyColumn(Config::get('teams.foreign_keys.team_id')), $team->getKey())->exists()) {
             throw new RuntimeException('The role does not belong to the membership team.');
         }
     }

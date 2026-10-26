@@ -5,41 +5,38 @@ weight: 10
 
 # Introduction
 
-- [Core Concepts](#core-concepts)
-- [Choosing the Right Check](#choosing-the-right-check)
-- [Requirements](#requirements)
-
-Teams adds team-based access control to Laravel. A user can own teams, join other teams, and have different rights in each of them.
+Teams provides team-based access control for Laravel applications. A user may own teams, join teams owned by others, and have different permissions in each of them.
 
 ```php
-$team = $owner->ownedTeams()->create(['name' => 'Acme']);
+$team = $owner->teams()->create(['name' => 'Acme']);
 
-$team->addRole('editor', ['articles.view', 'articles.edit']);
-$team->addUser($user, 'editor');
+$team->roles()->create(['code' => 'editor'])->grant('articles.view', 'articles.edit');
 
-$user->hasTeamPermission($team, 'articles.edit'); // true
+$team->add($user)->as('editor');
+
+$user->can('articles.edit', $team); // true
 ```
 
 ## Core Concepts
 
-| Concept | Description |
-|---|---|
-| Team | A workspace with one owner and any number of members. |
-| Role | Every member has one role in a team. The role grants permissions. |
-| Permission | A code such as `articles.edit`. `articles.*` grants all `articles.` permissions. |
-| Group | Extra permissions for some members, on top of their roles. |
-| Ability | An allow or forbid rule for one record, such as "edit article #42". |
+| Concept    | Description                                                                         |
+|------------|-------------------------------------------------------------------------------------|
+| Team       | A workspace with one owner and any number of members.                               |
+| Role       | Each member has one role in a team. The role grants permissions.                    |
+| Permission | A code such as `articles.edit`. The `articles.*` code grants every `articles.` one. |
+| Group      | Extra permissions for some members, on top of their role.                           |
+| Ability    | A rule that allows or forbids an action on one record, such as article #42.         |
 
 > [!NOTE]
 > The team owner has no role and passes every check in their team.
 
 ## Choosing the Right Check
 
-| Question | Method |
-|---|---|
-| Does the user have this role? | [`hasTeamRole()`](users.md#roles) |
-| Can the user edit articles in this team? | [`hasTeamPermission()`](users.md#permissions) |
-| Can the user edit this article? | [`hasTeamAbility()`](abilities.md) |
+| Question                                 | Check                                                                         |
+|------------------------------------------|-------------------------------------------------------------------------------|
+| Can the user edit articles in this team? | [`$user->can('articles.edit', $team)`](authorization.md#checking-permissions) |
+| Can the user edit this article?          | [`$user->can('articles.edit', $article)`](abilities.md)                       |
+| Does the user have this role?            | [`$team->member($user)->is('editor')`](authorization.md#member-checks)        |
 
 ## Requirements
 

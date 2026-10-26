@@ -59,45 +59,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Middleware
+    | Gate
     |--------------------------------------------------------------------------
     |
-    | Middleware registration and unauthorized access handling.
+    | Use Laravel's Gate for team permissions.
     |
     */
 
-    'middleware' => [
-        'register' => true,
-        'handling' => 'abort',
-
-        'handlers' => [
-            'abort' => [
-                'code' => 403,
-                'message' => 'User does not have any of the necessary access rights.',
-            ],
-
-            'redirect' => [
-                'url' => '/home',
-                'message' => [
-                    'key' => 'error',
-                    'content' => '',
-                ],
-            ],
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Request
-    |--------------------------------------------------------------------------
-    |
-    | Permission decision caching within a single execution context.
-    |
-    */
-
-    'request' => [
-        'cache_decisions' => false,
-    ],
+    'gate' => true,
 
     /*
     |--------------------------------------------------------------------------

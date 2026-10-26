@@ -5,22 +5,21 @@ namespace Jurager\Teams\Http\Controllers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Jurager\Teams\Support\Facades\Teams;
 
 class InviteController extends Controller
 {
     /**
      * Accept the invitation on behalf of the invited user.
      */
-    public function inviteAccept(Request $request, int|string $invitationId): RedirectResponse
+    public function __invoke(Request $request, int|string $invitation): RedirectResponse
     {
-        $invitation = TeamsFacade::model('invitation')::query()->findOrFail($invitationId);
+        $invitation = Teams::model('invitation')::query()->findOrFail($invitation);
 
         abort_unless($invitation->user?->is($request->user()), 403);
 
-        $team = $invitation->team;
-        $team->inviteAccept($invitation->getKey());
+        $invitation->accept();
 
-        return redirect('/')->with('status', __('Success! You have accepted the invitation to join the :team team.', ['team' => $team->name]));
+        return redirect('/')->with('status', __('Success! You have accepted the invitation to join the :team team.', ['team' => $invitation->team->name]));
     }
 }

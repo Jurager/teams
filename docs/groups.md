@@ -5,65 +5,47 @@ weight: 80
 
 # Groups
 
-- [Creating Groups](#creating-groups)
-- [Adding and Removing Members](#adding-and-removing-members)
-- [Updating and Deleting Groups](#updating-and-deleting-groups)
-- [Global Groups](#global-groups)
-
-A group gives extra permissions to some members of a team, on top of their roles. A user can be in several groups.
+A group gives extra permissions to some members of a team, on top of their role. A user may belong to several groups.
 
 ## Creating Groups
 
-```php
-$team->addGroup('reviewers', ['articles.publish']);
-```
-
-The permissions and the name are optional. Groups are found by code or ID, like roles:
+Groups work just like [roles](roles-permissions.md). They are created using the team's `groups` relationship and found by their code:
 
 ```php
-$team->getGroup('reviewers');
-$team->hasGroup('reviewers');
+$team->groups()->create(['code' => 'reviewers'])->grant('articles.publish');
+
+$group = $team->group('reviewers');
+
+$group->revoke('articles.publish');
+
+$group->delete();
 ```
 
 ## Adding and Removing Members
 
-```php
-$group->attachUser($user);
-$group->detachUser($user);
-```
-
-Both methods accept a user or a collection of users. Users outside the team are skipped.
+To add users to a group or remove them, use the `add` and `remove` methods. Both accept a user or a collection of users:
 
 ```php
-$team->addGroup('reviewers', ['articles.publish'])->attachUser($user);
+$team->group('reviewers')->add($user);
 
-$user->hasTeamPermission($team, 'articles.publish'); // true
+$team->group('reviewers')->remove($user);
 ```
 
-## Updating and Deleting Groups
-
-```php
-$team->updateGroup('reviewers', ['articles.*']);           // replace permissions
-$team->updateGroup('reviewers', name: 'Senior Reviewers');
-
-$team->deleteGroup('reviewers');
-```
+Users who aren't in the team are skipped. The users of a group are available through `$group->members`.
 
 ## Global Groups
 
-A group with an empty `team_id` is global. Its permissions pass [ability checks](abilities.md) in every team, even for users who are not members. This suits staff such as support agents.
+A group without a team is global.
+
+Its permissions pass [record checks](abilities.md) in every team, even for users who aren't members. Global groups are useful for staff such as support agents:
 
 ```php
 use Jurager\Teams\Models\Group;
 
-$support = Group::create(['team_id' => null, 'code' => 'support', 'name' => 'Support']);
+Group::create(['code' => 'support'])->grant('tickets.*')->add($agent);
 
-$support->permissions()->sync($team->getPermissionIds(['tickets.*']));
-$support->attachUser($agent);
+$agent->can('tickets.reply', $ticket); // true, in any team
 ```
 
 > [!NOTE]
-> Global groups affect `hasTeamAbility()` only. They do not grant membership, a role, or `hasTeamPermission()`.
-
-> [!WARNING]
-> The permission codes are stored under the team passed to `getPermissionIds()` and are deleted with it. Use a team that is never deleted.
+> Global groups only affect record checks. They don't give membership, a role, or team-wide permissions, and they can't have [ability rules](abilities.md).

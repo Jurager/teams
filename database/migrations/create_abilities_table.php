@@ -16,7 +16,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId(Config::get('teams.foreign_keys.team_id', 'team_id'))->constrained(Config::get('teams.tables.teams'))->cascadeOnDelete();
             $table->foreignId('permission_id')->constrained(Config::get('teams.tables.permissions'))->cascadeOnDelete();
-            $table->string('title')->nullable();
             $table->morphs('entity');
             $table->timestamps();
 

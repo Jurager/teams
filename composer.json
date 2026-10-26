@@ -1,7 +1,14 @@
 {
     "name": "jurager/teams",
     "description": "Laravel package to manage team functionality and operate with user permissions.",
-    "keywords": ["laravel", "teams", "groups", "permissions", "abilities", "auth"],
+    "keywords": [
+        "laravel",
+        "teams",
+        "groups",
+        "permissions",
+        "abilities",
+        "auth"
+    ],
     "license": "MIT",
     "authors": [
         {
@@ -23,7 +30,7 @@
     "require-dev": {
         "laravel/pint": "^1.0",
         "orchestra/testbench": "^8.0|^9.0|^10.0|^11.0",
-        "phpunit/phpunit": "^10.5|^11.5"
+        "pestphp/pest": "^2.34|^3.0|^4.0"
     },
     "autoload": {
         "psr-4": {
@@ -36,7 +43,7 @@
         }
     },
     "scripts": {
-        "test": "phpunit",
+        "test": "pest",
         "format": "pint",
         "format:test": "pint --test"
     },
@@ -48,6 +55,11 @@
             "aliases": {
                 "Teams": "Jurager\\Teams\\Support\\Facades\\Teams"
             }
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
         }
     }
 }

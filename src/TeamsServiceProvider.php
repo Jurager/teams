@@ -2,22 +2,17 @@
 
 namespace Jurager\Teams;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Foundation\CachesConfiguration;
-use Illuminate\Database\Events\TransactionCommitting;
-use Illuminate\Database\Events\TransactionRolledBack;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use Jurager\Teams\Middleware\Ability as AbilityMiddleware;
-use Jurager\Teams\Middleware\Permission as PermissionMiddleware;
-use Jurager\Teams\Middleware\Role as RoleMiddleware;
-use Jurager\Teams\Observers\GroupObserver;
 use Jurager\Teams\Observers\MembershipObserver;
-use Jurager\Teams\Observers\PermissionCacheObserver;
-use Jurager\Teams\Observers\RoleObserver;
-use Jurager\Teams\Observers\TeamObserver;
 use Jurager\Teams\Support\Facades\Teams;
 use Jurager\Teams\Support\Services\TeamsService;
+use Jurager\Teams\Traits\HasTeams;
 
 class TeamsServiceProvider extends ServiceProvider
 {
@@ -28,7 +23,7 @@ class TeamsServiceProvider extends ServiceProvider
     {
         $this->mergeConfig();
 
-        $this->app->scoped(TeamsService::class);
+        $this->app->singleton(TeamsService::class);
         $this->app->alias(TeamsService::class, 'teams');
     }
 
@@ -39,9 +34,9 @@ class TeamsServiceProvider extends ServiceProvider
     {
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'teams');
 
-        $this->registerObservers();
-        $this->registerCacheInvalidation();
-        $this->registerMiddlewares();
+        Teams::model('membership')::observe(MembershipObserver::class);
+
+        $this->registerGate();
         $this->registerRoutes();
 
         if ($this->app->runningInConsole()) {
@@ -69,44 +64,42 @@ class TeamsServiceProvider extends ServiceProvider
     }
 
     /**
-     * Observe the configured models.
+     * Use the Gate for team permissions when no policy or ability did.
      */
-    protected function registerObservers(): void
+    protected function registerGate(): void
     {
-        foreach ([
-            'team' => [PermissionCacheObserver::class, TeamObserver::class],
-            'role' => [PermissionCacheObserver::class, RoleObserver::class],
-            'group' => [PermissionCacheObserver::class, GroupObserver::class],
-            'permission' => PermissionCacheObserver::class,
-            'membership' => [PermissionCacheObserver::class, MembershipObserver::class],
-        ] as $model => $observer) {
-            Teams::model($model)::observe($observer);
-        }
-    }
-
-    /**
-     * Clear decisions before after-commit listeners run, or after rollback.
-     */
-    protected function registerCacheInvalidation(): void
-    {
-        Event::listen(
-            [TransactionCommitting::class, TransactionRolledBack::class],
-            fn () => Teams::forgetCachedPermissions(),
-        );
-    }
-
-    /**
-     * Register the middleware aliases.
-     */
-    protected function registerMiddlewares(): void
-    {
-        if (! $this->app->make('config')->get('teams.middleware.register')) {
+        if (! Config::get('teams.gate', true)) {
             return;
         }
 
-        Route::aliasMiddleware('ability', AbilityMiddleware::class);
-        Route::aliasMiddleware('role', RoleMiddleware::class);
-        Route::aliasMiddleware('permission', PermissionMiddleware::class);
+        Gate::after(function (Authenticatable $user, $ability, ?bool $result, array $arguments) {
+
+            $subject = $arguments[0] ?? null;
+
+            if ($result !== null || ! is_string($ability) || ! $subject instanceof Model || ! in_array(HasTeams::class, class_uses_recursive($user), true)) {
+                return null;
+            }
+
+            $team = $this->teamOf($subject);
+
+            return $team?->member($user)->can($ability, $team === $subject ? null : $subject) ?: null;
+        });
+    }
+
+    /**
+     * Get the team itself, or the team of a record.
+     */
+    protected function teamOf(Model $subject): ?Model
+    {
+        $class = Teams::model('team');
+
+        if ($subject instanceof $class) {
+            return $subject;
+        }
+
+        $key = $subject->getAttribute(Config::get('teams.foreign_keys.team_id'));
+
+        return $key === null ? null : $class::query()->find($key);
     }
 
     /**
@@ -114,15 +107,13 @@ class TeamsServiceProvider extends ServiceProvider
      */
     protected function registerRoutes(): void
     {
-        $config = $this->app->make('config');
-
-        if (! $config->get('teams.invitations.enabled') || ! $config->get('teams.invitations.routes.register')) {
+        if (! Config::get('teams.invitations.enabled') || ! Config::get('teams.invitations.routes.register')) {
             return;
         }
 
         Route::group([
-            'prefix' => $config->get('teams.invitations.routes.prefix', '/'),
-            'middleware' => $config->get('teams.invitations.routes.middleware'),
+            'prefix' => Config::get('teams.invitations.routes.prefix', '/'),
+            'middleware' => Config::get('teams.invitations.routes.middleware'),
         ], fn () => $this->loadRoutesFrom(__DIR__.'/../routes/web.php'));
     }
 
@@ -139,8 +130,8 @@ class TeamsServiceProvider extends ServiceProvider
             __DIR__.'/../resources/views' => resource_path('views/vendor/teams'),
         ], 'teams-views');
 
-        // The prefixes are part of the published file names; changing one would
-        // republish that migration next to an already applied copy.
+        // The prefixes are part of the published file names;
+        // Changing one would republish that migration next to an already applied copy.
         $migrations = [
             'create_teams_table' => '2019_12_14_000001',
             'create_permissions_table' => '2019_12_14_000002',
@@ -153,7 +144,7 @@ class TeamsServiceProvider extends ServiceProvider
             'create_entity_permission_table' => '2019_12_14_000010',
         ];
 
-        if ($this->app->make('config')->get('teams.invitations.enabled')) {
+        if (Config::get('teams.invitations.enabled')) {
             $migrations['create_invitations_table'] = '2019_12_14_000012';
         }
 

@@ -5,78 +5,69 @@ weight: 60
 
 # Roles and Permissions
 
-- [Creating Roles](#creating-roles)
-- [Finding Roles](#finding-roles)
-- [Updating Roles](#updating-roles)
-- [Deleting Roles](#deleting-roles)
-- [Changing a Single Permission](#changing-a-single-permission)
-- [Wildcards](#wildcards)
-
-A permission is a code such as `articles.edit`. Codes belong to a team and are created automatically when you pass them to a role or group.
+A permission is a code such as `articles.edit`. Permissions belong to a team and are created automatically the first time you grant them.
 
 ## Creating Roles
 
-```php
-$team->addRole('editor', ['articles.view', 'articles.edit']);
-
-$team->addRole('admin', ['articles.*'], 'Administrator', 'Manages all articles');
-```
-
-The name defaults to the code in StudlyCase. Codes are unique within a team.
-
-## Finding Roles
+Roles are Eloquent models, created using the team's `roles` relationship:
 
 ```php
-$team->getRole('editor'); // Role or null
-$team->hasRole('editor'); // true or false
+$team->roles()->create(['code' => 'editor'])->grant('articles.view', 'articles.edit');
+
+$team->roles()->create([
+    'code' => 'admin',
+    'name' => 'Administrator',
+    'description' => 'Manages all articles',
+])->grant('articles.*');
 ```
 
-Roles can be found by code or by ID.
+Role codes are unique within a team. If you don't give a name, it is made from the code, so `content-editor` becomes `Content Editor`.
 
-> [!WARNING]
-> Numeric values are treated as IDs, so avoid numeric role codes such as `'2024'`.
+## Granting Permissions
 
-## Updating Roles
-
-Pass only what you want to change:
+To change the permissions of a role, use the `grant`, `revoke`, and `sync` methods:
 
 ```php
-$team->updateRole('editor', ['articles.*']);                // replace permissions
-$team->updateRole('editor', []);                            // remove all permissions
-$team->updateRole('editor', name: 'Content Editor');
-$team->updateRole('editor', description: 'Writes articles');
+$role = $team->role('editor');
+
+$role->grant('articles.publish');
+$role->revoke('articles.delete');
+
+// Replace all permissions...
+$role->sync('articles.view', 'articles.edit');
+
+// Remove all permissions...
+$role->sync();
 ```
 
-## Deleting Roles
+Each method accepts any number of codes or an array, and returns the role, so calls may be chained.
+
+## Finding, Updating, and Deleting Roles
+
+The `role` method finds a role by its code. If the role doesn't exist, a `ModelNotFoundException` is thrown:
 
 ```php
-$team->deleteRole('editor');
+$role = $team->role('editor');
+
+$role->update(['name' => 'Content Editor']);
+
+$role->delete();
 ```
+
+All roles of a team are available through `$team->roles`.
 
 > [!NOTE]
-> A role assigned to members cannot be deleted. Move them to another role first.
-
-## Changing a Single Permission
-
-`updateRole()` replaces the whole list. To add or remove one permission, use the relation:
-
-```php
-$role = $team->getRole('editor');
-
-$role->permissions()->syncWithoutDetaching($team->getPermissionIds(['articles.publish']));
-
-$role->permissions()->detach($team->permissions()->where('code', 'articles.publish')->pluck('id'));
-```
+> A role that is assigned to members can't be deleted, so move them to another role first. Deleting a role also deletes its permissions and [ability rules](abilities.md).
 
 ## Wildcards
 
-A code ending with `.*` grants everything below it:
+A code that ends with `.*` grants every permission below it:
 
 ```php
-$team->addRole('editor', ['articles.*']);
+$team->role('editor')->sync('articles.*');
 
-$user->hasTeamPermission($team, 'articles.edit');          // true
-$user->hasTeamPermission($team, 'articles.comments.edit'); // true
+$user->can('articles.edit', $team);          // true
+$user->can('articles.comments.edit', $team); // true
 ```
 
-To let a code such as `*` grant every permission, enable [`wildcards`](configuration.md#wildcards) in the configuration.
+To let a code such as `*` grant every permission, enable [wildcards](configuration.md#wildcards) in the configuration.

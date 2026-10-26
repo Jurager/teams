@@ -5,54 +5,61 @@ weight: 100
 
 # Invitations
 
-- [Sending Invitations](#sending-invitations)
-- [Accepting Invitations](#accepting-invitations)
-- [Using Your Own Route](#using-your-own-route)
-- [Customizing the Email](#customizing-the-email)
-
 ## Sending Invitations
 
+To invite someone to a team, call the `invite` method with their email and pass the role to `as`:
+
 ```php
-$team->inviteUser('jane@example.com', 'editor');
+$invitation = $team->invite('jane@example.com')->as('editor');
 ```
 
-The user receives an email with a signed link. Inviting the same email again updates the role and resends the email. Pending invitations are available as `$team->invitations`.
+The user receives an email with a signed link. Inviting the same email again updates the role and sends the email again.
+
+Pending invitations are available through `$team->invitations`.
+
+Inviting the owner or an existing member throws a `RuntimeException`.
 
 ## Accepting Invitations
 
-The link leads to the built-in route. It adds the user to the team with the invited role when:
+The link in the email leads to the built-in route, which adds the user to the team with the invited role when:
 
 - the user is signed in with the invited email;
-- the link is unchanged and not older than `invitations.expire` (7 days by default).
+- the link hasn't been changed and is not older than `invitations.expire`, 7 days by default.
 
-Otherwise, it responds with `403`. After accepting, the user is redirected to `/`.
+Otherwise, the route returns a `403` response. After accepting, the user is redirected to `/`.
 
 > [!WARNING]
-> Keep `auth` in `invitations.routes.middleware`. It stops mail scanners that open links automatically from accepting invitations.
+> Keep `auth` in `invitations.routes.middleware`. It stops mail scanners, which open links automatically, from accepting invitations.
 
 > [!NOTE]
-> The invited user must already have an account.
+> The invited user must already have an account. A user who is already in the team keeps their role.
 
 ## Using Your Own Route
 
-Set `invitations.routes.register` to `false` and define a route with the same name. The email links to it:
+To handle invitations yourself, set `invitations.routes.register` to `false` and define a route with the same name. The email will link to your route:
 
 ```php
 Route::get('/invitations/{invitation_id}', function (Request $request, int $invitation_id) {
+
     $invitation = Invitation::findOrFail($invitation_id);
 
     abort_unless($invitation->user?->is($request->user()), 403);
 
-    $invitation->team->inviteAccept($invitation->id);
+    $invitation->accept();
 
     return redirect('/dashboard');
+    
 })->middleware(['auth', 'signed'])->name('teams.invitations.accept');
 ```
 
 ## Customizing the Email
 
+To change the email, publish the views:
+
 ```shell
 php artisan vendor:publish --tag=teams-views
 ```
 
-Edit `resources/views/vendor/teams/emails/invitation.blade.php`. The template receives `$invitation` and the link as `$url`.
+Then edit `resources/views/vendor/teams/emails/invitation.blade.php`.
+
+The view receives the `$invitation` and the link as `$url`.

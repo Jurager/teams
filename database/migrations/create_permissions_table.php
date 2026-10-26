@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create(Config::get('teams.tables.permissions', 'permissions'), static function (Blueprint $table) {
             $table->id();
-            $table->foreignId(Config::get('teams.foreign_keys.team_id', 'team_id'))->constrained(Config::get('teams.tables.teams'))->cascadeOnDelete();
+            $table->foreignId(Config::get('teams.foreign_keys.team_id', 'team_id'))->nullable()->constrained(Config::get('teams.tables.teams'))->cascadeOnDelete();
             $table->string('name')->nullable();
             $table->string('code');
 

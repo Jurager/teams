@@ -5,85 +5,88 @@ weight: 40
 
 # Teams
 
-- [Creating Teams](#creating-teams)
-- [Managing Members](#managing-members)
-- [Inspecting Members](#inspecting-members)
-- [Authorization](#authorization)
-- [Deleting Teams](#deleting-teams)
-
 ## Creating Teams
 
-A team is created through its owner. Add at least one [role](roles-permissions.md) before adding members:
+Teams are created using the `teams` relationship of the user who will own the team:
 
 ```php
-$team = $user->ownedTeams()->create(['name' => 'Acme']);
+$team = $user->teams()->create(['name' => 'Acme']);
+```
 
-$team->addRole('editor', ['articles.view', 'articles.edit']);
+Before adding members, create at least one [role](roles-permissions.md):
+
+```php
+$team->roles()->create(['code' => 'editor'])->grant('articles.view', 'articles.edit');
 ```
 
 ## Managing Members
 
-Every member has one role in a team. Pass the role code or ID:
+### Adding Members
+
+To add a user to a team, call the `add` method and pass the role code or a `Role` model to `as`:
 
 ```php
-$team->addUser($user, 'editor');
-$team->updateUser($user, 'admin');
-$team->deleteUser($user);
+$team->add($user)->as('editor');
 ```
 
-Removing a member also removes their groups and personal [ability rules](abilities.md) in this team.
+### Changing Roles
 
-A missing role throws `ModelNotFoundException`. Adding an existing member, or changing and removing a non-member, throws `RuntimeException`.
+To give a member another role, use the `assign` method:
+
+```php
+$team->member($user)->assign('admin');
+```
+
+### Removing Members
+
+To remove a member, use the `remove` method. Their groups and [ability rules](abilities.md) in the team are removed too:
+
+```php
+$team->remove($user);
+```
+
+An unknown role throws a `ModelNotFoundException`. Adding a user who is already a member, or changing or removing a user who isn't, throws a `RuntimeException`.
 
 > [!NOTE]
-> The owner is not a member, so these methods cannot be used on the owner.
+> The team owner isn't a member, so the owner can't be added, reassigned, or removed.
 
-## Inspecting Members
+## Retrieving Teams and Members
+
+The `owner` and `members` relationships return the team's owner and members. The owner is never part of `members`:
 
 ```php
-$team->owner;                    // the owner
-$team->users;                    // members, without the owner
-$team->allUsers();               // members and the owner
-
-$team->hasUser($user);           // member or owner
-$team->hasUserWithEmail($email); // member or owner
-$team->userRole($user);          // Role, Owner, or null
-$team->userHasPermission($user, 'articles.edit');
+$team->owner;
+$team->members;
 ```
 
-## Authorization
-
-The team methods do not check who calls them. Protect them with a policy:
+On the user, `teams` returns the teams the user owns, and `memberships` returns the teams the user has joined:
 
 ```php
-class TeamPolicy
-{
-    public function addMember(User $user, Team $team): bool
-    {
-        return $user->hasTeamPermission($team, 'members.add');
-    }
+$user->teams;
+$user->memberships;
+```
+
+Each team returned by `memberships` has a `membership` attribute with the member's `role_id` and timestamps.
+
+To determine if a user owns a team or belongs to it, use the `owns` and `in` methods. The `in` method returns `true` for the owner as well:
+
+```php
+if ($user->owns($team)) {
+    // ...
+}
+
+if ($user->in($team)) {
+    // ...
 }
 ```
 
-Register it in the `boot` method of your `AppServiceProvider`, then authorize before calling the team method:
-
-```php
-Gate::policy(config('teams.models.team'), TeamPolicy::class);
-```
-
-```php
-Gate::authorize('addMember', $team);
-
-$team->addUser($user, 'editor');
-```
-
 ## Deleting Teams
+
+To delete a team together with its members, roles, groups, permissions, and invitations, use the `purge` method:
 
 ```php
 $team->purge();
 ```
 
-Purge removes all members and deletes the team with its roles, groups, permissions, and invitations.
-
 > [!WARNING]
-> `$team->delete()` fails while the team has members. Use `purge()`.
+> Calling `delete` on a team that still has members fails. Use `purge` instead.

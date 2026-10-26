@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Traits\HasPermissions;
 
 class Group extends Model
 {
+    use HasPermissions;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -38,112 +40,81 @@ class Group extends Model
     }
 
     /**
-     * Get the team that the group belongs to.
+     * Get the team that the group belongs to. Global groups have none.
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('team'), Config::get('teams.foreign_keys.team_id'));
+        return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Get all the users that belong to the group.
+     * Get the users in the group.
      */
-    public function users(): BelongsToMany
+    public function members(): BelongsToMany
     {
-        return $this->belongsToMany(TeamsFacade::model('user'), Config::get('teams.tables.group_user'), 'group_id', 'user_id');
+        return $this->belongsToMany(Teams::model('user'), Config::get('teams.tables.group_user'), 'group_id', 'user_id');
     }
 
     /**
-     * Get all the permissions assigned to the group.
+     * Add users to the group. Users outside the group's team are skipped.
      */
-    public function permissions(): MorphToMany
+    public function add(Model|Collection $users): static
     {
-        return $this->morphToMany(TeamsFacade::model('permission'), 'entity', Config::get('teams.tables.entity_permission'), 'entity_id', 'permission_id');
-    }
+        $users = Collection::wrap($users);
 
-    /**
-     * Get all the abilities assigned to the group.
-     */
-    public function abilities(): MorphToMany
-    {
-        return $this->morphToMany(TeamsFacade::model('ability'), 'entity', Config::get('teams.tables.entity_ability'), 'entity_id', 'ability_id')
-            ->withPivot('forbidden')
-            ->withTimestamps();
-    }
-
-    /**
-     * Attach the given users to the group, skipping users outside the group's team.
-     */
-    public function attachUser(Collection|Model $user): bool
-    {
-        $users = Collection::wrap($user);
-
-        if ($users->isEmpty()) {
-            return false;
-        }
-
-        return $this->getConnection()->transaction(function () use ($users) {
-            $users = $this->eligibleMembers($users);
-
-            $this->lockForUpdate()->findOrFail($this->getKey());
-
-            $changes = $this->users()->syncWithoutDetaching($users->modelKeys());
-
-            $this->forgetMembershipRelations($users);
-
-            return $changes['attached'] !== [];
+        $this->getConnection()->transaction(function () use ($users) {
+            $this->members()->syncWithoutDetaching($this->eligible($users)->modelKeys());
         });
+
+        return $this->forgetMembers($users);
     }
 
     /**
-     * Detach the given users from the group.
+     * Remove users from the group.
      */
-    public function detachUser(Collection|Model $user): bool
+    public function remove(Model|Collection $users): static
     {
-        $users = Collection::wrap($user);
+        $users = Collection::wrap($users);
 
-        if ($users->isEmpty()) {
-            return false;
-        }
+        $this->members()->detach($users->modelKeys());
 
-        $detached = $this->users()->detach($users->modelKeys());
-
-        $this->forgetMembershipRelations($users);
-
-        if ($this->getConnection()->transactionLevel() === 0) {
-            TeamsFacade::forgetCachedPermissions();
-        }
-
-        return $detached > 0;
+        return $this->forgetMembers($users);
     }
 
     /**
-     * Keep only the team owner and members among the given users.
+     * Delete the group with its permissions and rules.
      */
-    protected function eligibleMembers(Collection $users): Collection
+    public function delete(): ?bool
+    {
+        return $this->getConnection()->transaction(fn () => parent::delete());
+    }
+
+    /**
+     * Keep the team owner and members among the users. A global group accepts anyone.
+     */
+    protected function eligible(Collection $users): Collection
     {
         if ($this->getAttribute(Config::get('teams.foreign_keys.team_id')) === null) {
             return $users;
         }
 
         $team = $this->team()->lockForUpdate()->firstOrFail();
-        $members = $team->users();
-        $userModel = $members->getRelated();
+        $members = $team->members();
 
-        $memberIds = $members->whereKey($users->modelKeys())
-            ->pluck($userModel->getQualifiedKeyName())
+        $ids = $members->whereKey($users->modelKeys())
+            ->pluck($members->getRelated()->getQualifiedKeyName())
             ->push($team->user_id);
 
-        return $users->whereIn($userModel->getKeyName(), $memberIds);
+        return $users->whereIn($members->getRelated()->getKeyName(), $ids);
     }
 
     /**
-     * Clear the loaded group relations on the group and the given users.
+     * Clear the loaded membership relations on the group and the users.
      */
-    protected function forgetMembershipRelations(Collection $users): void
+    protected function forgetMembers(Collection $users): static
     {
-        $this->unsetRelation('users');
-
         $users->each->unsetRelation('groups');
+
+        return $this->unsetRelation('members');
     }
 }

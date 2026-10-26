@@ -5,14 +5,14 @@ weight: 125
 
 # Facade
 
-The `Teams` facade returns the configured model classes and clears the decision cache:
+The `Teams` facade returns the configured class of a model:
 
 ```php
 use Jurager\Teams\Support\Facades\Teams;
 
-Teams::model('team');              // 'App\Models\Team'
-Teams::instance('role');           // new, unsaved Role model
-Teams::forgetCachedPermissions();  // clear the decision cache
+Teams::model('team'); // 'App\Models\Team'
 ```
 
-Use `model()` when your code must work with whatever class is configured. An unknown key throws a `RuntimeException`.
+Use it when your code must work with whatever class is configured.
+
+An unknown key, or a class that doesn't extend its package model, throws a `RuntimeException`.

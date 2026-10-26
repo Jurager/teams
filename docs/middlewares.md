@@ -5,55 +5,61 @@ weight: 90
 
 # Middleware
 
-- [Roles and Permissions](#roles-and-permissions)
-- [Selecting the Team](#selecting-the-team)
-- [Abilities](#abilities)
-- [Failed Checks](#failed-checks)
+Routes may be protected using Laravel's `can` middleware, just like any other [permission check](authorization.md#checking-permissions).
 
-The package registers three middleware: `permission`, `role`, and `ability`.
+## Protecting Routes
 
-## Roles and Permissions
+The second argument of `can` is the name of the route parameter that holds the team or the record:
 
 ```php
-Route::get('/teams/{team_id}/articles', [ArticleController::class, 'index'])
-    ->middleware('permission:articles.view');
+Route::get('/teams/{team}/articles', [ArticleController::class, 'index'])
+    ->can('articles.view', 'team');
 
-Route::get('/teams/{team_id}/settings', [SettingsController::class, 'show'])
-    ->middleware('role:admin|manager');
+Route::put('/articles/{article}', [ArticleController::class, 'update'])
+    ->can('articles.edit', 'article');
 ```
 
-Separate values with `|`; any one of them is enough. Add `require` as the third argument to require all of them:
+> [!WARNING]
+> The parameter must be bound to a model. A plain ID isn't a team, so the check fails with a `403` response.
+
+## Checking Roles
+
+In routes, it is better to check permissions than roles.
+
+Grant a permission such as `settings.manage` to the roles that need it, then check that permission:
 
 ```php
-->middleware('permission:articles.edit|articles.publish,team_id,require');
+$team->role('admin')->grant('settings.manage');
+
+Route::get('/teams/{team}/settings', [SettingsController::class, 'show'])
+    ->can('settings.manage', 'team');
 ```
 
-## Selecting the Team
-
-The team is read from the `team_id` route parameter or request field. Pass a second argument to use another parameter name or a fixed team ID:
+If a route must depend on the role itself, define a gate in the `boot` method of your `AppServiceProvider`:
 
 ```php
-Route::get('/teams/{team}/articles', ...)->middleware('permission:articles.view,team');
-
-Route::get('/admin', ...)->middleware('role:admin,1');
+Gate::define('team-admin', function (User $user, Team $team) {
+    return $team->member($user)->is('admin', 'manager');
+});
 ```
-
-Route model binding is supported. A route parameter always wins over a request field with the same name.
-
-## Abilities
-
-The arguments are the ability, the model class, and the route parameter holding the record:
 
 ```php
-Route::get('/teams/{team_id}/articles/{article}/edit', ...)
-    ->middleware('ability:articles.edit,'.Article::class.',article');
+Route::get('/teams/{team}/billing', [BillingController::class, 'show'])
+    ->can('team-admin', 'team');
 ```
 
-When the record has a `team_id` column, it must belong to the team from the route.
+The team owner passes every role check.
 
 ## Failed Checks
 
-Guests and users without access get `403 Forbidden`. An unknown team returns `404 Not Found`. To redirect instead, set `middleware.handling` to `redirect` in the [configuration](configuration.md#middleware).
+When a check fails, Laravel throws an `AuthorizationException`, which becomes a `403` response. To redirect the user instead, render the exception yourself in your application's `bootstrap/app.php` file:
 
-> [!NOTE]
-> If the aliases clash with your own middleware, set `middleware.register` to `false` and register the `Jurager\Teams\Middleware` classes under other names.
+```php
+use Illuminate\Auth\Access\AuthorizationException;
+
+->withExceptions(function (Exceptions $exceptions) {
+    $exceptions->render(function (AuthorizationException $e) {
+        return redirect('/home')->with('error', 'No access.');
+    });
+})
+```

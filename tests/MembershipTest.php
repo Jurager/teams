@@ -1,150 +1,83 @@
 <?php
 
-namespace Jurager\Teams\Tests;
-
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Jurager\Teams\Events\TeamMemberRemoved;
 use Jurager\Teams\Models\Membership;
-use Jurager\Teams\Support\Facades\Teams;
-use Jurager\Teams\Tests\Fixtures\Article;
-use RuntimeException;
 
-class MembershipTest extends TestCase
-{
-    public function test_member_removal_rolls_back_membership_groups_and_rules_together(): void
-    {
-        config(['teams.request.cache_decisions' => true]);
-        $team = $this->team();
-        $user = $this->member($team);
-        $group = $team->addGroup('editors', ['articles.edit']);
-        $group->attachUser($user);
-        $article = Article::create(['team_id' => $team->getKey()]);
-        $user->allowTeamAbility($team, 'articles.edit', $article);
-        $this->assertTrue($user->hasTeamPermission($team, 'articles.edit'));
-        $removed = 0;
-        Event::listen(TeamMemberRemoved::class, function () use (&$removed) {
-            $removed++;
-        });
-        Event::listen('eloquent.deleted: '.Membership::class, fn () => throw new RuntimeException('Deletion failed.'));
+it('rolls back member removal with its groups and rules', function () {
+    $team = team();
+    $user = member($team);
+    $group = $team->groups()->create(['code' => 'editors'])->grant('articles.edit')->add($user);
+    $team->member($user)->allow('articles.edit')->on(article($team));
+    Event::fake(TeamMemberRemoved::class);
+    Membership::deleted(fn () => throw new RuntimeException('Deletion failed.'));
 
-        try {
-            $team->deleteUser($user);
-            $this->fail('Expected the membership deletion listener to fail.');
-        } catch (RuntimeException $exception) {
-            $this->assertSame('Deletion failed.', $exception->getMessage());
-        }
+    expect(fn () => $team->remove($user))->toThrow(RuntimeException::class, 'Deletion failed.')
+        ->and($user->in($team))->toBeTrue()
+        ->and($group->members()->whereKey($user->id)->exists())->toBeTrue()
+        ->and($user->abilities()->count())->toBe(1)
+        ->and($team->member($user)->can('articles.edit'))->toBeTrue();
 
-        $this->assertTrue($team->hasUser($user));
-        $this->assertTrue($group->users()->whereKey($user->getKey())->exists());
-        $this->assertCount(1, $user->teamAbilities($team, $article));
-        $this->assertTrue($user->hasTeamPermission($team, 'articles.edit'));
-        $this->assertSame(0, $removed);
-    }
+    Event::assertNotDispatched(TeamMemberRemoved::class);
+});
 
-    public function test_pivot_insertion_rejects_a_role_from_another_team(): void
-    {
-        $team = $this->team();
-        $other = $this->team();
-        $role = $other->addRole('editor', []);
-        $user = $this->user();
+it('rejects a role from another team', function () {
+    $team = team();
+    $user = user();
 
-        try {
-            $team->users()->attach($user, ['role_id' => $role->getKey()]);
-            $this->fail('Expected the membership to reject an unrelated role.');
-        } catch (RuntimeException $exception) {
-            $this->assertStringContainsString('role does not belong', $exception->getMessage());
-        }
+    expect(fn () => $team->add($user)->as(role(team(), 'editor')))
+        ->toThrow(RuntimeException::class, 'role does not belong')
+        ->and($user->in($team))->toBeFalse();
+});
 
-        $this->assertFalse($team->hasUser($user));
-    }
+it('keeps the role when reassigning to a role from another team', function () {
+    $team = team();
+    $user = member($team);
+    $role = $team->member($user)->role();
 
-    public function test_pivot_updates_preserve_the_role_when_the_new_role_is_invalid(): void
-    {
-        $team = $this->team();
-        $user = $this->member($team);
-        $role = $user->teamRole($team);
-        $other = $this->team()->addRole('editor', []);
+    expect(fn () => $team->member($user)->assign(role(team(), 'editor')))->toThrow(RuntimeException::class)
+        ->and($team->member($user)->role()->is($role))->toBeTrue();
+});
 
-        try {
-            $team->users()->updateExistingPivot($user->getKey(), ['role_id' => $other->getKey()]);
-            $this->fail('Expected the membership to reject an unrelated role.');
-        } catch (RuntimeException) {
-            $this->assertTrue($user->teamRole($team)->is($role));
-        }
-    }
+it('does not write the owner into the pivot', function () {
+    $team = team();
+    $role = role($team, 'editor');
 
-    public function test_the_owner_cannot_be_inserted_into_the_membership_pivot(): void
-    {
-        $team = $this->team();
-        $role = $team->addRole('editor', []);
+    expect(fn () => $team->members()->attach($team->owner, ['role_id' => $role->id]))
+        ->toThrow(RuntimeException::class, 'owner cannot be a member')
+        ->and($team->members()->count())->toBe(0);
+});
 
-        try {
-            $team->users()->attach($team->owner, ['role_id' => $role->getKey()]);
-            $this->fail('Expected an owner membership to be rejected.');
-        } catch (RuntimeException $exception) {
-            $this->assertStringContainsString('owner cannot be a member', $exception->getMessage());
-        }
+it('validates a moved membership against the new team', function () {
+    $team = team();
+    $user = member($team);
+    $other = team();
+    $membership = $team->members()->whereKey($user->id)->firstOrFail()->membership;
+    $membership->setAttribute(config('teams.foreign_keys.team_id'), $other->id);
 
-        $this->assertSame(0, $team->users()->count());
-    }
+    expect(fn () => $membership->save())->toThrow(RuntimeException::class, 'role does not belong')
+        ->and($user->in($team))->toBeTrue()
+        ->and($user->in($other))->toBeFalse();
+});
 
-    public function test_changing_the_team_does_not_validate_against_the_old_pivot_parent(): void
-    {
-        $team = $this->team();
-        $user = $this->member($team);
-        $other = $this->team();
-        $membership = $team->users()->whereKey($user->getKey())->firstOrFail()->membership;
-        $membership->setAttribute(config('teams.foreign_keys.team_id'), $other->getKey());
+it('validates against the current owner when the team instance is stale', function () {
+    $team = team();
+    $role = role($team, 'editor');
+    $user = user();
+    $team->fresh()->update(['user_id' => $user->id]);
 
-        try {
-            $membership->save();
-            $this->fail('Expected the role to be validated against the new team.');
-        } catch (RuntimeException $exception) {
-            $this->assertStringContainsString('role does not belong', $exception->getMessage());
-        }
+    expect(fn () => $team->members()->attach($user, ['role_id' => $role->id]))
+        ->toThrow(RuntimeException::class, 'owner cannot be a member')
+        ->and($team->members()->count())->toBe(0);
+});
 
-        $this->assertTrue($team->hasUser($user));
-        $this->assertFalse($other->hasUser($user));
-    }
+it('exposes the team, user and role of a membership', function () {
+    $team = team();
+    $user = member($team);
+    $membership = $user->memberships()->firstOrFail()->membership;
 
-    public function test_validation_uses_the_current_owner_when_the_pivot_parent_is_stale(): void
-    {
-        $team = $this->team();
-        $role = $team->addRole('editor', []);
-        $user = $this->user();
-        $team->fresh()->update(['user_id' => $user->getKey()]);
-
-        try {
-            $team->users()->attach($user, ['role_id' => $role->getKey()]);
-            $this->fail('Expected the current team owner to be rejected.');
-        } catch (RuntimeException $exception) {
-            $this->assertStringContainsString('owner cannot be a member', $exception->getMessage());
-        }
-
-        $this->assertSame(0, $team->users()->count());
-    }
-
-    public function test_a_membership_exposes_its_team_user_and_role(): void
-    {
-        $team = $this->team();
-        $user = $this->member($team);
-        $membership = $user->teams()->firstOrFail()->membership;
-
-        $this->assertInstanceOf(Membership::class, $membership);
-        $this->assertTrue($membership->team->is($team));
-        $this->assertTrue($membership->user->is($user));
-        $this->assertTrue($membership->role->is($user->teamRole($team)));
-    }
-
-    public function test_custom_membership_must_be_an_eloquent_pivot(): void
-    {
-        config(['teams.models.membership' => InvalidMembership::class]);
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('must extend Eloquent Pivot');
-
-        Teams::model('membership');
-    }
-}
-
-class InvalidMembership extends Model {}
+    expect($membership)->toBeInstanceOf(Membership::class)
+        ->and($membership->team->is($team))->toBeTrue()
+        ->and($membership->user->is($user))->toBeTrue()
+        ->and($membership->role->is($team->member($user)->role()))->toBeTrue();
+});

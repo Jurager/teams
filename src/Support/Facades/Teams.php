@@ -6,17 +6,14 @@ use Illuminate\Support\Facades\Facade;
 use Jurager\Teams\Support\Services\TeamsService;
 
 /**
- * @method static string model(string $model)
- * @method static \Illuminate\Database\Eloquent\Model instance(string $model)
- * @method static bool rememberPermission(string $key, \Closure $resolve)
- * @method static void forgetCachedPermissions()
+ * @method static class-string<\Illuminate\Database\Eloquent\Model> model(string $model)
  *
  * @see TeamsService
  */
 class Teams extends Facade
 {
     /**
-     * Gets the facade name.
+     * Get the registered name of the component.
      */
     protected static function getFacadeAccessor(): string
     {

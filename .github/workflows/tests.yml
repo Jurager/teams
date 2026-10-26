@@ -51,7 +51,7 @@ jobs:
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction --no-progress
 
       - name: Run tests
-        run: vendor/bin/phpunit
+        run: vendor/bin/pest
 
   pint:
     runs-on: ubuntu-latest

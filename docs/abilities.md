@@ -5,46 +5,45 @@ weight: 70
 
 # Abilities
 
-- [Allowing and Forbidding Actions](#allowing-and-forbidding-actions)
-- [Rules for Roles and Groups](#rules-for-roles-and-groups)
-- [Record Owners](#record-owners)
-- [How Access Is Decided](#how-access-is-decided)
+A permission applies to every record in the team. An ability allows or forbids an action on one record.
 
-Permissions apply to the whole team: an editor can edit every article. Abilities add exceptions for single records, such as "this editor may not edit article #42".
+## Checking a Record
+
+To check a permission on a record, pass the record to `can`. The team is taken from the record's `team_id` column:
 
 ```php
-$user->hasTeamAbility($team, 'articles.edit', $article);
+$user->can('articles.edit', $article);
 ```
 
-Without any rules, `hasTeamAbility()` uses the user's role and group permissions.
+When the record has no rules, the user's role and group permissions decide. A record of another team is always denied.
 
 ## Allowing and Forbidding Actions
 
+Rules are added to a member, a role, or a group, and the `on` method names the record they apply to:
+
 ```php
-$user->allowTeamAbility($team, 'articles.edit', $article);
-$user->forbidTeamAbility($team, 'articles.edit', $article);
-$user->deleteTeamAbility($team, 'articles.edit', $article);
+$team->member($user)->allow('articles.edit')->on($article);
+
+$team->role('editor')->forbid('articles.delete')->on($article);
+
+$team->group('reviewers')->allow('articles.publish')->on($article);
 ```
 
-Instead of a model, you may pass its class and ID:
+To remove a rule, use the `forget` method:
 
 ```php
-$user->hasTeamAbility($team, 'articles.edit', Article::class, $articleId);
+$team->member($user)->forget('articles.edit')->on($article);
 ```
 
-To list the user's own rules for a record, use `$user->teamAbilities($team, $article)`.
-
-## Rules for Roles and Groups
-
-Pass `targetEntity` to attach the rule to a role or a group instead of the user:
+Instead of a model, you may pass its class and key:
 
 ```php
-$user->forbidTeamAbility($team, 'articles.delete', $article, targetEntity: $team->getRole('editor'));
+$team->member($user)->allow('articles.edit')->on(Article::class, $articleId);
 ```
 
 ## Record Owners
 
-If a model has an `isOwner()` method, its owner always passes:
+If a model has an `isOwner` method, a user for whom it returns `true` always passes:
 
 ```php
 class Article extends Model
@@ -58,13 +57,11 @@ class Article extends Model
 
 ## How Access Is Decided
 
-The team owner, the record owner, and members of a matching [global group](groups.md#global-groups) always pass. For other team members, the first matching step decides:
+The team owner, the record owner, and members of a matching [global group](groups.md#global-groups) always pass.
+For everyone else in the team, the first step that has a rule or a permission decides:
 
-1. The user's own rules.
-2. The rules and permissions of the user's groups.
-3. The rules and permissions of the user's role.
+1. The member's own rules.
+2. The rules and permissions of the member's groups.
+3. The rules and permissions of the member's role.
 
-At each step a forbid wins over an allow. When nothing matches, access is denied.
-
-> [!WARNING]
-> `hasTeamAbility()` does not check that the record belongs to `$team`. Pass the record's own team, for example `$article->team`.
+Within a step, a forbid wins over an allow. When no step matches, access is denied.

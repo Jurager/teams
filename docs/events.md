@@ -5,13 +5,9 @@ weight: 120
 
 # Events
 
-- [Available Events](#available-events)
-- [Listening for Events](#listening-for-events)
-- [Cancelling an Action](#cancelling-an-action)
-
 ## Available Events
 
-All events live in the `Jurager\Teams\Events` namespace.
+The package dispatches the following events. All of them live in the `Jurager\Teams\Events` namespace:
 
 | Event                | Properties              | Dispatched                                             |
 |----------------------|-------------------------|--------------------------------------------------------|
@@ -30,7 +26,7 @@ All events live in the `Jurager\Teams\Events` namespace.
 
 ## Listening for Events
 
-Register listeners in the `boot` method of your `AppServiceProvider`:
+You may register listeners in the `boot` method of your `AppServiceProvider`:
 
 ```php
 use Illuminate\Support\Facades\Event;
@@ -41,17 +37,17 @@ Event::listen(function (TeamMemberAdded $event) {
 });
 ```
 
-The "after" events are dispatched once the database transaction commits, and not at all if it rolls back. They are safe for emails and notifications.
+The "after" events are dispatched once the database transaction is committed, and not at all if it is rolled back, so they are safe for sending emails and notifications.
 
 ## Cancelling an Action
 
-The "before" events run inside the operation. Throw an exception to cancel it:
+The "before" events run inside the operation. To cancel the operation, throw an exception from the listener:
 
 ```php
 use Jurager\Teams\Events\TeamMemberAdding;
 
 Event::listen(function (TeamMemberAdding $event) {
-    if ($event->team->users()->count() >= 10) {
+    if ($event->team->members()->count() >= 10) {
         throw new TeamIsFullException;
     }
 });

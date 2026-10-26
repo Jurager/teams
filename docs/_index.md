@@ -13,11 +13,12 @@ Team roles, group permissions, record-level access rules, and email invitations 
 - [Installation](installation.md)
 - [Configuration](configuration.md)
 - [Database Schema](schema.md)
+- [Upgrade Guide](upgrade-guide.md)
 
 ## Usage
 
 - [Teams](teams.md)
-- [Users](users.md)
+- [Authorization](authorization.md)
 - [Roles and Permissions](roles-permissions.md)
 - [Groups](groups.md)
 - [Abilities](abilities.md)
@@ -30,5 +31,4 @@ Team roles, group permissions, record-level access rules, and email invitations 
 - [Events](events.md)
 - [Models](models.md)
 - [Facade](facade-service.md)
-- [Troubleshooting](troubleshooting.md)
 - [License](license.md)

@@ -12,12 +12,12 @@ Additionally, users can be added to a global group to grant them access across a
 
 ## Features
 
-- Team-scoped roles and permissions.
+- Team-scoped roles and permissions with a fluent API.
+- Works with Laravel's Gate: `$user->can()`, `@can`, and the `can` middleware.
 - Hierarchical wildcard permissions (`articles.*`).
 - Team groups that extend role permissions.
-- Record-level allow and forbid rules for users, roles, and groups.
+- Record-level allow and forbid rules for members, roles, and groups.
 - Global groups for cross-team access.
-- Route middleware for roles, permissions, and abilities.
 - Email invitations.
 - Team and membership lifecycle events.
 
@@ -48,17 +48,25 @@ class User extends Authenticatable
 ## Usage
 
 ```php
-$team = $owner->ownedTeams()->create(['name' => 'Acme']);
-$team->addRole('member', ['articles.view']);
-$team->addUser($user, 'member');
-$team->addGroup('editors', ['articles.*'])->attachUser($user);
+$team = $owner->teams()->create(['name' => 'Acme']);
 
-$user->forbidTeamAbility($team, 'articles.delete', $article);
-$user->hasTeamAbility($team, 'articles.edit', $article);   // true
-$user->hasTeamAbility($team, 'articles.delete', $article); // false
+$team->roles()->create(['code' => 'member'])->grant('articles.view');
+$team->groups()->create(['code' => 'editors'])->grant('articles.*');
+
+$team->add($user)->as('member');
+$team->group('editors')->add($user);
+
+$team->member($user)->forbid('articles.delete')->on($article);
+
+$user->can('articles.edit', $article);   // true
+$user->can('articles.delete', $article); // false
 ```
 
-See the [documentation](https://docs.gerassimov.me/teams/) for groups, middleware, invitations, and configuration.
+See the [documentation](https://docs.gerassimov.me/teams/) for groups, route protection, invitations, and configuration.
+
+## Upgrading
+
+Upgrading from 3.x? See the [upgrade guide](https://docs.gerassimov.me/teams/upgrade-guide/).
 
 ## Development
 

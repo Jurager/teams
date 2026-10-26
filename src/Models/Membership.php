@@ -5,7 +5,7 @@ namespace Jurager\Teams\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Jurager\Teams\Support\Facades\Teams;
 
 class Membership extends Pivot
 {
@@ -29,7 +29,7 @@ class Membership extends Pivot
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('role'), 'role_id');
+        return $this->belongsTo(Teams::model('role'), 'role_id');
     }
 
     /**
@@ -37,7 +37,7 @@ class Membership extends Pivot
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('team'), Config::get('teams.foreign_keys.team_id'));
+        return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
@@ -45,6 +45,6 @@ class Membership extends Pivot
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('user'), 'user_id');
+        return $this->belongsTo(Teams::model('user'), 'user_id');
     }
 }

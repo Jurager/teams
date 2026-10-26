@@ -12,17 +12,7 @@ abstract class TeamEvent
     use SerializesModels;
 
     /**
-     * The team instance.
-     */
-    public Model $team;
-
-    /**
      * Create a new event instance.
-     *
-     * @return void
      */
-    public function __construct(Model $team)
-    {
-        $this->team = $team;
-    }
+    public function __construct(public Model $team) {}
 }

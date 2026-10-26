@@ -5,12 +5,15 @@ namespace Jurager\Teams\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams as TeamsFacade;
+use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Traits\HasPermissions;
+use RuntimeException;
 
 class Role extends Model
 {
+    use HasPermissions;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -19,20 +22,18 @@ class Role extends Model
     protected $fillable = ['code', 'name', 'description'];
 
     /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = ['permissions'];
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool
      */
     public $timestamps = false;
-
-    /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'permissions',
-    ];
 
     /**
      * Create a new model instance.
@@ -57,32 +58,28 @@ class Role extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(TeamsFacade::model('team'), Config::get('teams.foreign_keys.team_id'));
+        return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
     /**
-     * Get all users associated with the role.
+     * Get the team members with this role.
      */
-    public function users(): BelongsToMany
+    public function members(): BelongsToMany
     {
-        return $this->belongsToMany(TeamsFacade::model('user'), TeamsFacade::model('membership'), 'role_id', 'user_id');
+        return $this->belongsToMany(Teams::model('user'), Teams::model('membership'), 'role_id', 'user_id');
     }
 
     /**
-     * Get all the permissions assigned to the role.
+     * Delete the role with its permissions and rules. A role that members still have cannot be deleted.
      */
-    public function permissions(): MorphToMany
+    public function delete(): ?bool
     {
-        return $this->morphToMany(TeamsFacade::model('permission'), 'entity', Config::get('teams.tables.entity_permission'), 'entity_id', 'permission_id');
-    }
+        return $this->getConnection()->transaction(function () {
+            if ($this->members()->exists()) {
+                throw new RuntimeException('Reassign or remove team members before deleting their role.');
+            }
 
-    /**
-     * Get all the abilities assigned to the role.
-     */
-    public function abilities(): MorphToMany
-    {
-        return $this->morphToMany(TeamsFacade::model('ability'), 'entity', Config::get('teams.tables.entity_ability'), 'entity_id', 'ability_id')
-            ->withPivot('forbidden')
-            ->withTimestamps();
+            return parent::delete();
+        });
     }
 }
