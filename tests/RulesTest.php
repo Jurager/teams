@@ -8,6 +8,8 @@ use Jurager\Teams\Models\Role;
 use Jurager\Teams\Tests\Fixtures\Article;
 use Jurager\Teams\Tests\Fixtures\OwnedArticle;
 
+afterEach(fn () => Relation::morphMap([], false));
+
 it('keeps rule precedence', function (array $rolePermissions, array $groupPermissions, array $rules, bool $global, bool $expected) {
     $team = team();
     $user = member($team, $rolePermissions);
@@ -117,7 +119,7 @@ it('shares rules between records given by class and key and morph aliases', func
 
     $member->forget('articles.edit')->on(Article::class, $article->id);
     expect($member->user->abilities()->count())->toBe(0);
-})->after(fn () => Relation::morphMap([], false));
+});
 
 it('needs a saved record or a model class and key', function (array $record) {
     $member = team()->member(user());
