@@ -3,8 +3,6 @@ title: Facade
 weight: 125
 ---
 
-# Facade
-
 The `Teams` facade returns the configured class of a model:
 
 ```php

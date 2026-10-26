@@ -3,8 +3,6 @@ title: Authorization
 weight: 50
 ---
 
-# Authorization
-
 ## Checking Permissions
 
 Team permissions are part of Laravel's [authorization](https://laravel.com/docs/authorization) features. To check a permission, pass the team, or a model with a `team_id` column, to the user's `can` method:

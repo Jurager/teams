@@ -3,8 +3,6 @@ title: Groups
 weight: 80
 ---
 
-# Groups
-
 A group gives extra permissions to some members of a team, on top of their role. A user may belong to several groups.
 
 ## Creating Groups
