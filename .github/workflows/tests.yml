@@ -45,6 +45,10 @@ jobs:
           extensions: dom, curl, libxml, mbstring, zip, pdo, sqlite, pdo_sqlite
           coverage: none
 
+      - name: Allow end-of-life Laravel versions
+        if: matrix.laravel == '10.*' || matrix.laravel == '11.*'
+        run: composer config policy.advisories.block false
+
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --dev --no-interaction --no-update
