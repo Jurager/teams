@@ -145,3 +145,67 @@ it('expires the link after the configured time', function () {
     $this->actingAs($user)->get($url)->assertForbidden();
     expect($user->in($team))->toBeFalse();
 });
+
+it('lists the invitations sent to a user', function () {
+    $user = user();
+    $team = team();
+    role($team, 'editor');
+    $other = team();
+    role($other, 'editor');
+
+    $team->invite($user->email)->as('editor');
+    $other->invite($user->email)->as('editor');
+    $team->invite('someone@example.com')->as('editor');
+
+    expect($user->invitations)->toHaveCount(2)
+        ->and($user->invitations->first()->team->is($team))->toBeTrue();
+});
+
+it('declines an invitation', function () {
+    $team = team();
+    role($team, 'editor');
+    $user = user();
+
+    $team->invite($user->email)->as('editor')->decline();
+
+    expect($user->invitations()->count())->toBe(0)
+        ->and($user->in($team))->toBeFalse();
+});
+
+it('prunes invitations whose links have expired', function () {
+    $team = team();
+    role($team, 'editor');
+    $expired = $team->invite('old@example.com')->as('editor');
+    $this->travel(8)->days();
+    $fresh = $team->invite('new@example.com')->as('editor');
+
+    $this->artisan('model:prune', ['--model' => [Invitation::class]])->assertSuccessful();
+
+    $this->assertModelMissing($expired);
+    $this->assertModelExists($fresh);
+});
+
+it('prunes a resent invitation from the last email', function () {
+    $team = team();
+    role($team, 'editor');
+    $invitation = $team->invite('jane@example.com')->as('editor');
+    $this->travel(6)->days();
+    $team->invite('jane@example.com')->as('editor');
+    $this->travel(6)->days();
+
+    $this->artisan('model:prune', ['--model' => [Invitation::class]])->assertSuccessful();
+
+    $this->assertModelExists($invitation);
+});
+
+it('keeps invitations when links never expire', function () {
+    config(['teams.invitations.expire' => null]);
+    $team = team();
+    role($team, 'editor');
+    $invitation = $team->invite('jane@example.com')->as('editor');
+    $this->travel(1)->years();
+
+    $this->artisan('model:prune', ['--model' => [Invitation::class]])->assertSuccessful();
+
+    $this->assertModelExists($invitation);
+});

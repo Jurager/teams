@@ -2,12 +2,15 @@
 
 namespace Jurager\Teams\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
+use Jurager\Teams\Database\Factories\TeamFactory;
 use Jurager\Teams\Traits\HasMembers;
 
 class Team extends Model
 {
+    use HasFactory;
     use HasMembers;
 
     /**
@@ -23,5 +26,13 @@ class Team extends Model
     public function getTable(): string
     {
         return $this->table ?? Config::get('teams.tables.teams', 'teams');
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): TeamFactory
+    {
+        return TeamFactory::new();
     }
 }

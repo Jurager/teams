@@ -31,6 +31,14 @@ trait HasTeams
     }
 
     /**
+     * Get the pending invitations sent to the user's email.
+     */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(Teams::model('invitation'), 'email', 'email');
+    }
+
+    /**
      * Get the groups the user is in.
      */
     public function groups(): BelongsToMany

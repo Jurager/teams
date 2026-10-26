@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.1.0
+
+### New
+
+- `$team->transfer($user)` makes another user the team owner. Pass a role to keep the previous owner as a member: `$team->transfer($user, 'admin')`.
+- `TeamTransferring` and `TeamTransferred` events.
+- `Group`, `Member`, and `Invitable` validation rules.
+- `$user->invitations` returns the invitations sent to the user's email, and `$invitation->decline()` declines one.
+- Expired invitations can be deleted with Laravel's `model:prune` command.
+- Factories for teams, roles, groups, and invitations.
+- `$team->member($user)->load($articles)` loads the rules for many records at once, so checks on them run no extra queries.
+- `grant` and `sync` accept `code => name` pairs to name permissions.
+
+### Changed
+
+- New permissions are named after their code, so `articles.edit` is named `Articles Edit`.
+
+
 ## 4.0.0
 
 Teams 4.0 brings a fluent API, native Gate support, and safer invitations.

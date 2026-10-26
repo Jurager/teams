@@ -12,10 +12,65 @@ use RuntimeException;
 
 class Member
 {
+    /**
+     * The role, groups, and record rules loaded by load(), shared by the checks on those records.
+     *
+     * @var array{role: Model|null, groups: array{0: Collection, 1: Collection}, records: array<string, int>, rules: array<string, Collection>}|null
+     */
+    protected ?array $loaded = null;
+
     public function __construct(
         public readonly Model $team,
         public readonly Model $user,
     ) {}
+
+    /**
+     * Load the member's role, groups, and rules on the given records at once, so checks on these records run no queries.
+     *
+     * The loaded data is not refreshed, so load it right before the checks.
+     */
+    public function load(iterable $records): static
+    {
+        if ($this->user->owns($this->team)) {
+            return $this;
+        }
+
+        $records = collect($records)
+            ->filter(fn (Model $record): bool => $this->contains($record));
+
+        [$global, $groups] = $this->groups();
+
+        $role = $this->role()?->load('permissions');
+
+        $rules = [
+            'user' => collect(),
+            'groups' => collect(),
+            'role' => collect(),
+        ];
+
+        if ($records->isNotEmpty() && $role !== null) {
+
+            $constraint = $this->constraint($records);
+
+            $rules = [
+                'user' => $constraint($this->user->abilities())->get(),
+                'groups' => $groups->load(['abilities' => $constraint])->flatMap->abilities,
+                'role' => $role->load(['abilities' => $constraint])->abilities,
+            ];
+        }
+
+        $this->loaded = [
+            'role' => $role,
+            'groups' => [$global, $groups],
+            'records' => $records
+                ->map(fn (Model $record) => $this->key($record))
+                ->flip()
+                ->all(),
+            'rules' => $rules,
+        ];
+
+        return $this;
+    }
 
     /**
      * Get the member's role: a team role, the owner role, or null for a non-member.
@@ -177,48 +232,113 @@ class Member
             return true;
         }
 
-        $teamKey = Config::get('teams.foreign_keys.team_id');
-
-        [$globalGroups, $teamGroups] = $this->user->groups()
-            ->where(fn ($query) => $query->whereBelongsTo($this->team, 'team')->orWhereNull($teamKey))
-            ->with('permissions')
-            ->get()
-            ->partition(fn ($group) => $group->getAttribute($teamKey) === null);
+        [$globalGroups, $teamGroups] = $this->loaded['groups'] ?? $this->groups();
 
         if ($this->matches($globalGroups->flatMap->permissions->pluck('code')->all(), $permission)) {
             return true;
         }
 
-        $role = $this->role();
+        $role = $this->loaded === null ? $this->role() : $this->loaded['role'];
 
         if ($role === null) {
             return false;
         }
 
-        $rules = $this->rules($record, $permission);
+        $rules = $this->rules($record, $permission, $teamGroups, $role);
 
         // The member's own rules decide first, then the rules of their team groups, then of their role.
-        return $this->decide($rules($this->user->abilities())->get(), [], $permission)
-            ?? $this->decide($teamGroups->load(['abilities' => $rules])->flatMap->abilities, $teamGroups->flatMap->permissions->pluck('code')->all(), $permission)
-            ?? $this->decide($role->load(['permissions', 'abilities' => $rules])->abilities, $role->permissions->pluck('code')->all(), $permission)
+        return $this->decide($rules('user'), [], $permission)
+            ?? $this->decide($rules('groups'), $teamGroups->flatMap->permissions->pluck('code')->all(), $permission)
+            ?? $this->decide($rules('role'), $role->permissions->pluck('code')->all(), $permission)
             ?? false;
     }
 
     /**
-     * Build a constraint for the team's rules on the record that cover the permission.
+     * Get the user's global groups and their groups in the team, with permissions.
+     *
+     * @return array{0: Collection, 1: Collection}
      */
-    protected function rules(Model $record, string $permission): Closure
+    protected function groups(): array
     {
-        $permissions = $this->team->permissions();
+        $teamKey = Config::get('teams.foreign_keys.team_id');
 
-        $permissionIds = $permissions
-            ->whereIn($permissions->getRelated()->qualifyColumn('code'), $this->codes($permission))
-            ->select($permissions->getRelated()->getQualifiedKeyName());
+        [$global, $team] = $this->user->groups()
+            ->where(fn ($query) => $query->whereBelongsTo($this->team, 'team')->orWhereNull($teamKey))
+            ->with('permissions')
+            ->get()
+            ->partition(fn ($group) => $group->getAttribute($teamKey) === null);
 
-        return fn ($query) => $query->whereBelongsTo($this->team, 'team')
-            ->where($query->qualifyColumn('entity_type'), $record->getMorphClass())
-            ->where($query->qualifyColumn('entity_id'), $record->getKey())
-            ->whereIn($query->qualifyColumn('permission_id'), $permissionIds);
+        return [$global, $team];
+    }
+
+    /**
+     * Get a resolver of the rules on the record that cover the permission, for the user, their groups, or their role.
+     */
+    protected function rules(Model $record, string $permission, Collection $groups, Model $role): Closure
+    {
+        $key = $this->key($record);
+        $codes = $this->codes($permission);
+
+        if (isset($this->loaded['records'][$key])) {
+            return fn (string $level) => $this->loaded['rules'][$level]->filter(
+                fn (Model $rule): bool => "{$rule->entity_type}:{$rule->entity_id}" === $key && in_array($rule->permission->code, $codes, true)
+            );
+        }
+
+        $constraint = $this->constraint(collect([$record]), $codes);
+
+        return fn (string $level) => match ($level) {
+            'user' => $constraint($this->user->abilities())->get(),
+            'groups' => $groups->load(['abilities' => $constraint])->flatMap->abilities,
+            'role' => $role->load(['abilities' => $constraint])->abilities,
+        };
+    }
+
+    /**
+     * Build a constraint for the team's rules on the records. With codes, only the rules for those codes are kept.
+     *
+     * @param  list<string>|null  $codes
+     */
+    protected function constraint(Collection $records, ?array $codes = null): Closure
+    {
+        $entities = $records
+            ->groupBy(fn (Model $record): string => $record->getMorphClass())
+            ->map(fn (Collection $group): array => $group->map->getKey()->all());
+
+        return function ($query) use ($entities, $codes) {
+
+            $query->whereBelongsTo($this->team, 'team');
+
+            $query->where(static function ($query) use ($entities): void {
+                foreach ($entities as $type => $ids) {
+                    $query->orWhere(static fn ($query) => $query
+                        ->where($query->qualifyColumn('entity_type'), $type)
+                        ->whereIn($query->qualifyColumn('entity_id'), $ids));
+                }
+            });
+
+            if ($codes === null) {
+                return $query->with('permission');
+            }
+
+            $permissions = $this->team->permissions();
+            $permission = $permissions->getRelated();
+
+            return $query->whereIn(
+                $query->qualifyColumn('permission_id'),
+                $permissions
+                    ->whereIn($permission->qualifyColumn('code'), $codes)
+                    ->select($permission->getQualifiedKeyName()),
+            );
+        };
+    }
+
+    /**
+     * Get the key that identifies the record among records of any type.
+     */
+    protected function key(Model $record): string
+    {
+        return $record->getMorphClass().':'.$record->getKey();
     }
 
     /**

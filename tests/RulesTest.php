@@ -10,7 +10,7 @@ use Jurager\Teams\Tests\Fixtures\OwnedArticle;
 
 afterEach(fn () => Relation::morphMap([], false));
 
-it('keeps rule precedence', function (array $rolePermissions, array $groupPermissions, array $rules, bool $global, bool $expected) {
+it('keeps rule precedence', function (array $rolePermissions, array $groupPermissions, array $rules, bool $global, bool $expected, bool $preload) {
     $team = team();
     $user = member($team, $rolePermissions);
     $member = $team->member($user);
@@ -26,7 +26,7 @@ it('keeps rule precedence', function (array $rolePermissions, array $groupPermis
         Group::create(['code' => 'support'])->grant('articles.*')->add($user);
     }
 
-    expect($member->can('articles.edit', $article))->toBe($expected);
+    expect(($preload ? $member->load([$article]) : $member)->can('articles.edit', $article))->toBe($expected);
 })->with([
     'no grant' => [[], [], [], false, false],
     'role permission' => [['articles.*'], [], [], false, true],
@@ -38,6 +38,9 @@ it('keeps rule precedence', function (array $rolePermissions, array $groupPermis
     'user grant overrides group deny' => [[], [], [['group', true, 'articles.edit'], ['user', false, 'articles.edit']], false, true],
     'user deny overrides wildcard user grant' => [[], [], [['user', false, 'articles.*'], ['user', true, 'articles.edit']], false, false],
     'global grant overrides user deny' => [[], [], [['user', true, 'articles.edit']], true, true],
+])->with([
+    'queried' => false,
+    'preloaded' => true,
 ]);
 
 it('decides on a personal grant before loading lower levels', function () {
@@ -192,4 +195,37 @@ it('removes the permissions and rules of a deleted group', function () {
             'entity_id' => $group->getKey(),
         ]);
     }
+});
+
+it('checks preloaded records without queries', function () {
+    $team = team();
+    $user = member($team, ['articles.view']);
+    $member = $team->member($user);
+    $group = $team->groups()->create(['code' => 'editors'])->grant('articles.edit')->add($user);
+    [$first, $second, $third] = [article($team), article($team), OwnedArticle::create(['team_id' => $team->id, 'owner_id' => $user->id])];
+    $member->forbid('articles.edit')->on($first);
+    $group->forbid('articles.view')->on($second);
+    $member->role()->allow('articles.delete')->on($second);
+    $records = [$first, $second, $third];
+    $checks = ['articles.view', 'articles.edit', 'articles.delete'];
+    $expected = collect($records)->map(fn ($record) => collect($checks)->map(fn ($check) => $member->can($check, $record))->all())->all();
+
+    $member->load([...$records, article(team())]);
+    DB::enableQueryLog();
+
+    expect(collect($records)->map(fn ($record) => collect($checks)->map(fn ($check) => $member->can($check, $record))->all())->all())
+        ->toBe($expected)
+        ->toBe([[true, false, false], [false, true, true], [true, true, true]])
+        ->and(DB::getQueryLog())->toBeEmpty();
+});
+
+it('queries records that were not preloaded', function () {
+    $team = team();
+    $member = $team->member(member($team, ['articles.*']));
+    $article = article($team);
+    $member->load([article($team)]);
+    $member->forbid('articles.edit')->on($article);
+
+    expect($member->can('articles.edit', $article))->toBeFalse()
+        ->and($member->can('articles.view', $article))->toBeTrue();
 });

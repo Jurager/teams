@@ -37,6 +37,11 @@ class PendingInvitation
 
             $invitation = $this->team->invitations()->updateOrCreate(['email' => $this->email], ['role_id' => $role->getKey()]);
 
+            // A resent link expires later, so the invitation is pruned later too.
+            if (! $invitation->wasRecentlyCreated) {
+                $invitation->touch();
+            }
+
             TeamMemberInvited::dispatch($this->team, $this->email, $role);
 
             $this->team->getConnection()->afterCommit(fn () => Mail::to($this->email)->send(new Invitation($invitation)));

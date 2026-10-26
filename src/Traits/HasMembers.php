@@ -12,6 +12,8 @@ use Jurager\Teams\Events\TeamCreating;
 use Jurager\Teams\Events\TeamDeleted;
 use Jurager\Teams\Events\TeamMemberRemoved;
 use Jurager\Teams\Events\TeamMemberRemoving;
+use Jurager\Teams\Events\TeamTransferred;
+use Jurager\Teams\Events\TeamTransferring;
 use Jurager\Teams\Events\TeamUpdated;
 use Jurager\Teams\Events\TeamUpdating;
 use Jurager\Teams\Support\Facades\Teams;
@@ -119,17 +121,47 @@ trait HasMembers
 
             TeamMemberRemoving::dispatch($this, $user);
 
-            $user->groups()->detach($this->groups()->pluck($this->groups()->getRelated()->getKeyName()));
-
-            $rules = $user->abilities()->whereBelongsTo($this, 'team');
-            $user->abilities()->detach($rules->pluck($rules->getRelated()->getQualifiedKeyName()));
-
             $this->members()->detach($user);
-
-            $this->unsetRelation('members');
-            $user->unsetRelation('memberships')->unsetRelation('groups')->unsetRelation('abilities');
+            $this->release($user);
 
             TeamMemberRemoved::dispatch($this, $user);
+        });
+    }
+
+    /**
+     * Make the user the owner of the team.
+     *
+     * With a role, the previous owner stays in the team as a member with that role. Without one, they leave the team.
+     */
+    public function transfer(Model $user, string|Model|null $role = null): void
+    {
+        $this->getConnection()->transaction(function () use ($user, $role) {
+
+            $team = $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+
+            if ($user->owns($team)) {
+                throw new RuntimeException('The user already owns the team.');
+            }
+
+            $role = is_string($role) ? $this->role($role) : $role;
+            $previous = $team->owner()->firstOrFail();
+
+            TeamTransferring::dispatch($this, $user, $previous);
+
+            $this->members()->detach($user);
+            $this->forceFill(['user_id' => $user->getKey()])->save();
+
+            if ($role === null) {
+                $this->release($previous);
+            } else {
+                $this->members()->attach($previous, ['role_id' => $role->getKey()]);
+            }
+
+            $this->unsetRelation('owner');
+            $user->unsetRelation('teams')->unsetRelation('memberships');
+            $previous->unsetRelation('teams');
+
+            TeamTransferred::dispatch($this, $user, $previous);
         });
     }
 
@@ -179,5 +211,19 @@ trait HasMembers
 
             $this->delete();
         });
+    }
+
+    /**
+     * Remove the user's team groups and record rules once they have left the team.
+     */
+    protected function release(Model $user): void
+    {
+        $user->groups()->detach($this->groups()->pluck($this->groups()->getRelated()->getKeyName()));
+
+        $rules = $user->abilities()->whereBelongsTo($this, 'team');
+        $user->abilities()->detach($rules->pluck($rules->getRelated()->getQualifiedKeyName()));
+
+        $this->unsetRelation('members');
+        $user->unsetRelation('memberships')->unsetRelation('groups')->unsetRelation('abilities');
     }
 }

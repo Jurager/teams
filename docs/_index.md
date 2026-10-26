@@ -15,8 +15,11 @@ Roles and groups grant permissions within a team, and abilities allow or forbid 
 - Team groups that add permissions on top of a member's role.
 - Allow and forbid rules on single records for members, roles, and groups.
 - Global groups for access across all teams.
+- Ownership transfer.
 - Email invitations with signed, expiring links.
+- Fast permission checks on lists of records.
 - Events for team and membership changes.
+- Model factories for your tests.
 
 ## Requirements
 
@@ -89,3 +92,4 @@ Upgrading from 3.x? See the [upgrade guide](upgrade-guide.md).
 - [Events](events.md)
 - [Models](models.md)
 - [Facade](facade-service.md)
+- [Testing](testing.md)

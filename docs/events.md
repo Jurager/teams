@@ -9,20 +9,22 @@ weight: 120
 
 The package dispatches the following events. All of them live in the `Jurager\Teams\Events` namespace:
 
-| Event                | Properties              | Dispatched                                             |
-|----------------------|-------------------------|--------------------------------------------------------|
-| `TeamCreating`       | `team`                  | Before a team is created                               |
-| `TeamCreated`        | `team`                  | After a team is created                                |
-| `TeamUpdating`       | `team`                  | Before a team is updated                               |
-| `TeamUpdated`        | `team`                  | After a team is updated                                |
-| `TeamDeleted`        | `team`                  | After a team is deleted                                |
-| `TeamMemberAdding`   | `team`, `user`          | Before a member is added                               |
-| `TeamMemberAdded`    | `team`, `user`          | After a member is added                                |
-| `TeamMemberUpdated`  | `team`, `user`          | After a member's role is changed                       |
-| `TeamMemberRemoving` | `team`, `user`          | Before a member is removed                             |
-| `TeamMemberRemoved`  | `team`, `user`          | After a member is removed                              |
-| `TeamMemberInviting` | `team`, `email`, `role` | Before an invitation is saved                          |
-| `TeamMemberInvited`  | `team`, `email`, `role` | After an invitation is saved, before the email is sent |
+| Event                | Properties                  | Dispatched                                             |
+|----------------------|-----------------------------|--------------------------------------------------------|
+| `TeamCreating`       | `team`                      | Before a team is created                               |
+| `TeamCreated`        | `team`                      | After a team is created                                |
+| `TeamUpdating`       | `team`                      | Before a team is updated                               |
+| `TeamUpdated`        | `team`                      | After a team is updated                                |
+| `TeamDeleted`        | `team`                      | After a team is deleted                                |
+| `TeamTransferring`   | `team`, `owner`, `previous` | Before the team gets a new owner                       |
+| `TeamTransferred`    | `team`, `owner`, `previous` | After the team gets a new owner                        |
+| `TeamMemberAdding`   | `team`, `user`              | Before a member is added                               |
+| `TeamMemberAdded`    | `team`, `user`              | After a member is added                                |
+| `TeamMemberUpdated`  | `team`, `user`              | After a member's role is changed                       |
+| `TeamMemberRemoving` | `team`, `user`              | Before a member is removed                             |
+| `TeamMemberRemoved`  | `team`, `user`              | After a member is removed                              |
+| `TeamMemberInviting` | `team`, `email`, `role`     | Before an invitation is saved                          |
+| `TeamMemberInvited`  | `team`, `email`, `role`     | After an invitation is saved, before the email is sent |
 
 ## Listening for Events
 

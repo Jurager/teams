@@ -2,14 +2,21 @@
 
 namespace Jurager\Teams\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Config;
+use Jurager\Teams\Database\Factories\InvitationFactory;
 use Jurager\Teams\Support\Facades\Teams;
 use RuntimeException;
 
 class Invitation extends Model
 {
+    use HasFactory;
+    use Prunable;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -81,5 +88,33 @@ class Invitation extends Model
 
             $this->delete();
         });
+    }
+
+    /**
+     * Decline the invitation.
+     */
+    public function decline(): void
+    {
+        $this->delete();
+    }
+
+    /**
+     * Get the invitations whose links have expired.
+     */
+    public function prunable(): Builder
+    {
+        $expire = Config::get('teams.invitations.expire');
+
+        return $expire === null
+            ? static::query()->whereRaw('1 = 0')
+            : static::query()->where('updated_at', '<', now()->subMinutes($expire));
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): InvitationFactory
+    {
+        return InvitationFactory::new();
     }
 }

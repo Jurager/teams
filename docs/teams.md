@@ -80,6 +80,20 @@ if ($user->in($team)) {
 }
 ```
 
+## Transferring Ownership
+
+To make another user the owner of a team, use the `transfer` method. If the user was a member, their membership is replaced by ownership:
+
+```php
+$team->transfer($user);
+```
+
+By default, the previous owner leaves the team along with their groups and [ability rules](abilities.md). To keep them as a member, pass a role:
+
+```php
+$team->transfer($user, 'admin');
+```
+
 ## Deleting Teams
 
 To delete a team together with its members, roles, groups, permissions, and invitations, use the `purge` method:

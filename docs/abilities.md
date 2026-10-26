@@ -55,6 +55,22 @@ class Article extends Model
 }
 ```
 
+## Checking Many Records
+
+Each record check runs a few queries. When checking a list of records, load the member's role, groups, and rules for all of them at once with the `load` method. Checks on the loaded records then run no queries:
+
+```php
+$member = $team->member($user)->load($articles);
+
+foreach ($articles as $article) {
+    if ($member->can('articles.edit', $article)) {
+        // ...
+    }
+}
+```
+
+The loaded data isn't refreshed, so load it right before the checks.
+
 ## How Access Is Decided
 
 The team owner, the record owner, and members of a matching [global group](groups.md#global-groups) always pass.

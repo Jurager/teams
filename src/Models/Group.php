@@ -3,15 +3,18 @@
 namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Config;
+use Jurager\Teams\Database\Factories\GroupFactory;
 use Jurager\Teams\Support\Facades\Teams;
 use Jurager\Teams\Traits\HasPermissions;
 
 class Group extends Model
 {
+    use HasFactory;
     use HasPermissions;
 
     /**
@@ -116,5 +119,13 @@ class Group extends Model
         $users->each->unsetRelation('groups');
 
         return $this->unsetRelation('members');
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): GroupFactory
+    {
+        return GroupFactory::new();
     }
 }

@@ -34,6 +34,37 @@ Otherwise, the route returns a `403` response. After accepting, the user is redi
 > [!NOTE]
 > The invited user must already have an account. A user who is already in the team keeps their role.
 
+## Listing a User's Invitations
+
+The `invitations` relationship of a user returns the invitations sent to their email, for example to show them after the user signs in:
+
+```php
+foreach ($user->invitations as $invitation) {
+    $invitation->team->name;
+    $invitation->role->name;
+}
+```
+
+To accept or decline an invitation yourself, use the `accept` and `decline` methods:
+
+```php
+$invitation->accept();
+
+$invitation->decline();
+```
+
+## Pruning Expired Invitations
+
+Expired invitations stay in the database. To delete them, schedule Laravel's `model:prune` command for the invitation model:
+
+```php
+use Jurager\Teams\Models\Invitation;
+
+Schedule::command('model:prune', ['--model' => [Invitation::class]])->daily();
+```
+
+An invitation is pruned once `invitations.expire` has passed since its email was last sent. When `expire` is `null`, invitations are never pruned.
+
 ## Using Your Own Route
 
 To handle invitations yourself, set `invitations.routes.register` to `false` and define a route with the same name. The email will link to your route:

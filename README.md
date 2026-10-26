@@ -18,8 +18,11 @@ Additionally, users can be added to a global group to grant them access across a
 - Team groups that extend role permissions.
 - Record-level allow and forbid rules for members, roles, and groups.
 - Global groups for cross-team access.
+- Ownership transfer.
 - Email invitations.
+- Fast permission checks on lists of records.
 - Team and membership lifecycle events.
+- Model factories for your tests.
 
 ## Requirements
 

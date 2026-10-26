@@ -123,3 +123,40 @@ it('keeps custom relationship constraints', function () {
     expect($member->permissions())->toEqualCanonicalizing(['visible.role', 'visible.group'])
         ->and($member->canAny(['hidden.role', 'hidden.group', 'hidden.group.permission']))->toBeFalse();
 });
+
+it('grants permissions with or without names', function () {
+    $role = role(team(), 'editor');
+
+    $role->grant('articles.view', ['articles.edit' => 'Edit articles', 'articles.publish']);
+
+    expect($role->permissions->pluck('name', 'code')->all())->toEqualCanonicalizing([
+        'articles.view' => 'Articles View',
+        'articles.edit' => 'Edit articles',
+        'articles.publish' => 'Articles Publish',
+    ]);
+});
+
+it('renames existing permissions only when a name is given', function () {
+    $team = team();
+    $team->permissions()->create(['code' => 'articles.edit', 'name' => 'Edit articles']);
+
+    role($team, 'editor')->grant('articles.edit');
+    expect($team->permissions()->value('name'))->toBe('Edit articles');
+
+    role($team, 'author')->sync(['articles.edit' => 'Change articles']);
+    expect($team->permissions()->value('name'))->toBe('Change articles')
+        ->and($team->permissions()->count())->toBe(1);
+});
+
+it('reuses global permissions across global groups', function () {
+    Group::create(['code' => 'support'])->grant('tickets.view', ['tickets.edit' => 'Edit tickets']);
+    Group::create(['code' => 'billing'])->grant('tickets.view', ['tickets.edit' => 'Edit tickets']);
+
+    expect(Permission::whereNull('team_id')->count())->toBe(2);
+});
+
+it('names permissions after their code by default', function () {
+    $permission = team()->permissions()->create(['code' => 'billing.view_invoices']);
+
+    expect($permission->name)->toBe('Billing View Invoices');
+});

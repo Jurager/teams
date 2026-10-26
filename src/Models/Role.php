@@ -2,16 +2,19 @@
 
 namespace Jurager\Teams\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Config;
+use Jurager\Teams\Database\Factories\RoleFactory;
 use Jurager\Teams\Support\Facades\Teams;
 use Jurager\Teams\Traits\HasPermissions;
 use RuntimeException;
 
 class Role extends Model
 {
+    use HasFactory;
     use HasPermissions;
 
     /**
@@ -81,5 +84,13 @@ class Role extends Model
 
             return parent::delete();
         });
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): RoleFactory
+    {
+        return RoleFactory::new();
     }
 }

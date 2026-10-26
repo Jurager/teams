@@ -50,11 +50,11 @@ trait HasPermissions
     }
 
     /**
-     * Grant the given permissions.
+     * Grant the given permissions, as codes or code => name pairs.
      */
-    public function grant(string|array ...$codes): static
+    public function grant(string|array ...$permissions): static
     {
-        $this->permissions()->syncWithoutDetaching($this->permissionIds($codes));
+        $this->permissions()->syncWithoutDetaching($this->permissionIds($permissions));
 
         return $this->unsetRelation('permissions');
     }
@@ -76,11 +76,11 @@ trait HasPermissions
     }
 
     /**
-     * Replace all permissions with the given ones. Without arguments, removes them all.
+     * Replace all permissions with the given codes or code => name pairs. Without arguments, removes them all.
      */
-    public function sync(string|array ...$codes): static
+    public function sync(string|array ...$permissions): static
     {
-        $this->permissions()->sync($this->permissionIds($codes));
+        $this->permissions()->sync($this->permissionIds($permissions));
 
         return $this->unsetRelation('permissions');
     }
@@ -110,14 +110,16 @@ trait HasPermissions
     }
 
     /**
-     * Resolve permission codes to IDs in the record's team, creating missing ones.
+     * Resolve permissions to IDs in the record's team, creating missing ones.
      *
-     * @param  array<string|array<string>>  $codes
+     * @param  array<string|array<int|string, string>>  $permissions
      * @return list<int|string>
      */
-    protected function permissionIds(array $codes): array
+    protected function permissionIds(array $permissions): array
     {
-        return Teams::model('permission')::ids($this->getAttribute(Config::get('teams.foreign_keys.team_id')), Arr::flatten($codes));
+        $team = $this->getAttribute(Config::get('teams.foreign_keys.team_id'));
+
+        return Teams::model('permission')::ids($team, array_merge(...array_map(Arr::wrap(...), $permissions)));
     }
 
     /**

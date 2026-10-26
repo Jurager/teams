@@ -59,6 +59,32 @@ All roles of a team are available through `$team->roles`.
 > [!NOTE]
 > A role that is assigned to members can't be deleted, so move them to another role first. Deleting a role also deletes its permissions and [ability rules](abilities.md).
 
+## Naming Permissions
+
+Each permission has a name for your screens. By default, it is made from the code, so `articles.edit` is named `Articles Edit`. To give your own names, pass `code => name` pairs to the `grant` or `sync` methods. You may mix them with plain codes:
+
+```php
+$team->role('editor')->grant('articles.view', [
+    'articles.edit' => 'Edit articles',
+    'articles.publish' => 'Publish articles',
+]);
+
+$team->role('editor')->permissions->pluck('name');
+// ['Articles View', 'Edit articles', 'Publish articles']
+```
+
+Permissions are stored in the database once per team, so a name given to one role also changes for every other role with that permission. Granting a code without a name keeps its current name.
+
+The team's permissions are useful for building a form that manages a role's permissions, and for validating it:
+
+```php
+$request->validate([
+    'permissions.*' => [Rule::in($team->permissions->pluck('code'))],
+]);
+
+$team->role('editor')->sync($request->permissions);
+```
+
 ## Wildcards
 
 A code that ends with `.*` grants every permission below it:
