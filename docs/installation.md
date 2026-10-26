@@ -3,8 +3,6 @@ title: Installation
 weight: 20
 ---
 
-# Installation
-
 ## Installing the Package
 
 You may install Teams using the Composer package manager:

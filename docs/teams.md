@@ -3,8 +3,6 @@ title: Teams
 weight: 40
 ---
 
-# Teams
-
 ## Creating Teams
 
 Teams are created using the `teams` relationship of the user who will own the team:

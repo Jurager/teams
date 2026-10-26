@@ -3,8 +3,6 @@ title: Events
 weight: 120
 ---
 
-# Events
-
 ## Available Events
 
 The package dispatches the following events. All of them live in the `Jurager\Teams\Events` namespace:

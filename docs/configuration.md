@@ -3,8 +3,6 @@ title: Configuration
 weight: 30
 ---
 
-# Configuration
-
 All of the package options are stored in the `config/teams.php` file. To change them, publish the file:
 
 ```shell

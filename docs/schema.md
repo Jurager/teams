@@ -3,8 +3,6 @@ title: Database Schema
 weight: 35
 ---
 
-# Database Schema
-
 ## Tables
 
 The package creates the following tables. See the [migration files](https://github.com/jurager/teams/tree/main/database/migrations) for their full definitions.

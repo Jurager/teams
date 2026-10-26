@@ -3,8 +3,6 @@ title: Validation
 weight: 126
 ---
 
-# Validation
-
 To make sure a value is a role code of a team, use the `Role` rule:
 
 ```php

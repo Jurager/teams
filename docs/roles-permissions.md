@@ -3,8 +3,6 @@ title: Roles and Permissions
 weight: 60
 ---
 
-# Roles and Permissions
-
 A permission is a code such as `articles.edit`. Permissions belong to a team and are created automatically the first time you grant them.
 
 ## Creating Roles

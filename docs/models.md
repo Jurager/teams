@@ -3,8 +3,6 @@ title: Models
 weight: 130
 ---
 
-# Models
-
 ## Package Models
 
 All models live in the `Jurager\Teams\Models` namespace and have the following relationships:
