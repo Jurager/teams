@@ -3,6 +3,8 @@ title: Invitations
 weight: 100
 ---
 
+# Invitations
+
 ## Sending Invitations
 
 To invite someone to a team, call the `invite` method with their email and pass the role to `as`:

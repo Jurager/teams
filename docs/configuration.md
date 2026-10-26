@@ -3,7 +3,9 @@ title: Configuration
 weight: 30
 ---
 
-All of the package options are stored in the `config/teams.php` file. To change them, publish the file:
+# Configuration
+
+All the package options are stored in the `config/teams.php` file. To change them, publish the file:
 
 ```shell
 php artisan vendor:publish --tag=teams-config

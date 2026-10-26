@@ -3,6 +3,8 @@ title: Upgrade Guide
 weight: 38
 ---
 
+# Upgrade Guide
+
 ## High Impact Changes
 
 - [Updating Dependencies](#updating-dependencies)

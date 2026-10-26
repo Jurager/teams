@@ -3,6 +3,8 @@ title: Introduction
 weight: 10
 ---
 
+# Introduction
+
 Teams provides team-based access control for Laravel applications. A user may own teams, join teams owned by others, and have different permissions in each of them.
 
 ```php

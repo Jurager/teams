@@ -3,6 +3,8 @@ title: Middleware
 weight: 90
 ---
 
+# Middleware
+
 Routes may be protected using Laravel's `can` middleware, just like any other [permission check](authorization.md#checking-permissions).
 
 ## Protecting Routes

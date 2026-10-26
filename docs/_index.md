@@ -3,6 +3,8 @@ title: Teams
 weight: 1
 ---
 
+# Teams
+
 Teams provides team-based access control for Laravel. A user may own teams, join teams owned by others, and have a different role in each of them.
 
 Roles and groups grant permissions within a team, and abilities allow or forbid actions on single records. Global groups give staff, such as support agents, access across all teams without joining each one.
@@ -89,4 +91,3 @@ Upgrading from 3.x? See the [upgrade guide](upgrade-guide.md).
 - [Events](events.md)
 - [Models](models.md)
 - [Facade](facade-service.md)
-- [License](license.md)

@@ -3,6 +3,8 @@ title: Abilities
 weight: 70
 ---
 
+# Abilities
+
 A permission applies to every record in the team. An ability allows or forbids an action on one record.
 
 ## Checking a Record
