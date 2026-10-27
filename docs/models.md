@@ -14,7 +14,7 @@ All models live in the `Jurager\Teams\Models` namespace and have the following r
 | `Team`       | `owner`, `members`, `roles`, `groups`, `permissions`, `abilities`, `invitations` |
 | `Role`       | `team`, `members`, `permissions`, `abilities`                                    |
 | `Group`      | `team`, `members`, `permissions`, `abilities`                                    |
-| `Ability`    | `team`, `permission`, `entity`                                                   |
+| `Ability`    | `team`, `permission`, `entity`, `users`, `roles`, `groups`                       |
 | `Invitation` | `team`, `role`, `user`                                                           |
 | `Membership` | `team`, `user`, `role`                                                           |
 | `Permission` | —                                                                                |

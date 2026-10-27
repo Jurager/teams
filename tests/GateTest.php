@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Jurager\Teams\Models\Team;
+use Jurager\Teams\Tests\Fixtures\User;
 
 beforeEach(fn () => Route::model('team', Team::class));
 
@@ -42,6 +43,34 @@ it('asks the application gate first', function () {
     Gate::define('articles.edit', fn () => false);
 
     expect($user->can('articles.edit', $team))->toBeFalse();
+});
+
+it('allows later after callbacks to grant undefined abilities', function () {
+    $team = team();
+    $user = member($team);
+    Gate::after(fn () => true);
+
+    expect($user->can('articles.edit', $team))->toBeTrue();
+});
+
+it('preserves boolean results for typed after callbacks', function (bool $allowed) {
+    $team = team();
+    $user = member($team, $allowed ? ['articles.edit'] : []);
+    $results = [];
+    Gate::after(function (User $user, string $ability, ?bool $result, array $arguments) use (&$results) {
+        $results[] = $result;
+    });
+
+    expect($user->can('articles.edit', $team))->toBe($allowed)
+        ->and($results)->toBe([$allowed ? true : null]);
+})->with([false, true]);
+
+it('keeps explicit application denials when later callbacks grant', function () {
+    $team = team();
+    Gate::define('articles.edit', fn () => false);
+    Gate::after(fn () => true);
+
+    expect($team->owner->can('articles.edit', $team))->toBeFalse();
 });
 
 it('leaves other subjects and guests alone', function () {

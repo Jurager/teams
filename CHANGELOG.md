@@ -1,5 +1,27 @@
 # Changelog
 
+## 4.2.0
+
+### New
+
+- `Member::inspect` returns Laravel's authorization response with the source and reason of an access decision. The response can be returned from gates and policies or authorized directly.
+- `PermissionsUpdated`, `GroupMembersUpdated`, and `AbilityUpdated` events report actual assignment changes after commit.
+- String-backed enums are accepted for role, group, and permission codes, including mixed arrays in permission methods.
+- `$user->accessible()` queries owned and joined teams in one SQL statement, with filtering, sorting, and pagination.
+- `$team->rules($record)` queries explicit record rules with their permissions and user, role, and group recipients.
+- Unassigned ability definitions can be removed with Laravel's `model:prune`, with assignments rechecked under a lock before deletion.
+
+### Fixed
+
+- Gate integration preserves application authorization responses, typed after callbacks, and grants from later after callbacks.
+- Record checks deny models with a missing or null team key, including partially selected models.
+- Cancelling role or group deletion preserves their permissions and record rules. Cancelling a team purge preserves its members.
+- Accessible team queries and record authorization use the model's database connection.
+- Ownership transfers use the current locked team state, including transfers from stale model instances.
+- Cancelled membership changes, ownership transfers, and invitation writes roll back without dispatching completion events or sending invitations.
+- Invitations reject role models from another team before saving or sending email.
+- Ownership transfers clear loaded member and ownership relationships for the team and both owners.
+
 ## 4.1.0
 
 ### New

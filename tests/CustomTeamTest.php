@@ -36,6 +36,9 @@ it('gives an independent team model the whole api with one trait', function () {
         ->and($user->memberships()->firstOrFail()->is($team))->toBeTrue()
         ->and($user->can('articles.edit', $article))->toBeTrue();
 
+    expect($user->accessible()->first())->toBeInstanceOf(Workspace::class)
+        ->and($team->rules($article)->first()->users->first()->is($user))->toBeTrue();
+
     $team->update(['name' => 'Renamed']);
     $team->remove($user);
 

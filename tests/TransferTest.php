@@ -4,6 +4,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Jurager\Teams\Events\TeamTransferred;
 use Jurager\Teams\Events\TeamTransferring;
+use Jurager\Teams\Models\Membership;
+use Jurager\Teams\Models\Team;
 
 it('transfers the team to a member and lets the previous owner leave', function () {
     $team = team();
@@ -32,6 +34,23 @@ it('keeps the previous owner as a member with the given role', function () {
     expect($user->owns($team))->toBeTrue()
         ->and($team->member($previous)->is('admin'))->toBeTrue()
         ->and($team->members->modelKeys())->toBe([$previous->id]);
+});
+
+it('refreshes loaded members and ownership relationships when retaining the previous owner', function () {
+    $team = team();
+    $previous = $team->owner->load('teams', 'memberships');
+    $next = member($team)->load('teams', 'memberships');
+    $team->load('members');
+    role($team, 'reader');
+
+    $team->transfer($next, 'reader');
+
+    expect($team->members->modelKeys())->toBe([$previous->id])
+        ->and($previous->teams)->toBeEmpty()
+        ->and($previous->memberships->first()->is($team))->toBeTrue()
+        ->and($previous->memberships->first()->membership->role->code)->toBe('reader')
+        ->and($next->teams->first()->is($team))->toBeTrue()
+        ->and($next->memberships)->toBeEmpty();
 });
 
 it('does not transfer to the current owner or with an unknown role', function () {
@@ -68,4 +87,67 @@ it('rolls back the transfer when a listener fails', function () {
     expect(fn () => $team->transfer($user))->toThrow(RuntimeException::class, 'Listener failed.')
         ->and($team->fresh()->owner->is($owner))->toBeTrue()
         ->and($user->in($team))->toBeTrue();
+});
+
+it('transfers a stale team back to its original owner using current database state', function () {
+    $team = team();
+    $original = $team->owner;
+    role($team, 'reader');
+    $previous = user();
+    $team->fresh()->transfer($previous, 'reader');
+    Event::fake(TeamTransferred::class);
+
+    $team->transfer($original, 'reader');
+
+    expect($team->fresh()->owner->is($original))->toBeTrue()
+        ->and($team->owner->is($original))->toBeTrue()
+        ->and($team->members()->whereKey($original)->exists())->toBeFalse()
+        ->and($team->member($previous)->is('reader'))->toBeTrue();
+
+    Event::assertDispatched(TeamTransferred::class, fn ($event) => $event->team === $team
+        && $event->owner->is($original) && $event->previous->is($previous));
+});
+
+it('rolls back a transfer when saving the owner is cancelled', function () {
+    $team = team();
+    $owner = $team->owner;
+    $next = member($team);
+    Event::fake(TeamTransferred::class);
+    Team::saving(fn () => false);
+
+    expect(fn () => $team->transfer($next))->toThrow(RuntimeException::class, 'The team ownership could not be transferred.')
+        ->and($team->fresh()->owner->is($owner))->toBeTrue()
+        ->and($next->memberships()->whereKey($team)->exists())->toBeTrue();
+
+    Event::assertNotDispatched(TeamTransferred::class);
+});
+
+it('rolls back a transfer when removing the next owners membership is cancelled', function () {
+    $team = team();
+    $owner = $team->owner;
+    $next = member($team);
+    Event::fake(TeamTransferred::class);
+    Membership::deleting(fn () => false);
+
+    expect(fn () => $team->transfer($next))->toThrow(RuntimeException::class, 'The membership could not be removed.')
+        ->and($team->fresh()->owner->is($owner))->toBeTrue()
+        ->and($next->in($team))->toBeTrue();
+
+    Event::assertNotDispatched(TeamTransferred::class);
+});
+
+it('rolls back a transfer when retaining the previous owner is cancelled', function () {
+    $team = team();
+    $owner = $team->owner;
+    $next = member($team);
+    $role = role($team, 'reader');
+    Event::fake(TeamTransferred::class);
+    Membership::saving(fn () => false);
+
+    expect(fn () => $team->transfer($next, $role))->toThrow(RuntimeException::class, 'The membership could not be created.')
+        ->and($team->fresh()->owner->is($owner))->toBeTrue()
+        ->and($next->memberships()->whereKey($team)->exists())->toBeTrue()
+        ->and($team->members()->whereKey($owner)->exists())->toBeFalse();
+
+    Event::assertNotDispatched(TeamTransferred::class);
 });

@@ -97,3 +97,28 @@ $user->can('articles.comments.edit', $team); // true
 ```
 
 To let a code such as `*` grant every permission, enable [wildcards](configuration.md#wildcards) in the configuration.
+
+## Using Enums
+
+You may pass string-backed enums instead of role, group, or permission codes:
+
+```php
+enum Permission: string
+{
+    case ViewArticles = 'articles.view';
+    case EditArticles = 'articles.edit';
+}
+
+$team->role('editor')->grant(Permission::ViewArticles, Permission::EditArticles);
+
+$team->member($user)->can(Permission::EditArticles);
+$team->member($user)->forbid(Permission::EditArticles)->on($article);
+```
+
+Enums work in `grant`, `revoke`, `sync`, `can`, `canAny`, `inspect`, and record rules, including arrays mixed with strings. Role enums work in `role`, `as`, `assign`, `is`, and `transfer`; group enums work in `group`.
+
+The `code` attribute of roles, groups, and permissions also accepts enums and stores their string values.
+
+When using Laravel's Gate on versions without native enum support, including Laravel 10.30, pass `Permission::EditArticles->value`.
+
+To name an enum permission, use its value as the array key: `[Permission::EditArticles->value => 'Edit articles']`.

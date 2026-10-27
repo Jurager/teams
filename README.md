@@ -14,14 +14,17 @@ Additionally, users can be added to a global group to grant them access across a
 
 - Team-scoped roles and permissions with a fluent API.
 - Works with Laravel's Gate: `$user->can()`, `@can`, and the `can` middleware.
+- Inspect access decisions with Laravel's authorization responses.
+- String-backed enums for role, group, and permission codes.
 - Hierarchical wildcard permissions (`articles.*`).
 - Team groups that extend role permissions.
 - Record-level allow and forbid rules for members, roles, and groups.
+- Query record rules with their permissions and recipients.
 - Global groups for cross-team access.
 - Ownership transfer.
 - Email invitations.
 - Fast permission checks on lists of records.
-- Team and membership lifecycle events.
+- Team, membership, and access change events.
 - Model factories for your tests.
 
 ## Requirements

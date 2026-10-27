@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Database\Factories\GroupFactory;
+use Jurager\Teams\Events\GroupMembersUpdated;
 use Jurager\Teams\Support\Facades\Teams;
 use Jurager\Teams\Traits\HasPermissions;
 
@@ -66,10 +67,20 @@ class Group extends Model
         $users = Collection::wrap($users);
 
         $this->getConnection()->transaction(function () use ($users) {
-            $this->members()->syncWithoutDetaching($this->eligible($users)->modelKeys());
+
+            $eligible = $this->eligible($users);
+
+            $this->lockForUpdate()->findOrFail($this->getKey());
+
+            $changes = $this->members()->syncWithoutDetaching($eligible->modelKeys());
+            $this->forgetMembers($users);
+
+            if ($changes['attached'] !== []) {
+                GroupMembersUpdated::dispatch($this, $changes['attached'], []);
+            }
         });
 
-        return $this->forgetMembers($users);
+        return $this;
     }
 
     /**
@@ -79,9 +90,22 @@ class Group extends Model
     {
         $users = Collection::wrap($users);
 
-        $this->members()->detach($users->modelKeys());
+        $this->getConnection()->transaction(function () use ($users) {
 
-        return $this->forgetMembers($users);
+            $this->lockForUpdate()->findOrFail($this->getKey());
+
+            $members = $this->members();
+            $ids = $members->whereKey($users->modelKeys())->pluck($members->getRelated()->getQualifiedKeyName())->all();
+
+            $this->members()->detach($ids);
+            $this->forgetMembers($users);
+
+            if ($ids !== []) {
+                GroupMembersUpdated::dispatch($this, [], $ids);
+            }
+        });
+
+        return $this;
     }
 
     /**

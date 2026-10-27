@@ -68,6 +68,14 @@ $user->memberships;
 
 Each team returned by `memberships` has a `membership` attribute with the member's `role_id` and timestamps.
 
+To query both owned and joined teams, use `accessible`. It returns an Eloquent builder, so you can filter, sort, and paginate the results:
+
+```php
+$teams = $user->accessible()->orderBy('name')->paginate(15);
+```
+
+The query runs in the database and returns each team once. Pending invitations and global groups don't add teams to this list.
+
 To determine if a user owns a team or belongs to it, use the `owns` and `in` methods. The `in` method returns `true` for the owner as well:
 
 ```php

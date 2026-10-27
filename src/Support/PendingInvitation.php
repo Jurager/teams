@@ -2,6 +2,7 @@
 
 namespace Jurager\Teams\Support;
 
+use BackedEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
 use Jurager\Teams\Events\TeamMemberInvited;
@@ -21,25 +22,27 @@ class PendingInvitation
      *
      * Inviting the same email again updates the pending invitation.
      */
-    public function as(string|Model $role): Model
+    public function as(string|BackedEnum|Model $role): Model
     {
         return $this->team->getConnection()->transaction(function () use ($role) {
 
-            $this->team->newQuery()->lockForUpdate()->findOrFail($this->team->getKey());
+            $this->team->lockForUpdate()->findOrFail($this->team->getKey());
 
             if ($this->joined()) {
                 throw new RuntimeException('This user already belongs to the team.');
             }
 
-            $role = $role instanceof Model ? $role : $this->team->role($role);
+            $role = $role instanceof Model
+                ? $this->team->roles()->whereKey($role)->firstOrFail()
+                : $this->team->role($role);
 
             TeamMemberInviting::dispatch($this->team, $this->email, $role);
 
-            $invitation = $this->team->invitations()->updateOrCreate(['email' => $this->email], ['role_id' => $role->getKey()]);
+            $invitation = $this->team->invitations()->firstOrNew(['email' => $this->email]);
+            $invitation->fill(['role_id' => $role->getKey()])->setUpdatedAt($invitation->freshTimestamp());
 
-            // A resent link expires later, so the invitation is pruned later too.
-            if (! $invitation->wasRecentlyCreated) {
-                $invitation->touch();
+            if (! $invitation->save()) {
+                throw new RuntimeException('The invitation could not be saved.');
             }
 
             TeamMemberInvited::dispatch($this->team, $this->email, $role);

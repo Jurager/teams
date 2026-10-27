@@ -1,12 +1,16 @@
 <?php
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Jurager\Teams\Events\TeamMemberAdded;
 use Jurager\Teams\Events\TeamMemberAdding;
+use Jurager\Teams\Events\TeamMemberInvited;
+use Jurager\Teams\Events\TeamMemberInviting;
 use Jurager\Teams\Mail\Invitation as InvitationMail;
 use Jurager\Teams\Models\Invitation;
+use Jurager\Teams\Models\Membership;
 
 beforeEach(fn () => Mail::fake());
 
@@ -47,6 +51,79 @@ it('adds the user and deletes the invitation on accept', function () {
 
     expect($team->member($user)->can('articles.edit'))->toBeTrue()
         ->and($team->invitations()->count())->toBe(0);
+});
+
+it('rejects a role from another team before inviting or mailing', function () {
+    $team = team();
+    $foreign = role(team(), 'admin');
+    Event::fake([TeamMemberInviting::class, TeamMemberInvited::class]);
+
+    expect(fn () => $team->invite('invited@example.com')->as($foreign))->toThrow(ModelNotFoundException::class)
+        ->and($team->invitations()->count())->toBe(0);
+
+    Event::assertNotDispatched(TeamMemberInviting::class);
+    Event::assertNotDispatched(TeamMemberInvited::class);
+    Mail::assertNothingSent();
+});
+
+it('does not mail an invitation when saving is cancelled', function () {
+    $team = team();
+    $role = role($team, 'reader');
+    Event::fake(TeamMemberInvited::class);
+    Invitation::saving(fn () => false);
+
+    expect(fn () => $team->invite('invited@example.com')->as($role))->toThrow(RuntimeException::class, 'The invitation could not be saved.')
+        ->and($team->invitations()->count())->toBe(0);
+
+    Event::assertNotDispatched(TeamMemberInvited::class);
+    Mail::assertNothingSent();
+});
+
+it('preserves an existing invitation when resending is cancelled', function () {
+    $team = team();
+    role($team, 'reader');
+    role($team, 'editor');
+    $invitation = $team->invite('invited@example.com')->as('reader');
+    $sentAt = $invitation->updated_at;
+    $this->travel(1)->days();
+    Mail::fake();
+    Invitation::saving(fn () => false);
+    Event::fake(TeamMemberInvited::class);
+
+    expect(fn () => $team->invite($invitation->email)->as('editor'))->toThrow(RuntimeException::class, 'The invitation could not be saved.')
+        ->and($invitation->fresh()->role->code)->toBe('reader')
+        ->and($invitation->fresh()->updated_at->eq($sentAt))->toBeTrue();
+
+    Event::assertNotDispatched(TeamMemberInvited::class);
+    Mail::assertNothingSent();
+});
+
+it('preserves invitations when membership creation is cancelled', function () {
+    $team = team();
+    $user = user();
+    $invitation = $team->invite($user->email)->as(role($team, 'reader'));
+    Event::fake(TeamMemberAdded::class);
+    Membership::saving(fn () => false);
+
+    expect(fn () => $invitation->accept())->toThrow(RuntimeException::class, 'The membership could not be created.')
+        ->and($invitation->fresh())->not->toBeNull()
+        ->and($user->in($team))->toBeFalse();
+
+    Event::assertNotDispatched(TeamMemberAdded::class);
+});
+
+it('rolls back membership creation when invitation deletion is cancelled', function () {
+    $team = team();
+    $user = user();
+    $invitation = $team->invite($user->email)->as(role($team, 'reader'));
+    Event::fake(TeamMemberAdded::class);
+    Invitation::deleting(fn () => false);
+
+    expect(fn () => $invitation->accept())->toThrow(RuntimeException::class, 'The invitation could not be accepted.')
+        ->and($invitation->fresh())->not->toBeNull()
+        ->and($user->in($team))->toBeFalse();
+
+    Event::assertNotDispatched(TeamMemberAdded::class);
 });
 
 it('keeps the role of an existing member', function () {

@@ -145,6 +145,19 @@ it('purges a team with its members', function () {
     expect(Membership::count())->toBe(0);
 });
 
+it('preserves members when team deletion is cancelled', function () {
+    $team = team();
+    $user = member($team, ['articles.edit']);
+    Event::fake(TeamDeleted::class);
+    Team::deleting(fn () => false);
+
+    expect(fn () => $team->purge())->toThrow(RuntimeException::class, 'The team could not be deleted.')
+        ->and($team->fresh())->not->toBeNull()
+        ->and($team->member($user)->can('articles.edit'))->toBeTrue();
+
+    Event::assertNotDispatched(TeamDeleted::class);
+});
+
 it('loads a team and resolves a role with one query each', function () {
     $team = team();
     $user = member($team);

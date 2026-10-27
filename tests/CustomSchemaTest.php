@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Jurager\Teams\Models\Team;
+use Jurager\Teams\Tests\Fixtures\Article;
 use Jurager\Teams\Tests\TestCase;
 
 beforeAll(function () {
@@ -35,6 +36,14 @@ it('uses the configured tables and foreign key everywhere', function () {
         ->and($team->invite('custom@example.com')->as($role)->team->is($team))->toBeTrue()
         ->and($user->memberships()->first()->membership->getTable())->toBe('custom_team_user');
 
+    expect($user->accessible()->first()->is($team))->toBeTrue()
+        ->and($team->rules($article)->first()->users->first()->is($user))->toBeTrue();
+
+    $member->forget('articles.publish')->on($article);
+    $ability = $team->abilities()->firstOrFail();
+    expect($ability->prunable()->count())->toBe(1)
+        ->and($ability->prune())->toBeTrue();
+
     $team->remove($user);
     $group->delete();
     $role->delete();
@@ -55,4 +64,13 @@ it('rolls back the migrations with the configured tables', function () {
     foreach (config('teams.tables') as $table) {
         expect(Schema::hasTable($table))->toBeFalse();
     }
+});
+
+it('requires the configured team key when checking a selected record', function () {
+    $team = team();
+    $member = $team->member(member($team, ['articles.*']));
+    $article = article($team);
+
+    expect($member->can('articles.edit', Article::select('id', 'workspace_id')->findOrFail($article->id)))->toBeTrue()
+        ->and($member->can('articles.edit', Article::select('id')->findOrFail($article->id)))->toBeFalse();
 });
