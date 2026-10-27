@@ -2,6 +2,7 @@
 
 namespace Jurager\Teams\Traits;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,6 +12,19 @@ use Jurager\Teams\Support\Facades\Teams;
 
 trait HasTeams
 {
+    /**
+     * Query the teams the user owns or belongs to.
+     */
+    public function accessible(): Builder
+    {
+        $memberships = $this->memberships();
+
+        return $memberships->getRelated()->newQuery()->where(fn (Builder $query) => $query
+            ->whereBelongsTo($this, 'owner')
+            ->orWhereIn($query->getModel()->getQualifiedKeyName(), $memberships
+                ->select($memberships->getRelated()->getQualifiedKeyName())));
+    }
+
     /**
      * Get the teams the user owns.
      */

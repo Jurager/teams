@@ -11,14 +11,17 @@ Roles and groups grant permissions within a team, and abilities allow or forbid 
 
 - Team roles and permissions with a fluent API.
 - Works with Laravel's Gate: `$user->can()`, `@can`, and the `can` middleware.
+- Inspect access decisions with Laravel's authorization responses.
+- String-backed enums for role, group, and permission codes.
 - Wildcard permissions such as `articles.*`.
 - Team groups that add permissions on top of a member's role.
 - Allow and forbid rules on single records for members, roles, and groups.
+- Query record rules with their permissions and recipients.
 - Global groups for access across all teams.
 - Ownership transfer.
 - Email invitations with signed, expiring links.
 - Fast permission checks on lists of records.
-- Events for team and membership changes.
+- Events for team, membership, and access changes.
 - Model factories for your tests.
 
 ## Requirements

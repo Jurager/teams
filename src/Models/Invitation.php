@@ -79,14 +79,16 @@ class Invitation extends Model
 
         $this->getConnection()->transaction(function () {
             $team = $this->team()->lockForUpdate()->firstOrFail();
-            $invitation = $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+            $invitation = $this->lockForUpdate()->findOrFail($this->getKey());
             $user = $invitation->user ?? throw new RuntimeException('Invited user not found.');
 
             if (! $user->in($team)) {
                 $team->add($user)->as($invitation->role);
             }
 
-            $this->delete();
+            if ($this->delete() === false) {
+                throw new RuntimeException('The invitation could not be accepted.');
+            }
         });
     }
 

@@ -17,6 +17,8 @@ $user->can('articles.edit', $article);
 
 When the record has no rules, the user's role and group permissions decide. A record of another team is always denied.
 
+When selecting columns, include `team_id`, or your configured team foreign key. Checks deny records whose team key is missing or `null`, including checks by the team or record owner.
+
 ## Allowing and Forbidding Actions
 
 Rules are added to a member, a role, or a group, and the `on` method names the record they apply to:
@@ -40,6 +42,43 @@ Instead of a model, you may pass its class and key:
 ```php
 $team->member($user)->allow('articles.edit')->on(Article::class, $articleId);
 ```
+
+## Listing Record Rules
+
+The `rules` method queries the team's explicit rules on a record, with the permission and recipients already loaded:
+
+```php
+$rules = $team->rules($article)->get();
+
+foreach ($rules as $rule) {
+    $rule->permission->code;
+    $rule->users;
+    $rule->roles;
+    $rule->groups;
+}
+```
+
+Each recipient has a `pivot->forbidden` value: `true` forbids and `false` allows the permission. Definitions without recipients are omitted. The query supports filters and pagination:
+
+```php
+$rules = $team->rules($article)
+    ->whereRelation('permission', 'code', 'articles.edit')
+    ->paginate(15);
+```
+
+## Pruning Unused Abilities
+
+Removing a rule leaves its ability definition available for reuse. To delete definitions that have no assignments, schedule Laravel's `model:prune` command:
+
+```php
+use Jurager\Teams\Models\Ability;
+
+Schedule::command('model:prune', ['--model' => [Ability::class]])->daily();
+```
+
+Use your configured ability class if you have a custom model. Assignments are checked again under a lock before deletion, so an ability assigned during pruning is kept. Permission definitions are retained.
+
+To preview the candidates, run `php artisan model:prune --model="Jurager\Teams\Models\Ability" --pretend`.
 
 ## Record Owners
 

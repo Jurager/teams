@@ -2,6 +2,8 @@
 
 namespace Jurager\Teams\Models;
 
+use BackedEnum;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
@@ -51,12 +53,20 @@ class Permission extends Model
     }
 
     /**
+     * Store enum codes as strings.
+     */
+    protected function code(): Attribute
+    {
+        return Attribute::set(fn (string|BackedEnum $code) => $code instanceof BackedEnum ? $code->value : $code);
+    }
+
+    /**
      * Get the IDs of the permissions in the team, creating missing ones.
      *
      * Accepts codes and code => name pairs; a given name replaces the stored one.
      * A null team holds the permissions of global groups.
      *
-     * @param  array<int|string, string>  $permissions
+     * @param  array<int|string, string|BackedEnum>  $permissions
      * @return list<int|string>
      */
     public static function ids(int|string|null $team, array $permissions): array
@@ -93,7 +103,7 @@ class Permission extends Model
     /**
      * Turn codes and code => name pairs into a code => name map, with null for codes without a name.
      *
-     * @param  array<int|string, string>  $permissions
+     * @param  array<int|string, string|BackedEnum>  $permissions
      * @return array<string, string|null>
      */
     protected static function names(array $permissions): array
@@ -102,7 +112,7 @@ class Permission extends Model
 
         foreach ($permissions as $key => $value) {
             if (is_int($key)) {
-                $names[$value] ??= null;
+                $names[$value instanceof BackedEnum ? $value->value : $value] ??= null;
 
                 continue;
             }

@@ -179,6 +179,66 @@ it('rolls back role cleanup when a deleting listener fails', function () {
         ->and($role->permissions()->count())->toBe(1);
 });
 
+it('preserves assignments when role deletion is cancelled', function () {
+    $team = team();
+    $role = role($team, 'unused', ['articles.edit']);
+    $role->forbid('articles.edit')->on(article($team));
+    Role::deleting(fn () => false);
+
+    expect($role->delete())->toBeFalse()
+        ->and($role->fresh())->not->toBeNull()
+        ->and($role->permissions()->count())->toBe(1)
+        ->and($role->abilities()->count())->toBe(1);
+});
+
+it('preserves forbids and permissions when group deletion is cancelled', function () {
+    $team = team();
+    $user = member($team, ['articles.*']);
+    $article = article($team);
+    $group = $team->groups()->create(['code' => 'restricted'])->grant('articles.view')->add($user);
+    $group->forbid('articles.edit')->on($article);
+    Group::deleting(fn () => false);
+
+    expect($team->member($user)->can('articles.edit', $article))->toBeFalse()
+        ->and($group->delete())->toBeFalse()
+        ->and($group->fresh())->not->toBeNull()
+        ->and($group->permissions()->count())->toBe(1)
+        ->and($group->abilities()->count())->toBe(1)
+        ->and($group->members()->whereKey($user)->exists())->toBeTrue()
+        ->and($team->member($user)->can('articles.edit', $article))->toBeFalse();
+});
+
+it('denies records with an unselected or null team key before checking grants', function (string $source, bool $preload) {
+    $team = team();
+    $user = $source === 'team owner' ? $team->owner : member($team, ['articles.*']);
+    $member = $team->member($user);
+
+    if ($source === 'global group') {
+        Group::create(['code' => 'support'])->grant('articles.*')->add($user);
+    }
+
+    $record = OwnedArticle::create([
+        'team_id' => $team->id,
+        'owner_id' => $source === 'record owner' ? $user->id : null,
+    ]);
+    $partial = OwnedArticle::select('id', 'owner_id')->findOrFail($record->id);
+    $foreign = article(team());
+    $foreignPartial = Article::select('id')->findOrFail($foreign->id);
+    $unassigned = $record->replicate()->forceFill(['team_id' => null]);
+
+    if ($preload) {
+        $member->load([$record, $partial, $foreign, $foreignPartial, $unassigned]);
+    }
+
+    expect($member->can('articles.edit', $record))->toBeTrue();
+
+    foreach ([$partial, $foreign, $foreignPartial, $unassigned] as $record) {
+        expect($member->can('articles.edit', $record))->toBeFalse()
+            ->and($member->canAny(['articles.edit'], $record))->toBeFalse()
+            ->and($member->inspect('articles.edit', $record)->code())->toBe('team_mismatch');
+    }
+})->with(['role', 'team owner', 'record owner', 'global group'])->with([false, true]);
+
 it('removes the permissions and rules of a deleted group', function () {
     $team = team();
     $user = member($team);

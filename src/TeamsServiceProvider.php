@@ -72,7 +72,7 @@ class TeamsServiceProvider extends ServiceProvider
             return;
         }
 
-        Gate::after(function (Authenticatable $user, $ability, ?bool $result, array $arguments) {
+        Gate::after(function (Authenticatable $user, $ability, $result, array $arguments) {
 
             $subject = $arguments[0] ?? null;
 
@@ -99,7 +99,7 @@ class TeamsServiceProvider extends ServiceProvider
 
         $key = $subject->getAttribute(Config::get('teams.foreign_keys.team_id'));
 
-        return $key === null ? null : $class::query()->find($key);
+        return $key === null ? null : $subject->belongsTo($class, Config::get('teams.foreign_keys.team_id'))->first();
     }
 
     /**

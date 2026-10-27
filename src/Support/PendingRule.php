@@ -2,12 +2,16 @@
 
 namespace Jurager\Teams\Support;
 
+use BackedEnum;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use Jurager\Teams\Events\AbilityUpdated;
 use Jurager\Teams\Support\Facades\Teams;
 
 class PendingRule
 {
+    protected string $permission;
+
     /**
      * @param  Model  $target  The user, role or group the rule belongs to.
      * @param  bool|null  $forbidden  True to forbid, false to allow, null to remove the rule.
@@ -15,9 +19,11 @@ class PendingRule
     public function __construct(
         protected Model $team,
         protected Model $target,
-        protected string $permission,
+        string|BackedEnum $permission,
         protected ?bool $forbidden,
-    ) {}
+    ) {
+        $this->permission = $permission instanceof BackedEnum ? $permission->value : $permission;
+    }
 
     /**
      * Apply the rule to a record, given as a model or as a model class and key.
@@ -26,9 +32,9 @@ class PendingRule
     {
         $record = $this->record($record, $key);
 
-        $this->forbidden === null ? $this->detach($record) : $this->attach($record);
-
         $this->target->unsetRelation('abilities');
+
+        $this->forbidden === null ? $this->detach($record) : $this->attach($record);
     }
 
     /**
@@ -37,15 +43,29 @@ class PendingRule
     protected function attach(Model $record): void
     {
         $this->team->getConnection()->transaction(function () use ($record) {
+
+            $this->team->lockForUpdate()->findOrFail($this->team->getKey());
+
             $ability = $this->team->abilities()->firstOrCreate([
                 'entity_type' => $record->getMorphClass(),
                 'entity_id' => $record->getKey(),
                 'permission_id' => Teams::model('permission')::ids($this->team->getKey(), [$this->permission])[0],
             ]);
 
+            $ability->lockForUpdate()->findOrFail($ability->getKey());
+
+            $previous = $this->target->abilities()->whereKey($ability->getKey())->first();
+            $forbidden = $previous === null ? null : (bool) $previous->pivot->forbidden;
+
+            if ($forbidden === $this->forbidden) {
+                return;
+            }
+
             $this->target->abilities()->syncWithoutDetaching([
                 $ability->getKey() => ['forbidden' => $this->forbidden],
             ]);
+
+            AbilityUpdated::dispatch($ability, $this->target, $forbidden, $this->forbidden);
         });
     }
 
@@ -54,12 +74,26 @@ class PendingRule
      */
     protected function detach(Model $record): void
     {
-        $abilities = $this->team->abilities()
-            ->where('entity_type', $record->getMorphClass())
-            ->where('entity_id', $record->getKey())
-            ->whereRelation('permission', 'code', $this->permission);
+        $this->team->getConnection()->transaction(function () use ($record) {
+            $this->team->lockForUpdate()->findOrFail($this->team->getKey());
 
-        $this->target->abilities()->detach($abilities->pluck($abilities->getRelated()->getKeyName()));
+            $ability = $this->team->abilities()
+                ->where('entity_type', $record->getMorphClass())
+                ->where('entity_id', $record->getKey())
+                ->whereRelation('permission', 'code', $this->permission)
+                ->lockForUpdate()->first();
+
+            if ($ability === null) {
+                return;
+            }
+
+            $previous = $this->target->abilities()->whereKey($ability->getKey())->first();
+
+            if ($previous !== null) {
+                $this->target->abilities()->detach($ability->getKey());
+                AbilityUpdated::dispatch($ability, $this->target, (bool) $previous->pivot->forbidden, null);
+            }
+        });
     }
 
     /**

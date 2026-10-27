@@ -2,11 +2,14 @@
 
 namespace Jurager\Teams\Traits;
 
+use BackedEnum;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
+use Jurager\Teams\Events\PermissionsUpdated;
 use Jurager\Teams\Support\Facades\Teams;
 use Jurager\Teams\Support\PendingRule;
 use LogicException;
@@ -17,6 +20,14 @@ use LogicException;
 trait HasPermissions
 {
     /**
+     * Store enum codes as strings.
+     */
+    protected function code(): Attribute
+    {
+        return Attribute::set(fn (string|BackedEnum $code) => $code instanceof BackedEnum ? $code->value : $code);
+    }
+
+    /**
      * Name new records after their code and clean up their assignments on delete.
      */
     public static function bootHasPermissions(): void
@@ -25,7 +36,7 @@ trait HasPermissions
             $model->name ??= Str::headline($model->code);
         });
 
-        static::deleting(function (Model $model) {
+        static::deleted(function (Model $model) {
             $model->permissions()->detach();
             $model->abilities()->detach();
         });
@@ -52,25 +63,32 @@ trait HasPermissions
     /**
      * Grant the given permissions, as codes or code => name pairs.
      */
-    public function grant(string|array ...$permissions): static
+    public function grant(string|BackedEnum|array ...$permissions): static
     {
-        $this->permissions()->syncWithoutDetaching($this->permissionIds($permissions));
-
-        return $this->unsetRelation('permissions');
+        return $this->syncPermissions($permissions, detaching: false);
     }
 
     /**
      * Revoke the given permissions.
      */
-    public function revoke(string|array ...$codes): static
+    public function revoke(string|BackedEnum|array ...$codes): static
     {
-        $permissions = $this->permissions()->getRelated();
+        $this->getConnection()->transaction(function () use ($codes) {
 
-        $ids = $this->permissions()
-            ->whereIn($permissions->qualifyColumn('code'), Arr::flatten($codes))
-            ->pluck($permissions->getQualifiedKeyName());
+            $this->lockForUpdate()->findOrFail($this->getKey());
 
-        $this->permissions()->detach($ids);
+            $permissions = $this->permissions()->getRelated();
+            $ids = $this->permissions()
+                ->whereIn($permissions->qualifyColumn('code'), array_map(fn ($code) => $code instanceof BackedEnum ? $code->value : $code, Arr::flatten($codes)))
+                ->pluck($permissions->getQualifiedKeyName())->all();
+
+            if ($ids !== []) {
+                $this->permissions()->detach($ids);
+                $this->unsetRelation('permissions');
+
+                PermissionsUpdated::dispatch($this, [], $ids);
+            }
+        });
 
         return $this->unsetRelation('permissions');
     }
@@ -78,17 +96,15 @@ trait HasPermissions
     /**
      * Replace all permissions with the given codes or code => name pairs. Without arguments, removes them all.
      */
-    public function sync(string|array ...$permissions): static
+    public function sync(string|BackedEnum|array ...$permissions): static
     {
-        $this->permissions()->sync($this->permissionIds($permissions));
-
-        return $this->unsetRelation('permissions');
+        return $this->syncPermissions($permissions);
     }
 
     /**
      * Start a rule that allows the permission on one record.
      */
-    public function allow(string $permission): PendingRule
+    public function allow(string|BackedEnum $permission): PendingRule
     {
         return new PendingRule($this->ruleTeam(), $this, $permission, forbidden: false);
     }
@@ -96,7 +112,7 @@ trait HasPermissions
     /**
      * Start a rule that forbids the permission on one record.
      */
-    public function forbid(string $permission): PendingRule
+    public function forbid(string|BackedEnum $permission): PendingRule
     {
         return new PendingRule($this->ruleTeam(), $this, $permission, forbidden: true);
     }
@@ -104,15 +120,35 @@ trait HasPermissions
     /**
      * Start removing the rule for the permission on one record.
      */
-    public function forget(string $permission): PendingRule
+    public function forget(string|BackedEnum $permission): PendingRule
     {
         return new PendingRule($this->ruleTeam(), $this, $permission, forbidden: null);
     }
 
     /**
+     * Sync permissions and dispatch their actual assignment changes.
+     */
+    protected function syncPermissions(array $permissions, bool $detaching = true): static
+    {
+        $this->getConnection()->transaction(function () use ($permissions, $detaching) {
+
+            $this->lockForUpdate()->findOrFail($this->getKey());
+
+            $changes = $this->permissions()->sync($this->permissionIds($permissions), $detaching);
+            $this->unsetRelation('permissions');
+
+            if ($changes['attached'] !== [] || $changes['detached'] !== []) {
+                PermissionsUpdated::dispatch($this, array_values($changes['attached']), array_values($changes['detached']));
+            }
+        });
+
+        return $this;
+    }
+
+    /**
      * Resolve permissions to IDs in the record's team, creating missing ones.
      *
-     * @param  array<string|array<int|string, string>>  $permissions
+     * @param  array<string|BackedEnum|array<int|string, string|BackedEnum>>  $permissions
      * @return list<int|string>
      */
     protected function permissionIds(array $permissions): array

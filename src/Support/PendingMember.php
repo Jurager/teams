@@ -2,6 +2,7 @@
 
 namespace Jurager\Teams\Support;
 
+use BackedEnum;
 use Illuminate\Database\Eloquent\Model;
 use Jurager\Teams\Events\TeamMemberAdded;
 use Jurager\Teams\Events\TeamMemberAdding;
@@ -17,13 +18,13 @@ class PendingMember
     /**
      * Add the user to the team with the given role.
      */
-    public function as(string|Model $role): Member
+    public function as(string|BackedEnum|Model $role): Member
     {
         $this->team->getConnection()->transaction(function () use ($role) {
 
-            $this->team->newQuery()->lockForUpdate()->findOrFail($this->team->getKey());
+            $team = $this->team->lockForUpdate()->findOrFail($this->team->getKey());
 
-            if ($this->user->in($this->team)) {
+            if ($this->user->in($team)) {
                 throw new RuntimeException('User already belongs to the team.');
             }
 
@@ -32,6 +33,10 @@ class PendingMember
             TeamMemberAdding::dispatch($this->team, $this->user);
 
             $this->team->members()->attach($this->user, ['role_id' => $role->getKey()]);
+
+            if (! $this->team->members()->whereKey($this->user)->exists()) {
+                throw new RuntimeException('The membership could not be created.');
+            }
 
             $this->team->unsetRelation('members');
             $this->user->unsetRelation('memberships');

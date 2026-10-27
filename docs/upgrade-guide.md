@@ -67,13 +67,13 @@ Create a migration in your application that applies the changes below. Use your 
 
 **Likelihood Of Impact: High**
 
-The user and team methods have been replaced by a fluent API. On the user model, `teams` now returns the teams the user owns, and `memberships` returns the teams the user is a member of:
+The user and team methods have been replaced by a fluent API. On the user model, `teams` returns owned teams, `memberships` returns joined teams, and `accessible()` queries both:
 
 | 3.x                                                    | 4.0                                     |
 |--------------------------------------------------------|-----------------------------------------|
 | `$user->ownedTeams()`                                  | `$user->teams()`                        |
 | `$user->teams()`                                       | `$user->memberships()`                  |
-| `$user->allTeams()`                                    | Removed                                 |
+| `$user->allTeams()`                                    | `$user->accessible()->get()`            |
 | `$user->ownsTeam($team)`                               | `$user->owns($team)`                    |
 | `$user->belongsToTeam($team)`, `$team->hasUser($user)` | `$user->in($team)`                      |
 | `$team->users`                                         | `$team->members`                        |
@@ -179,7 +179,7 @@ The built-in route now requires a signed-in user whose email matches the invitat
 
 Custom `membership`, `invitation`, `role`, `permission`, `ability`, and `group` models must extend the package models. A class that does not throws a `RuntimeException`.
 
-The `users` relations on teams, roles, and groups have been renamed to `members`. The `users`, `roles`, and `groups` relations of `Ability`, and the relations of `Permission`, have been removed.
+The `users` relations on teams, roles, and groups have been renamed to `members`. The relations of `Permission` have been removed.
 
 ### Configuration
 

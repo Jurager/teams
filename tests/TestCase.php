@@ -55,6 +55,11 @@ abstract class TestCase extends Orchestra
     {
         parent::setUp();
 
+        $this->createTables();
+    }
+
+    protected function createTables(): void
+    {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('email')->unique();

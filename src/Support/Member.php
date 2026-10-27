@@ -2,8 +2,11 @@
 
 namespace Jurager\Teams\Support;
 
+use BackedEnum;
 use Closure;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Events\TeamMemberUpdated;
@@ -91,7 +94,7 @@ class Member
     /**
      * Determine if the member has any of the given roles. The owner has every role.
      */
-    public function is(string|Model ...$roles): bool
+    public function is(string|BackedEnum|Model ...$roles): bool
     {
         $role = $this->role();
 
@@ -100,7 +103,11 @@ class Member
         }
 
         return $role !== null && collect($roles)->contains(
-            fn ($expected) => $expected instanceof Model ? $expected->is($role) : $expected === $role->code
+            fn ($expected) => match (true) {
+                $expected instanceof Model => $expected->is($role),
+                $expected instanceof BackedEnum => $expected->value === $role->code,
+                default => $expected === $role->code,
+            }
         );
     }
 
@@ -111,29 +118,19 @@ class Member
      */
     public function permissions(): array
     {
-        $role = $this->role();
-
-        if ($role instanceof Owner) {
+        if ($this->user->owns($this->team)) {
             return ['*'];
         }
 
-        if ($role === null) {
-            return [];
-        }
-
-        $groups = $this->user->groups()->whereBelongsTo($this->team, 'team')->with('permissions')->get();
-
-        return $role->permissions->pluck('code')
-            ->merge($groups->flatMap->permissions->pluck('code'))
-            ->unique()->values()->all();
+        return $this->permissionSources()->flatten()->unique()->values()->all();
     }
 
     /**
      * Determine if the member has all of the given permissions, on the team or on one of its records.
      */
-    public function can(string|array $permissions, ?Model $record = null): bool
+    public function can(string|BackedEnum|array $permissions, ?Model $record = null): bool
     {
-        return $this->check((array) $permissions, $record, all: true);
+        return $this->check(Arr::wrap($permissions), $record, all: true)->allowed();
     }
 
     /**
@@ -141,29 +138,41 @@ class Member
      */
     public function canAny(array $permissions, ?Model $record = null): bool
     {
-        return $this->check($permissions, $record, all: false);
+        return $this->check($permissions, $record, all: false)->allowed();
+    }
+
+    /**
+     * Inspect the permission and explain which rule decides access.
+     */
+    public function inspect(string|BackedEnum $permission, ?Model $record = null): Response
+    {
+        return $this->check([$permission], $record, all: true);
     }
 
     /**
      * Change the member's role.
      */
-    public function assign(string|Model $role): static
+    public function assign(string|BackedEnum|Model $role): static
     {
         $this->team->getConnection()->transaction(function () use ($role) {
 
-            $this->team->newQuery()->lockForUpdate()->findOrFail($this->team->getKey());
+            $team = $this->team->lockForUpdate()->findOrFail($this->team->getKey());
 
-            if ($this->user->owns($this->team)) {
+            if ($this->user->owns($team)) {
                 throw new RuntimeException('The team owner cannot be changed or removed.');
             }
 
-            if (! $this->user->in($this->team)) {
+            if (! $this->user->in($team)) {
                 throw new RuntimeException('User does not belong to the team.');
             }
 
             $role = $role instanceof Model ? $role : $this->team->role($role);
 
             $this->team->members()->updateExistingPivot($this->user->getKey(), ['role_id' => $role->getKey()]);
+
+            if (! $this->team->members()->whereKey($this->user)->wherePivot('role_id', $role->getKey())->exists()) {
+                throw new RuntimeException('The membership could not be updated.');
+            }
 
             $this->team->unsetRelation('members');
             $this->user->unsetRelation('memberships');
@@ -177,7 +186,7 @@ class Member
     /**
      * Start a rule that allows the member the permission on one record.
      */
-    public function allow(string $permission): PendingRule
+    public function allow(string|BackedEnum $permission): PendingRule
     {
         return new PendingRule($this->team, $this->user, $permission, forbidden: false);
     }
@@ -185,7 +194,7 @@ class Member
     /**
      * Start a rule that forbids the member the permission on one record.
      */
-    public function forbid(string $permission): PendingRule
+    public function forbid(string|BackedEnum $permission): PendingRule
     {
         return new PendingRule($this->team, $this->user, $permission, forbidden: true);
     }
@@ -193,7 +202,7 @@ class Member
     /**
      * Start removing the member's own rule for the permission on one record.
      */
-    public function forget(string $permission): PendingRule
+    public function forget(string|BackedEnum $permission): PendingRule
     {
         return new PendingRule($this->team, $this->user, $permission, forbidden: null);
     }
@@ -201,56 +210,101 @@ class Member
     /**
      * Check all, or any, of the permissions.
      *
-     * @param  list<string>  $permissions
+     * @param  list<string|BackedEnum>  $permissions
      */
-    protected function check(array $permissions, ?Model $record, bool $all): bool
+    protected function check(array $permissions, ?Model $record, bool $all): Response
     {
-        if ($permissions === [] || ($record !== null && ! $this->contains($record))) {
-            return false;
+        if ($permissions === []) {
+            return Response::deny(__('No permission was requested.'), 'missing_permission');
+        }
+
+        if ($record !== null && ! $this->contains($record)) {
+            return Response::deny(__('The record belongs to another team.'), 'team_mismatch');
         }
 
         if ($this->user->owns($this->team)) {
-            return true;
+            return Response::allow(__('The user owns the team.'), 'team_owner');
         }
 
         if ($record === null) {
-            $granted = $this->permissions();
-            $passes = fn ($permission) => $this->matches($granted, $permission);
-        } else {
-            $passes = fn ($permission) => $this->allows($permission, $record);
+            $sources = $this->permissionSources();
+
+            if ($sources->isEmpty()) {
+                return Response::deny(__('The user does not belong to the team.'), 'not_member');
+            }
+
+            $roles = $sources->get('role', collect());
+            $groups = $sources->get('group', collect());
         }
 
-        return $all ? collect($permissions)->every($passes) : collect($permissions)->contains($passes);
+        foreach ($permissions as $permission) {
+            if ($permission instanceof BackedEnum) {
+                $permission = (string) $permission->value;
+            }
+
+            $response = $record !== null
+                ? $this->allows($permission, $record)
+                : $this->decide(collect(), $roles, $permission, 'role')
+                ?? $this->decide(collect(), $groups, $permission, 'group')
+                ?? Response::deny(__('No permission grants access.'), 'missing_permission');
+
+            if ($response->allowed() !== $all) {
+                return $response;
+            }
+        }
+
+        return $response;
     }
 
     /**
      * Determine if the member may use the permission on the record.
      */
-    protected function allows(string $permission, Model $record): bool
+    protected function allows(string $permission, Model $record): Response
     {
         if (method_exists($record, 'isOwner') && $record->isOwner($this->user)) {
-            return true;
+            return Response::allow(__('The user owns the record.'), 'record_owner');
         }
 
         [$globalGroups, $teamGroups] = $this->loaded['groups'] ?? $this->groups();
 
         if ($this->matches($globalGroups->flatMap->permissions->pluck('code')->all(), $permission)) {
-            return true;
+            return Response::allow(__('Granted by a global group.'), 'global_group');
         }
 
         $role = $this->loaded === null ? $this->role() : $this->loaded['role'];
 
         if ($role === null) {
-            return false;
+            return Response::deny(__('The user does not belong to the team.'), 'not_member');
         }
 
         $rules = $this->rules($record, $permission, $teamGroups, $role);
 
         // The member's own rules decide first, then the rules of their team groups, then of their role.
-        return $this->decide($rules('user'), [], $permission)
-            ?? $this->decide($rules('groups'), $teamGroups->flatMap->permissions->pluck('code')->all(), $permission)
-            ?? $this->decide($rules('role'), $role->permissions->pluck('code')->all(), $permission)
-            ?? false;
+        return $this->decide($rules('user'), [], $permission, 'user')
+            ?? $this->decide($rules('groups'), $teamGroups->flatMap->permissions->pluck('code')->all(), $permission, 'group')
+            ?? $this->decide($rules('role'), $role->permissions->pluck('code')->all(), $permission, 'role')
+            ?? Response::deny(__('No permission grants access.'), 'missing_permission');
+    }
+
+    /**
+     * Get the team-wide permission codes by their source. Non-members have no sources.
+     *
+     * @return Collection<string, list<string>>
+     */
+    protected function permissionSources(): Collection
+    {
+        $role = $this->role();
+
+        if ($role === null) {
+            return collect();
+        }
+
+        $groups = $this->user->groups()->whereBelongsTo($this->team, 'team')->with('permissions')->get();
+
+        return collect([
+            'role' => $role->permissions->pluck('code')->all(),
+            'group' => $groups->flatMap->permissions->pluck('code')->all(),
+        ]);
     }
 
     /**
@@ -348,24 +402,41 @@ class Member
      *
      * @param  list<string>  $granted
      */
-    protected function decide(Collection $rules, array $granted, string $permission): ?bool
+    protected function decide(Collection $rules, array $granted, string $permission, string $source): ?Response
     {
         if ($rules->contains(fn ($rule) => $rule->pivot->forbidden)) {
-            return false;
+            return Response::deny(match ($source) {
+                'user' => __('Forbidden by a personal rule.'),
+                'group' => __('Forbidden by a group rule.'),
+                'role' => __('Forbidden by a role rule.'),
+            }, "{$source}_forbidden");
         }
 
-        return $rules->isNotEmpty() || $this->matches($granted, $permission) ? true : null;
+        if ($rules->isNotEmpty()) {
+            return Response::allow(match ($source) {
+                'user' => __('Allowed by a personal rule.'),
+                'group' => __('Allowed by a group rule.'),
+                'role' => __('Allowed by a role rule.'),
+            }, "{$source}_allowed");
+        }
+
+        if ($this->matches($granted, $permission)) {
+            return Response::allow($source === 'group' ? __('Granted by a group.') : __('Granted by the role.'), "{$source}_permission");
+        }
+
+        return null;
     }
 
     /**
-     * Determine if the record belongs to the team. A record without the team column belongs to any team.
+     * Determine if the record belongs to the team.
      */
     protected function contains(Model $record): bool
     {
         $teamKey = Config::get('teams.foreign_keys.team_id');
 
-        return ! array_key_exists($teamKey, $record->getAttributes())
-            || (string) $record->getAttribute($teamKey) === (string) $this->team->getKey();
+        return isset($record->getAttributes()[$teamKey])
+            && $this->team->getKey() !== null
+            && (string) $record->getAttribute($teamKey) === (string) $this->team->getKey();
     }
 
     /**

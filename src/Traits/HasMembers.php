@@ -2,6 +2,8 @@
 
 namespace Jurager\Teams\Traits;
 
+use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -88,6 +90,16 @@ trait HasMembers
     }
 
     /**
+     * Query the assigned rules on the record, with their permissions and recipients.
+     */
+    public function rules(Model $record): HasMany
+    {
+        return $this->abilities()->whereMorphedTo('entity', $record)
+            ->where(fn (Builder $query) => $query->has('users')->orHas('roles')->orHas('groups'))
+            ->with(['permission', 'users', 'roles', 'groups']);
+    }
+
+    /**
      * Get the pending invitations of the team.
      */
     public function invitations(): HasMany
@@ -109,19 +121,24 @@ trait HasMembers
     public function remove(Model $user): void
     {
         $this->getConnection()->transaction(function () use ($user) {
-            $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+            $team = $this->lockForUpdate()->findOrFail($this->getKey());
 
-            if ($user->owns($this)) {
+            if ($user->owns($team)) {
                 throw new RuntimeException('The team owner cannot be changed or removed.');
             }
 
-            if (! $user->in($this)) {
+            if (! $user->in($team)) {
                 throw new RuntimeException('User does not belong to the team.');
             }
 
             TeamMemberRemoving::dispatch($this, $user);
 
             $this->members()->detach($user);
+
+            if ($this->members()->whereKey($user)->exists()) {
+                throw new RuntimeException('The membership could not be removed.');
+            }
+
             $this->release($user);
 
             TeamMemberRemoved::dispatch($this, $user);
@@ -133,33 +150,50 @@ trait HasMembers
      *
      * With a role, the previous owner stays in the team as a member with that role. Without one, they leave the team.
      */
-    public function transfer(Model $user, string|Model|null $role = null): void
+    public function transfer(Model $user, string|BackedEnum|Model|null $role = null): void
     {
         $this->getConnection()->transaction(function () use ($user, $role) {
 
-            $team = $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+            $team = $this->lockForUpdate()->findOrFail($this->getKey());
 
             if ($user->owns($team)) {
                 throw new RuntimeException('The user already owns the team.');
             }
 
-            $role = is_string($role) ? $this->role($role) : $role;
+            $role = $role instanceof BackedEnum || is_string($role) ? $this->role($role) : $role;
             $previous = $team->owner()->firstOrFail();
+
+            if ($this->relationLoaded('owner')) {
+                $this->owner?->unsetRelation('teams')->unsetRelation('memberships');
+            }
+
+            $this->setRawAttributes($team->getAttributes(), true)->unsetRelation('owner');
 
             TeamTransferring::dispatch($this, $user, $previous);
 
             $this->members()->detach($user);
-            $this->forceFill(['user_id' => $user->getKey()])->save();
+
+            if ($this->members()->whereKey($user)->exists()) {
+                throw new RuntimeException('The membership could not be removed.');
+            }
+
+            if (! $this->forceFill(['user_id' => $user->getKey()])->save()) {
+                throw new RuntimeException('The team ownership could not be transferred.');
+            }
 
             if ($role === null) {
                 $this->release($previous);
             } else {
                 $this->members()->attach($previous, ['role_id' => $role->getKey()]);
+
+                if (! $this->members()->whereKey($previous)->exists()) {
+                    throw new RuntimeException('The membership could not be created.');
+                }
             }
 
-            $this->unsetRelation('owner');
+            $this->unsetRelation('owner')->unsetRelation('members');
             $user->unsetRelation('teams')->unsetRelation('memberships');
-            $previous->unsetRelation('teams');
+            $previous->unsetRelation('teams')->unsetRelation('memberships');
 
             TeamTransferred::dispatch($this, $user, $previous);
         });
@@ -176,17 +210,17 @@ trait HasMembers
     /**
      * Find a team role by its code.
      */
-    public function role(string $code): Model
+    public function role(string|BackedEnum $code): Model
     {
-        return $this->roles()->where('code', $code)->firstOrFail();
+        return $this->roles()->where('code', $code instanceof BackedEnum ? $code->value : $code)->firstOrFail();
     }
 
     /**
      * Find a team group by its code.
      */
-    public function group(string $code): Model
+    public function group(string|BackedEnum $code): Model
     {
-        return $this->groups()->where('code', $code)->firstOrFail();
+        return $this->groups()->where('code', $code instanceof BackedEnum ? $code->value : $code)->firstOrFail();
     }
 
     /**
@@ -209,7 +243,9 @@ trait HasMembers
         $this->getConnection()->transaction(function () {
             $this->members()->detach();
 
-            $this->delete();
+            if ($this->delete() === false) {
+                throw new RuntimeException('The team could not be deleted.');
+            }
         });
     }
 

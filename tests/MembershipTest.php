@@ -1,8 +1,53 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
+use Jurager\Teams\Events\TeamMemberAdded;
 use Jurager\Teams\Events\TeamMemberRemoved;
+use Jurager\Teams\Events\TeamMemberUpdated;
 use Jurager\Teams\Models\Membership;
+
+it('does not report a cancelled membership creation as successful', function () {
+    $team = team();
+    $role = role($team, 'reader');
+    $user = user();
+    Event::fake(TeamMemberAdded::class);
+    Membership::saving(fn () => false);
+
+    expect(fn () => $team->add($user)->as($role))->toThrow(RuntimeException::class, 'The membership could not be created.')
+        ->and($user->in($team))->toBeFalse();
+
+    Event::assertNotDispatched(TeamMemberAdded::class);
+});
+
+it('does not report a cancelled role assignment as successful', function () {
+    $team = team();
+    $user = member($team);
+    $previous = $team->member($user)->role();
+    $role = role($team, 'editor');
+    Event::fake(TeamMemberUpdated::class);
+    Membership::saving(fn () => false);
+
+    expect(fn () => $team->member($user)->assign($role))->toThrow(RuntimeException::class, 'The membership could not be updated.')
+        ->and($team->member($user)->is($previous))->toBeTrue();
+
+    Event::assertNotDispatched(TeamMemberUpdated::class);
+});
+
+it('preserves membership, groups and rules when member deletion is cancelled', function () {
+    $team = team();
+    $user = member($team);
+    $group = $team->groups()->create(['code' => 'editors'])->add($user);
+    $team->member($user)->allow('articles.edit')->on(article($team));
+    Event::fake(TeamMemberRemoved::class);
+    Membership::deleting(fn () => false);
+
+    expect(fn () => $team->remove($user))->toThrow(RuntimeException::class, 'The membership could not be removed.')
+        ->and($user->in($team))->toBeTrue()
+        ->and($group->members()->whereKey($user)->exists())->toBeTrue()
+        ->and($user->abilities()->count())->toBe(1);
+
+    Event::assertNotDispatched(TeamMemberRemoved::class);
+});
 
 it('rolls back member removal with its groups and rules', function () {
     $team = team();
