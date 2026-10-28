@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Jurager\Teams\Models\Team;
 use Jurager\Teams\Tests\Fixtures\Article;
+use Jurager\Teams\Tests\Fixtures\User;
 use Jurager\Teams\Tests\TestCase;
 
 beforeAll(function () {
@@ -54,6 +55,7 @@ it('uses the configured tables and foreign key everywhere', function () {
 
 it('rolls back the migrations with the configured tables', function () {
     foreach ([
+        'add_expires_at_to_entity_ability_table',
         'create_invitations_table', 'create_entity_permission_table', 'create_group_user_table',
         'create_groups_table', 'create_entity_ability_table', 'create_abilities_table',
         'create_team_user_table', 'create_roles_table', 'create_permissions_table', 'create_teams_table',
@@ -73,4 +75,25 @@ it('requires the configured team key when checking a selected record', function 
 
     expect($member->can('articles.edit', Article::select('id', 'workspace_id')->findOrFail($article->id)))->toBeTrue()
         ->and($member->can('articles.edit', Article::select('id')->findOrFail($article->id)))->toBeFalse();
+});
+
+it('queries permissions, batches members and expires rules with the configured schema', function () {
+    $this->freezeTime();
+    $team = team();
+    role($team, 'reader', ['articles.view']);
+    $users = collect([user(), user()]);
+    $team->add($users)->as('reader');
+    $article = article($team);
+    $member = $team->member($users->first());
+    $member->forbid('articles.view')->until(now()->addMinute())->on($article);
+    $member->load([$article]);
+
+    expect(User::permission('articles.view', $team)->get()->modelKeys())->toEqualCanonicalizing([$team->user_id, ...$users->map->getKey()->all()])
+        ->and($member->can('articles.view', $article))->toBeFalse();
+
+    $this->travel(1)->minutes();
+    expect($member->can('articles.view', $article))->toBeTrue();
+
+    $team->remove($users);
+    expect($team->members()->count())->toBe(0);
 });

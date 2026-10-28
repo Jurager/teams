@@ -43,6 +43,23 @@ Instead of a model, you may pass its class and key:
 $team->member($user)->allow('articles.edit')->on(Article::class, $articleId);
 ```
 
+## Temporary Rules
+
+Call `until` before `on` to give an allow or forbid rule a deadline:
+
+```php
+$team->member($user)
+    ->allow('reports.download')
+    ->until(now()->addDay())
+    ->on($report);
+
+$team->role('reviewer')->forbid('reports.edit')->until(now()->addHour())->on($report);
+```
+
+Each user's, role's, or group's assignment has its own deadline. At that time the rule stops deciding access and the remaining rules and permissions apply. Expiration is checked during authorization, including checks on preloaded rules.
+
+Repeating the assignment with `until` replaces its deadline. Calling `allow` or `forbid` without `until` makes the assignment permanent.
+
 ## Listing Record Rules
 
 The `rules` method queries the team's explicit rules on a record, with the permission and recipients already loaded:
@@ -65,6 +82,8 @@ $rules = $team->rules($article)
     ->whereRelation('permission', 'code', 'articles.edit')
     ->paginate(15);
 ```
+
+The recipient's `pivot->expires_at` is a Carbon instance, or `null` for a permanent rule. Expired assignments remain in this list until removed with `forget`.
 
 ## Pruning Unused Abilities
 

@@ -9,27 +9,29 @@ weight: 120
 
 The package dispatches the following events. All of them live in the `Jurager\Teams\Events` namespace:
 
-| Event                   | Properties                                    | Dispatched                                              |
-|-------------------------|-----------------------------------------------|---------------------------------------------------------|
-| `TeamCreating`          | `team`                                        | Before a team is created                                |
-| `TeamCreated`           | `team`                                        | After a team is created                                 |
-| `TeamUpdating`          | `team`                                        | Before a team is updated                                |
-| `TeamUpdated`           | `team`                                        | After a team is updated                                 |
-| `TeamDeleted`           | `team`                                        | After a team is deleted                                 |
-| `TeamTransferring`      | `team`, `owner`, `previous`                   | Before the team gets a new owner                        |
-| `TeamTransferred`       | `team`, `owner`, `previous`                   | After the team gets a new owner                         |
-| `TeamMemberAdding`      | `team`, `user`                                | Before a member is added                                |
-| `TeamMemberAdded`       | `team`, `user`                                | After a member is added                                 |
-| `TeamMemberUpdated`     | `team`, `user`                                | After a member's role is changed                        |
-| `TeamMemberRemoving`    | `team`, `user`                                | Before a member is removed                              |
-| `TeamMemberRemoved`     | `team`, `user`                                | After a member is removed                               |
-| `TeamMemberInviting`    | `team`, `email`, `role`                       | Before an invitation is saved                           |
-| `TeamMemberInvited`     | `team`, `email`, `role`                       | After an invitation is saved, before the email is sent  |
-| `PermissionsUpdated`    | `model`, `attached`, `detached`               | After `grant`, `revoke`, or `sync` changes permissions  |
-| `GroupMembersUpdated`   | `group`, `attached`, `detached`               | After `add` or `remove` changes a group's members       |
-| `AbilityUpdated`        | `ability`, `target`, `previous`, `forbidden`  | After `allow`, `forbid`, or `forget` changes a rule     |
+| Event                 | Properties                                                                     | Dispatched                                                          |
+|-----------------------|--------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| `TeamCreating`        | `team`                                                                         | Before a team is created                                            |
+| `TeamCreated`         | `team`                                                                         | After a team is created                                             |
+| `TeamUpdating`        | `team`                                                                         | Before a team is updated                                            |
+| `TeamUpdated`         | `team`                                                                         | After a team is updated                                             |
+| `TeamDeleted`         | `team`                                                                         | After a team is deleted                                             |
+| `TeamTransferring`    | `team`, `owner`, `previous`                                                    | Before the team gets a new owner                                    |
+| `TeamTransferred`     | `team`, `owner`, `previous`                                                    | After the team gets a new owner                                     |
+| `TeamMemberAdding`    | `team`, `user`                                                                 | Before a member is added                                            |
+| `TeamMemberAdded`     | `team`, `user`                                                                 | After a member is added                                             |
+| `TeamMemberUpdated`   | `team`, `user`                                                                 | After a member's role is changed                                    |
+| `TeamMemberRemoving`  | `team`, `user`                                                                 | Before a member is removed                                          |
+| `TeamMemberRemoved`   | `team`, `user`                                                                 | After a member is removed                                           |
+| `TeamMemberInviting`  | `team`, `email`, `role`                                                        | Before an invitation is saved                                       |
+| `TeamMemberInvited`   | `team`, `email`, `role`                                                        | After an invitation is saved, before the email is sent              |
+| `PermissionsUpdated`  | `model`, `attached`, `detached`                                                | After `grant`, `revoke`, or `sync` changes permissions              |
+| `GroupMembersUpdated` | `group`, `attached`, `detached`                                                | After `add` or `remove` changes a group's members                   |
+| `AbilityUpdated`      | `ability`, `target`, `previous`, `forbidden`, `previousExpiresAt`, `expiresAt` | After `allow`, `forbid`, or `forget` changes a rule or its deadline |
 
 `attached` and `detached` contain permission or user IDs. For `AbilityUpdated`, `target` is the user, role, or group; `previous` and `forbidden` are the old and new rule: `null` means absent, `false` allows, and `true` forbids.
+
+`previousExpiresAt` and `expiresAt` contain the old and new Carbon deadlines, or `null` for no deadline. Changing only the deadline also dispatches `AbilityUpdated`.
 
 Assignment events are dispatched only when the package methods change assignments. Direct relationship queries, bulk operations, and deletion cleanup don't dispatch them.
 

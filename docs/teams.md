@@ -29,6 +29,14 @@ To add a user to a team, call the `add` method and pass the role code or a `Role
 $team->add($user)->as('editor');
 ```
 
+Pass an array, collection, or iterable of users to add several members at once:
+
+```php
+$members = $team->add($users)->as('editor');
+```
+
+A single user returns a `Member`; an iterable returns a collection of members. Duplicate user keys are processed once.
+
 ### Changing Roles
 
 To give a member another role, use the `assign` method:
@@ -44,6 +52,14 @@ To remove a member, use the `remove` method. Their groups and [ability rules](ab
 ```php
 $team->remove($user);
 ```
+
+The `remove` method also accepts an array, collection, or iterable:
+
+```php
+$team->remove($users);
+```
+
+Batch additions and removals run in one transaction. Every user is validated before changes begin; if a write or listener fails, the whole batch is rolled back. Membership observers run for each user, and completion events are dispatched for each changed member after commit. Empty batches do nothing.
 
 An unknown role throws a `ModelNotFoundException`. Adding a user who is already a member, or changing or removing a user who isn't, throws a `RuntimeException`.
 

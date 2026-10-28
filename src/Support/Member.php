@@ -11,6 +11,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Events\TeamMemberUpdated;
 use Jurager\Teams\Models\Owner;
+use Jurager\Teams\Support\Facades\Teams;
 use RuntimeException;
 
 class Member
@@ -331,7 +332,7 @@ class Member
     protected function rules(Model $record, string $permission, Collection $groups, Model $role): Closure
     {
         $key = $this->key($record);
-        $codes = $this->codes($permission);
+        $codes = Teams::model('permission')::codes($permission);
 
         if (isset($this->loaded['records'][$key])) {
             return fn (string $level) => $this->loaded['rules'][$level]->filter(
@@ -404,6 +405,8 @@ class Member
      */
     protected function decide(Collection $rules, array $granted, string $permission, string $source): ?Response
     {
+        $rules = $rules->filter(fn (Model $rule): bool => $rule->pivot->expires_at?->isFuture() ?? true);
+
         if ($rules->contains(fn ($rule) => $rule->pivot->forbidden)) {
             return Response::deny(match ($source) {
                 'user' => __('Forbidden by a personal rule.'),
@@ -446,25 +449,6 @@ class Member
      */
     protected function matches(array $granted, string $permission): bool
     {
-        return array_intersect($this->codes($permission), $granted) !== [];
-    }
-
-    /**
-     * Get the codes that cover the permission: itself, its parent wildcards and the configured wildcard nodes.
-     *
-     * @return list<string>
-     */
-    protected function codes(string $permission): array
-    {
-        $codes = [$permission];
-
-        while (($position = strrpos($permission, '.')) !== false) {
-            $permission = substr($permission, 0, $position);
-            $codes[] = "{$permission}.*";
-        }
-
-        return Config::get('teams.wildcards.enabled', false)
-            ? array_merge(Config::get('teams.wildcards.nodes', []), $codes)
-            : $codes;
+        return array_intersect(Teams::model('permission')::codes($permission), $granted) !== [];
     }
 }

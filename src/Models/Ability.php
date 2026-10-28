@@ -75,7 +75,8 @@ class Ability extends Model
     public function users(): MorphToMany
     {
         return $this->morphedByMany(Teams::model('user'), 'entity', Config::get('teams.tables.entity_ability'), 'ability_id', 'entity_id')
-            ->withPivot('forbidden')
+            ->using(AbilityAssignment::class)
+            ->withPivot('forbidden', 'expires_at')
             ->withTimestamps();
     }
 
@@ -85,7 +86,8 @@ class Ability extends Model
     public function roles(): MorphToMany
     {
         return $this->morphedByMany(Teams::model('role'), 'entity', Config::get('teams.tables.entity_ability'), 'ability_id', 'entity_id')
-            ->withPivot('forbidden')
+            ->using(AbilityAssignment::class)
+            ->withPivot('forbidden', 'expires_at')
             ->withTimestamps();
     }
 
@@ -95,7 +97,8 @@ class Ability extends Model
     public function groups(): MorphToMany
     {
         return $this->morphedByMany(Teams::model('group'), 'entity', Config::get('teams.tables.entity_ability'), 'ability_id', 'entity_id')
-            ->withPivot('forbidden')
+            ->using(AbilityAssignment::class)
+            ->withPivot('forbidden', 'expires_at')
             ->withTimestamps();
     }
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.2.1
+
+### New
+
+- `User::permission($permission, $team)` queries users granted a team-wide permission by ownership, their assigned role, or team groups, including wildcards and enum codes.
+- `$team->add($users)->as($role)` and `$team->remove($users)` accept arrays, collections, and iterables. Batches are atomic, preserve membership observers, and dispatch events per distinct user after commit.
+- `allow` and `forbid` rules accept `until($date)`. Deadlines belong to individual assignments, are exposed as Carbon instances on the pivot, and are checked on every authorization, including preloaded rules. `AbilityUpdated` reports deadline changes through `previousExpiresAt` and `expiresAt`.
+- A published migration adds a nullable `expires_at` column to existing record rule assignments.
+
+### Fixed
+
+- The database diagram matches the migration columns, nullability, relationships, and unique constraints.
+
 ## 4.2.0
 
 ### New

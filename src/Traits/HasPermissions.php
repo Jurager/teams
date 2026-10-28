@@ -10,6 +10,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Jurager\Teams\Events\PermissionsUpdated;
+use Jurager\Teams\Models\AbilityAssignment;
 use Jurager\Teams\Support\Facades\Teams;
 use Jurager\Teams\Support\PendingRule;
 use LogicException;
@@ -56,7 +57,8 @@ trait HasPermissions
     public function abilities(): MorphToMany
     {
         return $this->morphToMany(Teams::model('ability'), 'entity', Config::get('teams.tables.entity_ability'), 'entity_id', 'ability_id')
-            ->withPivot('forbidden')
+            ->using(AbilityAssignment::class)
+            ->withPivot('forbidden', 'expires_at')
             ->withTimestamps();
     }
 

@@ -108,40 +108,58 @@ trait HasMembers
     }
 
     /**
-     * Start adding the user to the team. Finish with as($role).
+     * Start adding one or more users to the team. Finish with as($role).
+     *
+     * @template TUsers of Model|iterable<Model>
+     *
+     * @param  TUsers  $users
+     * @return PendingMember<TUsers>
      */
-    public function add(Model $user): PendingMember
+    public function add(Model|iterable $users): PendingMember
     {
-        return new PendingMember($this, $user);
+        return new PendingMember($this, $users);
     }
 
     /**
-     * Remove the member from the team, along with their team groups and record rules.
+     * Remove members from the team, along with their team groups and record rules.
+     *
+     * @param  Model|iterable<Model>  $users
      */
-    public function remove(Model $user): void
+    public function remove(Model|iterable $users): void
     {
-        $this->getConnection()->transaction(function () use ($user) {
+        $users = collect($users instanceof Model ? [$users] : $users)
+            ->unique(fn (Model $user) => $user->getKey())->values();
+
+        if ($users->isEmpty()) {
+            return;
+        }
+
+        $this->getConnection()->transaction(function () use ($users) {
             $team = $this->lockForUpdate()->findOrFail($this->getKey());
 
-            if ($user->owns($team)) {
-                throw new RuntimeException('The team owner cannot be changed or removed.');
+            foreach ($users as $user) {
+                if ($user->owns($team)) {
+                    throw new RuntimeException('The team owner cannot be changed or removed.');
+                }
+
+                if (! $user->in($team)) {
+                    throw new RuntimeException('User does not belong to the team.');
+                }
             }
 
-            if (! $user->in($team)) {
-                throw new RuntimeException('User does not belong to the team.');
+            foreach ($users as $user) {
+                TeamMemberRemoving::dispatch($this, $user);
+
+                $this->members()->detach($user);
+
+                if ($this->members()->whereKey($user)->exists()) {
+                    throw new RuntimeException('The membership could not be removed.');
+                }
+
+                $this->release($user);
+
+                TeamMemberRemoved::dispatch($this, $user);
             }
-
-            TeamMemberRemoving::dispatch($this, $user);
-
-            $this->members()->detach($user);
-
-            if ($this->members()->whereKey($user)->exists()) {
-                throw new RuntimeException('The membership could not be removed.');
-            }
-
-            $this->release($user);
-
-            TeamMemberRemoved::dispatch($this, $user);
         });
     }
 
