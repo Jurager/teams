@@ -5,6 +5,17 @@ weight: 38
 
 # Upgrade Guide
 
+## Upgrading to 4.2.1
+
+Publish and run the new migration:
+
+```shell
+php artisan vendor:publish --tag=teams-migrations
+php artisan migrate
+```
+
+The migration adds a nullable `expires_at` column to your configured `entity_ability` table. Existing assignments remain permanent.
+
 ## High Impact Changes
 
 - [Updating Dependencies](#updating-dependencies)

@@ -2,6 +2,7 @@
 
 namespace Jurager\Teams\Events;
 
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -20,5 +21,7 @@ class AbilityUpdated implements ShouldDispatchAfterCommit
         public Model $target,
         public ?bool $previous,
         public ?bool $forbidden,
+        public ?CarbonInterface $previousExpiresAt = null,
+        public ?CarbonInterface $expiresAt = null,
     ) {}
 }

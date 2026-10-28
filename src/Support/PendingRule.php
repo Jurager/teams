@@ -3,14 +3,21 @@
 namespace Jurager\Teams\Support;
 
 use BackedEnum;
+use Carbon\CarbonInterface;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Date;
 use InvalidArgumentException;
 use Jurager\Teams\Events\AbilityUpdated;
 use Jurager\Teams\Support\Facades\Teams;
+use LogicException;
+use RuntimeException;
 
 class PendingRule
 {
     protected string $permission;
+
+    protected ?CarbonInterface $expiresAt = null;
 
     /**
      * @param  Model  $target  The user, role or group the rule belongs to.
@@ -23,6 +30,20 @@ class PendingRule
         protected ?bool $forbidden,
     ) {
         $this->permission = $permission instanceof BackedEnum ? $permission->value : $permission;
+    }
+
+    /**
+     * Apply the allow or forbid rule until the given time.
+     */
+    public function until(DateTimeInterface $expiresAt): static
+    {
+        if ($this->forbidden === null) {
+            throw new LogicException('Only allow and forbid rules may expire.');
+        }
+
+        $this->expiresAt = Date::instance($expiresAt)->setTimezone(Date::now()->getTimezone())->startOfSecond()->toImmutable();
+
+        return $this;
     }
 
     /**
@@ -57,15 +78,31 @@ class PendingRule
             $previous = $this->target->abilities()->whereKey($ability->getKey())->first();
             $forbidden = $previous === null ? null : (bool) $previous->pivot->forbidden;
 
-            if ($forbidden === $this->forbidden) {
+            $previousExpiresAt = $previous?->pivot->expires_at;
+
+            if ($forbidden === $this->forbidden && $previousExpiresAt?->toDateTimeString() === $this->expiresAt?->toDateTimeString()) {
                 return;
             }
 
             $this->target->abilities()->syncWithoutDetaching([
-                $ability->getKey() => ['forbidden' => $this->forbidden],
+                $ability->getKey() => ['forbidden' => $this->forbidden, 'expires_at' => $this->expiresAt],
             ]);
 
-            AbilityUpdated::dispatch($ability, $this->target, $forbidden, $this->forbidden);
+            $assignment = $this->target->abilities()->whereKey($ability->getKey())->first()?->pivot;
+
+            if ($assignment === null || (bool) $assignment->forbidden !== $this->forbidden
+                || $assignment->expires_at?->toDateTimeString() !== $this->expiresAt?->toDateTimeString()) {
+                throw new RuntimeException('The rule could not be saved.');
+            }
+
+            AbilityUpdated::dispatch(
+                $ability,
+                $this->target,
+                $forbidden,
+                $this->forbidden,
+                $previousExpiresAt,
+                $this->expiresAt,
+            );
         });
     }
 
@@ -91,7 +128,18 @@ class PendingRule
 
             if ($previous !== null) {
                 $this->target->abilities()->detach($ability->getKey());
-                AbilityUpdated::dispatch($ability, $this->target, (bool) $previous->pivot->forbidden, null);
+
+                if ($this->target->abilities()->whereKey($ability->getKey())->exists()) {
+                    throw new RuntimeException('The rule could not be removed.');
+                }
+
+                AbilityUpdated::dispatch(
+                    $ability,
+                    $this->target,
+                    (bool) $previous->pivot->forbidden,
+                    null,
+                    $previous->pivot->expires_at,
+                );
             }
         });
     }

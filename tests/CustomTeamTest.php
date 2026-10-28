@@ -6,6 +6,7 @@ use Jurager\Teams\Events\TeamCreated;
 use Jurager\Teams\Events\TeamDeleted;
 use Jurager\Teams\Events\TeamUpdated;
 use Jurager\Teams\Mail\Invitation;
+use Jurager\Teams\Tests\Fixtures\User;
 use Jurager\Teams\Tests\Fixtures\Workspace;
 use Jurager\Teams\Tests\TestCase;
 
@@ -71,4 +72,19 @@ it('sends and accepts invitations for an independent team model', function () {
     expect($user->can('articles.edit', $team))->toBeTrue();
     $this->assertModelMissing($invitation);
     Mail::assertSent(Invitation::class, 1);
+});
+
+it('supports permission queries, member batches and expiring rules with one team trait', function () {
+    $team = team();
+    role($team, 'reader', ['articles.view']);
+    $users = [user(), user()];
+    $members = $team->add($users)->as('reader');
+    $article = article($team);
+    $members->first()->allow('articles.edit')->until(now()->addHour())->on($article);
+
+    expect(User::permission('articles.view', $team)->count())->toBe(3)
+        ->and($members->first()->can('articles.edit', $article))->toBeTrue();
+
+    $team->remove($users);
+    expect($team->members()->count())->toBe(0);
 });

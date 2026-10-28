@@ -48,12 +48,15 @@ it('uses the users database for accessible teams and record authorization', func
     $user = User::on('secondary')->create(['email' => 'member@example.com']);
     $owned = $user->teams()->create(['name' => 'Owned on secondary']);
     $joined = $other->teams()->create(['name' => 'Joined on secondary']);
-    $joined->add($user)->as($joined->roles()->create(['code' => 'reader']));
+    $role = $joined->roles()->create(['code' => 'reader']);
+    $role->permissions()->attach($joined->permissions()->create(['code' => 'articles.view']));
+    $joined->add($user)->as($role);
     $article = Article::on('secondary')->create(['team_id' => $owned->id]);
 
     expect($user->accessible()->getConnection()->getName())->toBe('secondary')
         ->and($user->accessible()->orderBy('id')->pluck('name')->all())->toBe(['Owned on secondary', 'Joined on secondary'])
-        ->and($user->can('articles.edit', $article))->toBeTrue();
+        ->and($user->can('articles.edit', $article))->toBeTrue()
+        ->and(User::on('secondary')->permission('articles.view', $joined)->count())->toBe(2);
 });
 
 it('keeps subsequent filters around the entire team selection', function () {

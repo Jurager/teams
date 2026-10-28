@@ -61,6 +61,20 @@ $member->canAny(['articles.edit', 'articles.publish']);
 
 Member checks don't use the Gate, so they also work in queued jobs and console commands, where there is no authenticated user.
 
+## Querying Users by Permission
+
+Use the `permission` scope to query users who have a team-wide permission:
+
+```php
+$users = User::permission('invoices.approve', $team)
+    ->orderBy('email')
+    ->paginate(15);
+```
+
+The scope matches `$team->member($user)->can($permission)`: it includes the owner and members whose assigned role or team groups grant the permission, including wildcards. Global groups and record rules apply to record checks and aren't included in this query.
+
+The query returns each user once, and accepts string-backed permission enums. Application gates and policies aren't evaluated.
+
 ## Inspecting Access
 
 Use `inspect` to get Laravel's `Illuminate\Auth\Access\Response`, including the reason and code of the decision:

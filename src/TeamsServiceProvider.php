@@ -142,6 +142,7 @@ class TeamsServiceProvider extends ServiceProvider
             'create_groups_table' => '2019_12_14_000008',
             'create_group_user_table' => '2019_12_14_000009',
             'create_entity_permission_table' => '2019_12_14_000010',
+            'add_expires_at_to_entity_ability_table' => '2026_10_28_000001',
         ];
 
         if (Config::get('teams.invitations.enabled')) {

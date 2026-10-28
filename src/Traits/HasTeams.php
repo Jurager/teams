@@ -2,16 +2,54 @@
 
 namespace Jurager\Teams\Traits;
 
+use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
+use Jurager\Teams\Models\AbilityAssignment;
 use Jurager\Teams\Support\Facades\Teams;
 
 trait HasTeams
 {
+    /**
+     * Query users granted a team-wide permission by ownership, their role, or a team group.
+     */
+    public function scopePermission(Builder $query, string|BackedEnum $permission, Model $team): Builder
+    {
+        $teamId = $team->getKey();
+
+        if ($teamId === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $codes = Teams::model('permission')::codes($permission);
+        $roles = $team->roles();
+        $roleKey = $roles->getRelated()->getQualifiedKeyName();
+        $pivotRole = $this->memberships()->qualifyPivotColumn('role_id');
+
+        $hasPermission = fn (Builder $query): Builder => $query->whereIn('code', $codes);
+
+        $hasMembership = fn (Builder $query, HasMany $roles): Builder => $query
+            ->whereKey($teamId)
+            ->whereIn($pivotRole, $roles->select($roleKey));
+
+        $grantedRoles = (clone $roles)->whereHas('permissions', $hasPermission);
+
+        $viaGroup = fn (Builder $query): Builder => $query
+            ->whereHas('memberships', fn (Builder $query) => $hasMembership($query, clone $roles))
+            ->whereHas('groups', fn (Builder $query) => $query
+                ->whereBelongsTo($team, 'team')
+                ->whereHas('permissions', $hasPermission));
+
+        return $query->where(fn (Builder $query) => $query
+            ->whereKey($team->user_id)
+            ->orWhereHas('memberships', fn (Builder $query) => $hasMembership($query, $grantedRoles))
+            ->orWhere($viaGroup));
+    }
+
     /**
      * Query the teams the user owns or belongs to.
      */
@@ -66,7 +104,8 @@ trait HasTeams
     public function abilities(): MorphToMany
     {
         return $this->morphToMany(Teams::model('ability'), 'entity', Config::get('teams.tables.entity_ability'), 'entity_id', 'ability_id')
-            ->withPivot('forbidden')
+            ->using(AbilityAssignment::class)
+            ->withPivot('forbidden', 'expires_at')
             ->withTimestamps();
     }
 

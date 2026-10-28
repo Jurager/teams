@@ -61,6 +61,34 @@ class Permission extends Model
     }
 
     /**
+     * Get the codes that grant the permission, including its wildcards.
+     *
+     * @return list<string>
+     */
+    public static function codes(string|BackedEnum $permission): array
+    {
+        $permission = $permission instanceof BackedEnum
+            ? (string) $permission->value
+            : $permission;
+
+        $codes = [$permission];
+
+        while (($position = strrpos($permission, '.')) !== false) {
+            $permission = substr($permission, 0, $position);
+            $codes[] = "$permission.*";
+        }
+
+        if (! Config::get('teams.wildcards.enabled', false)) {
+            return $codes;
+        }
+
+        return [
+            ...Config::get('teams.wildcards.nodes', []),
+            ...$codes,
+        ];
+    }
+
+    /**
      * Get the IDs of the permissions in the team, creating missing ones.
      *
      * Accepts codes and code => name pairs; a given name replaces the stored one.

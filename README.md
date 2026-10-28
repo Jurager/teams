@@ -19,6 +19,8 @@ Additionally, users can be added to a global group to grant them access across a
 - Hierarchical wildcard permissions (`articles.*`).
 - Team groups that extend role permissions.
 - Record-level allow and forbid rules for members, roles, and groups.
+- Expiring record rules, checked at authorization time.
+- Query users by team-wide permission.
 - Query record rules with their permissions and recipients.
 - Global groups for cross-team access.
 - Ownership transfer.
