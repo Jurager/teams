@@ -13,7 +13,7 @@ it('publishes the package assets', function (string $tag, int $count) {
     }
 })->with([
     'config' => ['teams-config', 1],
-    'migrations' => ['teams-migrations', 11],
+    'migrations' => ['teams-migrations', 12],
 ]);
 
 it('publishes the views', function () {

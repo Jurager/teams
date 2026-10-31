@@ -4,32 +4,19 @@ namespace Jurager\Teams\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Facades\Teams;
+use Jurager\Teams\Record;
 
-/**
- * A permission on one record of a team, allowed or forbidden to users, roles and groups.
- */
+/** A permission allowed or forbidden to one recipient on one team record. */
 class Ability extends Model
 {
-    use Prunable {
-        prune as protected pruneModel;
-    }
+    protected $fillable = ['permission_id', 'entity_id', 'entity_type', 'recipient_id', 'recipient_type', 'forbidden', 'expires_at'];
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
-    protected $fillable = ['permission_id', 'entity_id', 'entity_type'];
+    protected $casts = ['forbidden' => 'boolean', 'expires_at' => 'immutable_datetime'];
 
-    /**
-     * Create a new model instance.
-     */
     public function __construct(array $attributes = [])
     {
         $this->mergeFillable([Config::get('teams.foreign_keys.team_id')]);
@@ -37,103 +24,66 @@ class Ability extends Model
         parent::__construct($attributes);
     }
 
-    /**
-     * Get the table associated with the model.
-     */
     public function getTable(): string
     {
         return $this->table ?? Config::get('teams.tables.abilities', 'abilities');
     }
 
-    /**
-     * Get the team that the ability belongs to.
-     */
     public function team(): BelongsTo
     {
         return $this->belongsTo(Teams::model('team'), Config::get('teams.foreign_keys.team_id'));
     }
 
-    /**
-     * Get the permission that the ability applies.
-     */
     public function permission(): BelongsTo
     {
         return $this->belongsTo(Teams::model('permission'), 'permission_id');
     }
 
-    /**
-     * Get the record that the ability applies to.
-     */
     public function entity(): MorphTo
     {
         return $this->morphTo();
     }
 
-    /**
-     * Get the users assigned the rule.
-     */
-    public function users(): MorphToMany
+    public function recipient(): MorphTo
     {
-        return $this->morphedByMany(Teams::model('user'), 'entity', Config::get('teams.tables.entity_ability'), 'ability_id', 'entity_id')
-            ->using(AbilityAssignment::class)
-            ->withPivot('forbidden', 'expires_at')
-            ->withTimestamps();
+        return $this->morphTo();
     }
 
-    /**
-     * Get the roles assigned the rule.
-     */
-    public function roles(): MorphToMany
+    public function scopeForRecord(Builder $query, Model|string|Record $record, int|string|null $key = null): void
     {
-        return $this->morphedByMany(Teams::model('role'), 'entity', Config::get('teams.tables.entity_ability'), 'ability_id', 'entity_id')
-            ->using(AbilityAssignment::class)
-            ->withPivot('forbidden', 'expires_at')
-            ->withTimestamps();
+        $record = $record instanceof Record ? $record : Record::from($record, $key);
+
+        $query->where($query->qualifyColumn('entity_type'), $record->type)
+            ->where($query->qualifyColumn('entity_id'), $record->id);
     }
 
-    /**
-     * Get the groups assigned the rule.
-     */
-    public function groups(): MorphToMany
+    /** @param iterable<Model> $records */
+    public function scopeForRecords(Builder $query, iterable $records): void
     {
-        return $this->morphedByMany(Teams::model('group'), 'entity', Config::get('teams.tables.entity_ability'), 'ability_id', 'entity_id')
-            ->using(AbilityAssignment::class)
-            ->withPivot('forbidden', 'expires_at')
-            ->withTimestamps();
+        $this->whereModels($query, 'entity', $records);
     }
 
-    /**
-     * Get the ability definitions without any assignments.
-     */
-    public function prunable(): Builder
+    /** @param iterable<Model> $recipients */
+    public function scopeForRecipients(Builder $query, iterable $recipients): void
     {
-        $assignments = $this->getConnection()->table(Config::get('teams.tables.entity_ability'))
-            ->whereColumn('ability_id', $this->getQualifiedKeyName());
-
-        return static::query()->whereNotExists($assignments);
+        $this->whereModels($query, 'recipient', $recipients);
     }
 
-    /**
-     * Recheck assignments under the same locks used when writing rules.
-     */
-    public function prune(): ?bool
+    /** @param iterable<Model> $models */
+    protected function whereModels(Builder $query, string $relation, iterable $models): void
     {
-        return $this->getConnection()->transaction(function () {
+        $types = collect($models)->groupBy(fn (Model $model): string => $model->getMorphClass());
 
-            if ($this->team()->lockForUpdate()->first() === null) {
-                return false;
+        $query->where(function (Builder $query) use ($relation, $types) {
+            if ($types->isEmpty()) {
+                $query->whereRaw('1 = 0');
             }
 
-            $ability = $this->withoutGlobalScopes()->lockForUpdate()->find($this->getKey());
-
-            if ($ability === null) {
-                return false;
+            foreach ($types as $type => $models) {
+                $query->orWhere(fn (Builder $query) => $query
+                    ->where($query->qualifyColumn("{$relation}_type"), $type)
+                    ->whereIn($query->qualifyColumn("{$relation}_id"), $models->map->getKey()->all()));
             }
-
-            $assigned = $this->getConnection()->table(Config::get('teams.tables.entity_ability'))
-                ->where('ability_id', $this->getKey())->lockForUpdate()->first();
-
-            return $assigned === null ? $ability->pruneModel() : false;
         });
     }
 }

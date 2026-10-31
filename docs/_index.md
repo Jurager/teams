@@ -19,7 +19,7 @@ Roles and groups grant permissions within a team, and abilities allow or forbid 
 - Query record rules with their permissions and recipients.
 - Global groups for access across all teams.
 - Ownership transfer.
-- Email invitations with signed, expiring links.
+- Email invitations with signed, expiring links and optional rate limits.
 - Fast permission checks on lists of records.
 - Events for team, membership, and access changes.
 - Model factories for your tests.

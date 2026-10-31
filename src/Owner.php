@@ -1,6 +1,6 @@
 <?php
 
-namespace Jurager\Teams\Models;
+namespace Jurager\Teams;
 
 use JsonSerializable;
 

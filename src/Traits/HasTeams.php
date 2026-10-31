@@ -7,10 +7,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Models\AbilityAssignment;
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Facades\Teams;
 
 trait HasTeams
 {
@@ -101,12 +100,9 @@ trait HasTeams
     /**
      * Get the user's own record rules.
      */
-    public function abilities(): MorphToMany
+    public function abilities(): MorphMany
     {
-        return $this->morphToMany(Teams::model('ability'), 'entity', Config::get('teams.tables.entity_ability'), 'entity_id', 'ability_id')
-            ->using(AbilityAssignment::class)
-            ->withPivot('forbidden', 'expires_at')
-            ->withTimestamps();
+        return $this->morphMany(Teams::model('ability'), 'recipient');
     }
 
     /**

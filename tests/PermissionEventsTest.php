@@ -74,8 +74,8 @@ it('reports rule creation, reversal and removal without no-op events', function 
     $target->forget('articles.edit')->on($article);
 
     Event::assertDispatchedTimes(AbilityUpdated::class, 3);
-    Event::assertDispatched(AbilityUpdated::class, fn ($event) => $event->target->is($model)
-        && $event->ability->entity->is($article) && $event->previous === null && $event->forbidden === false);
+    Event::assertDispatched(AbilityUpdated::class, fn ($event) => $event->recipientId === $model->getKey() && $event->recipientType === $model->getMorphClass()
+        && $event->entityId === $article->getKey() && $event->entityType === $article->getMorphClass() && $event->previous === null && $event->forbidden === false);
     Event::assertDispatched(AbilityUpdated::class, fn ($event) => $event->previous === false && $event->forbidden === true);
     Event::assertDispatched(AbilityUpdated::class, fn ($event) => $event->previous === true && $event->forbidden === null);
 })->with(['user', 'role', 'group']);

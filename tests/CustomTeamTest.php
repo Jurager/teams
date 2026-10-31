@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Jurager\Teams\Events\TeamCreated;
 use Jurager\Teams\Events\TeamDeleted;
+use Jurager\Teams\Events\TeamTransferred;
 use Jurager\Teams\Events\TeamUpdated;
 use Jurager\Teams\Mail\Invitation;
 use Jurager\Teams\Tests\Fixtures\User;
@@ -38,7 +39,7 @@ it('gives an independent team model the whole api with one trait', function () {
         ->and($user->can('articles.edit', $article))->toBeTrue();
 
     expect($user->accessible()->first())->toBeInstanceOf(Workspace::class)
-        ->and($team->rules($article)->first()->users->first()->is($user))->toBeTrue();
+        ->and($team->rules($article)->first()->recipient->is($user))->toBeTrue();
 
     $team->update(['name' => 'Renamed']);
     $team->remove($user);
@@ -87,4 +88,24 @@ it('supports permission queries, member batches and expiring rules with one team
 
     $team->remove($users);
     expect($team->members()->count())->toBe(0);
+});
+
+it('transfers an independent team and removes the former owners team assignments', function () {
+    $team = team();
+    $previous = $team->owner;
+    $next = member($team);
+    $article = article($team);
+    $group = $team->groups()->create(['code' => 'editors'])->add($previous);
+    $team->member($previous)->allow('articles.edit')->on($article);
+    Event::fake(TeamTransferred::class);
+
+    $team->transfer($next);
+
+    expect($team->owner->is($next))->toBeTrue()
+        ->and($previous->in($team))->toBeFalse()
+        ->and($group->members()->whereKey($previous)->exists())->toBeFalse()
+        ->and($previous->abilities()->count())->toBe(0)
+        ->and($team->member($next)->inspect('articles.edit', $article)->code())->toBe('team_owner');
+    Event::assertDispatched(TeamTransferred::class, fn ($event) => $event->team === $team
+        && $event->owner->is($next) && $event->previous->is($previous));
 });

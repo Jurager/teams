@@ -9,9 +9,8 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Jurager\Teams\Facades\Teams as TeamsFacade;
 use Jurager\Teams\Observers\MembershipObserver;
-use Jurager\Teams\Support\Facades\Teams;
-use Jurager\Teams\Support\Services\TeamsService;
 use Jurager\Teams\Traits\HasTeams;
 
 class TeamsServiceProvider extends ServiceProvider
@@ -23,8 +22,8 @@ class TeamsServiceProvider extends ServiceProvider
     {
         $this->mergeConfig();
 
-        $this->app->singleton(TeamsService::class);
-        $this->app->alias(TeamsService::class, 'teams');
+        $this->app->singleton(Teams::class);
+        $this->app->alias(Teams::class, 'teams');
     }
 
     /**
@@ -34,7 +33,7 @@ class TeamsServiceProvider extends ServiceProvider
     {
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'teams');
 
-        Teams::model('membership')::observe(MembershipObserver::class);
+        TeamsFacade::model('membership')::observe(MembershipObserver::class);
 
         $this->registerGate();
         $this->registerRoutes();
@@ -91,7 +90,7 @@ class TeamsServiceProvider extends ServiceProvider
      */
     protected function teamOf(Model $subject): ?Model
     {
-        $class = Teams::model('team');
+        $class = TeamsFacade::model('team');
 
         if ($subject instanceof $class) {
             return $subject;
@@ -143,6 +142,7 @@ class TeamsServiceProvider extends ServiceProvider
             'create_group_user_table' => '2019_12_14_000009',
             'create_entity_permission_table' => '2019_12_14_000010',
             'add_expires_at_to_entity_ability_table' => '2026_10_28_000001',
+            'merge_ability_assignments' => '2026_10_28_000002',
         ];
 
         if (Config::get('teams.invitations.enabled')) {

@@ -52,6 +52,13 @@ it('uses the users database for accessible teams and record authorization', func
     $role->permissions()->attach($joined->permissions()->create(['code' => 'articles.view']));
     $joined->add($user)->as($role);
     $article = Article::on('secondary')->create(['team_id' => $owned->id]);
+    $record = Article::on('secondary')->create(['team_id' => $joined->id]);
+    $joined->member($user)->allow('articles.edit')->on($record);
+
+    expect($joined->member($user)->can('articles.edit', $record))->toBeTrue()
+        ->and($joined->member($user)->load([$record])->can('articles.edit', $record))->toBeTrue()
+        ->and(DB::table(config('teams.tables.abilities'))->count())->toBe(0)
+        ->and(DB::table(config('teams.tables.permissions'))->count())->toBe(0);
 
     expect($user->accessible()->getConnection()->getName())->toBe('secondary')
         ->and($user->accessible()->orderBy('id')->pluck('name')->all())->toBe(['Owned on secondary', 'Joined on secondary'])

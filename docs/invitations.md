@@ -19,6 +19,29 @@ Pending invitations are available through `$team->invitations`.
 
 Inviting the owner or an existing member throws a `RuntimeException`.
 
+## Limiting Invitations
+
+Rate limiting is disabled by default. Enable it in `config/teams.php` to limit new invitations and resends:
+
+```php
+'invitations' => [
+    // ...
+    'rate_limit' => [
+        'enabled' => true,
+        'team' => ['max_attempts' => 10, 'decay_seconds' => 3600],
+        'email' => ['max_attempts' => 1, 'decay_seconds' => 60],
+    ],
+],
+```
+
+These values allow 10 attempts per team per hour and one attempt per email within that team per minute. Both windows start with their first attempt. Use positive integers for the allowances and durations. Email addresses share a limit regardless of case or surrounding whitespace. Teams on different database connections have separate limits.
+
+An exhausted limit throws Laravel's `ThrottleRequestsException`, which renders as HTTP `429` with a `Retry-After` header in seconds. The rejected attempt does not change the invitation, send mail, dispatch invitation events, or consume either allowance.
+
+The limiter uses Laravel's `cache.limiter` store, falling back to the default cache store. Configure a shared store for applications running on multiple servers.
+
+Attempts count after checking the role and existing membership, before writing the invitation. Cache counters are independent of database transactions: a later rollback, cancelled save, or mail failure does not restore the allowance. Emails and completion events still wait for the database transaction to commit.
+
 ## Accepting Invitations
 
 The link in the email leads to the built-in route, which adds the user to the team with the invited role when:

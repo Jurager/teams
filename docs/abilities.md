@@ -43,6 +43,29 @@ Instead of a model, you may pass its class and key:
 $team->member($user)->allow('articles.edit')->on(Article::class, $articleId);
 ```
 
+## External Records
+
+You may assign and check permissions for records from external services without an Eloquent model. Simply provide a resource type and ID:
+
+```php
+$member = $team->member($user);
+
+$member->allow('products.update')->on('catalog.product', 42);
+$team->role('reviewer')->forbid('products.delete')->on('catalog.product', 42);
+
+$member->can('products.update', 'catalog.product', 42);
+$member->canAny(['products.view', 'products.update'], 'catalog.product', 42);
+$member->inspect('products.update', 'catalog.product', 42);
+
+$member->forget('products.update')->on('catalog.product', 42);
+```
+
+Resource types may be any non-empty string, while IDs must be non-negative integers or numeric strings.
+
+Since external records are not loaded, your application is responsible for ensuring they belong to the correct team. All other permission behavior remains the same.
+
+For Eloquent models, continue passing the model instance to ensure proper team scoping.
+
 ## Temporary Rules
 
 Call `until` before `on` to give an allow or forbid rule a deadline:
@@ -62,42 +85,45 @@ Repeating the assignment with `until` replaces its deadline. Calling `allow` or 
 
 ## Listing Record Rules
 
-The `rules` method queries the team's explicit rules on a record, with the permission and recipients already loaded:
+You may retrieve a record's permission rules using the `rules` method:
 
 ```php
 $rules = $team->rules($article)->get();
 
 foreach ($rules as $rule) {
     $rule->permission->code;
-    $rule->users;
-    $rule->roles;
-    $rule->groups;
+    $rule->recipient; // User, role, or group
+    $rule->forbidden; // Whether access is denied
+    $rule->expires_at; // Expiration date or null
 }
 ```
 
-Each recipient has a `pivot->forbidden` value: `true` forbids and `false` allows the permission. Definitions without recipients are omitted. The query supports filters and pagination:
+Each rule belongs to a specific recipient. Since `rules` returns an Eloquent query builder, you may filter, sort, or paginate the results:
 
 ```php
 $rules = $team->rules($article)
     ->whereRelation('permission', 'code', 'articles.edit')
+    ->whereMorphedTo('recipient', $user)
     ->paginate(15);
 ```
 
-The recipient's `pivot->expires_at` is a Carbon instance, or `null` for a permanent rule. Expired assignments remain in this list until removed with `forget`.
-
-## Pruning Unused Abilities
-
-Removing a rule leaves its ability definition available for reuse. To delete definitions that have no assignments, schedule Laravel's `model:prune` command:
+For external records, provide the resource type and ID:
 
 ```php
-use Jurager\Teams\Models\Ability;
-
-Schedule::command('model:prune', ['--model' => [Ability::class]])->daily();
+$rules = $team->rules('catalog.product', 42)->get();
 ```
 
-Use your configured ability class if you have a custom model. Assignments are checked again under a lock before deletion, so an ability assigned during pruning is kept. Permission definitions are retained.
+You may also query rules for multiple records or recipients using `forRecords` and `forRecipients`:
 
-To preview the candidates, run `php artisan model:prune --model="Jurager\Teams\Models\Ability" --pretend`.
+```php
+$rules = $team->abilities()
+    ->forRecords($articles)
+    ->forRecipients([$user, $role, $group])
+    ->with(['permission', 'recipient'])
+    ->get();
+```
+
+Expired rules remain available until explicitly removed.
 
 ## Record Owners
 

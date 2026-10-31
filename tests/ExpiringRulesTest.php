@@ -3,9 +3,8 @@
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Schema;
 use Jurager\Teams\Events\AbilityUpdated;
-use Jurager\Teams\Models\AbilityAssignment;
+use Jurager\Teams\Models\Ability;
 
 it('expires allow and forbid rules for every recipient without refreshing loaded rules', function (string $recipient, bool $forbidden, bool $preload) {
     $this->freezeTime();
@@ -39,7 +38,7 @@ it('expires allow and forbid rules for every recipient without refreshing loaded
     }
 })->with(['user', 'role', 'group'])->with([false, true])->with([false, true]);
 
-it('keeps independent expiration times on a shared ability definition', function () {
+it('keeps independent expiration times on a record and permission', function () {
     $this->freezeTime();
     $team = team();
     $first = $team->member(member($team));
@@ -52,7 +51,7 @@ it('keeps independent expiration times on a shared ability definition', function
 
     $this->travel(2)->minutes();
 
-    expect($team->abilities()->count())->toBe(1)
+    expect($team->abilities()->count())->toBe(3)
         ->and($first->can('articles.edit', $article))->toBeFalse()
         ->and($first->inspect('articles.edit', $article)->code())->toBe('role_forbidden')
         ->and($second->can('articles.edit', $article))->toBeTrue();
@@ -103,7 +102,7 @@ it('can renew expired rules and replace a deadline with permanent access', funct
     $this->travel(1)->days();
 
     expect($member->can('articles.edit', $article))->toBeTrue()
-        ->and($member->user->abilities()->first()->pivot->expires_at)->toBeNull();
+        ->and($member->user->abilities()->first()->expires_at)->toBeNull();
 });
 
 it('reports deadline changes, skips identical writes and retains the old deadline when removing a rule', function () {
@@ -141,8 +140,8 @@ it('rolls back a deadline change and its event with the outer transaction', func
     $member->allow('articles.edit')->until(now()->addDay())->on($article);
     DB::rollBack();
 
-    expect($member->user->abilities()->first()->pivot->expires_at)->toBeInstanceOf(CarbonInterface::class)
-        ->and($member->user->abilities()->first()->pivot->expires_at->equalTo($deadline))->toBeTrue();
+    expect($member->user->abilities()->first()->expires_at)->toBeInstanceOf(CarbonInterface::class)
+        ->and($member->user->abilities()->first()->expires_at->equalTo($deadline))->toBeTrue();
     Event::assertNotDispatched(AbilityUpdated::class);
 });
 
@@ -175,42 +174,27 @@ it('lists deadlines for each recipient when querying record rules', function () 
     $member->allow('articles.edit')->until($deadline)->on($article);
     $member->role()->forbid('articles.edit')->until($deadline)->on($article);
     $team->groups()->create(['code' => 'reviewers'])->allow('articles.edit')->until($deadline)->on($article);
-    $ability = $team->rules($article)->firstOrFail();
+    $abilities = $team->rules($article)->get();
 
-    foreach (['users', 'roles', 'groups'] as $relation) {
-        $pivot = $ability->$relation->first()->pivot;
+    expect($abilities)->toHaveCount(3);
 
-        expect($pivot)->toBeInstanceOf(AbilityAssignment::class)
-            ->and($pivot->expires_at)->toBeInstanceOf(CarbonInterface::class)
-            ->and($pivot->expires_at->equalTo($deadline))->toBeTrue();
+    foreach ($abilities as $ability) {
+        expect($ability->recipient)->not->toBeNull()
+            ->and($ability->expires_at)->toBeInstanceOf(CarbonInterface::class)
+            ->and($ability->expires_at->equalTo($deadline))->toBeTrue();
     }
-});
-
-it('adds the expiry column to existing assignments without changing permanent rules', function () {
-    $team = team();
-    $member = $team->member(member($team));
-    $article = article($team);
-    $member->allow('articles.edit')->on($article);
-    $migration = require __DIR__.'/../database/migrations/add_expires_at_to_entity_ability_table.php';
-
-    $migration->down();
-    expect(Schema::hasColumn(config('teams.tables.entity_ability'), 'expires_at'))->toBeFalse();
-    $migration->up();
-
-    expect($member->can('articles.edit', $article))->toBeTrue()
-        ->and($member->user->abilities()->first()->pivot->expires_at)->toBeNull();
 });
 
 it('does not put a deadline on forgetting a rule', function () {
     team()->member(user())->forget('articles.edit')->until(now()->addHour());
 })->throws(LogicException::class);
 
-it('rolls back a rule assignment when its pivot save is cancelled', function () {
+it('rolls back a rule assignment when its save is cancelled', function () {
     $team = team();
     $member = $team->member(member($team));
     $article = article($team);
     Event::fake(AbilityUpdated::class);
-    AbilityAssignment::saving(fn () => false);
+    Ability::saving(fn () => false);
 
     expect(fn () => $member->allow('articles.edit')->until(now()->addHour())->on($article))->toThrow(RuntimeException::class)
         ->and($team->abilities()->count())->toBe(0)
@@ -219,29 +203,29 @@ it('rolls back a rule assignment when its pivot save is cancelled', function () 
     Event::assertNotDispatched(AbilityUpdated::class);
 });
 
-it('preserves a forbid and its deadline when its pivot update is cancelled', function () {
+it('preserves a forbid and its deadline when its update is cancelled', function () {
     $team = team();
     $member = $team->member(member($team, ['articles.*']));
     $article = article($team);
     $deadline = now()->addHour()->startOfSecond();
     $member->forbid('articles.edit')->until($deadline)->on($article);
     Event::fake(AbilityUpdated::class);
-    AbilityAssignment::saving(fn () => false);
+    Ability::saving(fn () => false);
 
     expect(fn () => $member->allow('articles.edit')->until(now()->addDay())->on($article))->toThrow(RuntimeException::class)
         ->and($member->can('articles.edit', $article))->toBeFalse()
-        ->and($member->user->abilities()->first()->pivot->expires_at->equalTo($deadline))->toBeTrue();
+        ->and($member->user->abilities()->first()->expires_at->equalTo($deadline))->toBeTrue();
 
     Event::assertNotDispatched(AbilityUpdated::class);
 });
 
-it('preserves a rule when its pivot deletion is cancelled', function () {
+it('preserves a rule when its deletion is cancelled', function () {
     $team = team();
     $member = $team->member(member($team));
     $article = article($team);
     $member->allow('articles.edit')->until(now()->addHour())->on($article);
     Event::fake(AbilityUpdated::class);
-    AbilityAssignment::deleting(fn () => false);
+    Ability::deleting(fn () => false);
 
     expect(fn () => $member->forget('articles.edit')->on($article))->toThrow(RuntimeException::class)
         ->and($member->can('articles.edit', $article))->toBeTrue();

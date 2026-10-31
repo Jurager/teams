@@ -50,6 +50,7 @@ return [
         'groups' => 'groups',
         'group_user' => 'group_user',
         'entity_permission' => 'entity_permission',
+        // Used only by historical migrations and the migration to recipient abilities.
         'entity_ability' => 'entity_ability',
     ],
 
@@ -99,6 +100,12 @@ return [
     'invitations' => [
         'enabled' => true,
         'expire' => 7 * 24 * 60,
+
+        'rate_limit' => [
+            'enabled' => false,
+            'team' => ['max_attempts' => 10, 'decay_seconds' => 3600],
+            'email' => ['max_attempts' => 1, 'decay_seconds' => 60],
+        ],
 
         'routes' => [
             'register' => true,

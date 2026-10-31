@@ -5,6 +5,63 @@ weight: 38
 
 # Upgrade Guide
 
+## Upgrading to the New Ability Schema
+
+This update changes database rows, event properties, and public imports. Existing fluent calls remain the same.
+
+### Migration
+
+Back up your database and stop application writes, including queue workers, during the migration. Publish the new migration without overwriting already published files:
+
+```shell
+php artisan vendor:publish --tag=teams-migrations
+php artisan migrate
+```
+
+Apply the existing `add_expires_at_to_entity_ability_table` migration first if it has not run. The new `2026_10_28_000002_merge_ability_assignments` migration copies every assignment into a new `abilities` row with a single `INSERT … SELECT`, checks the row count, removes `entity_ability` and the old definitions, then gives the new table the configured abilities name. Table names and the configured team key are retained.
+
+Decisions, deadlines, morph types, record and recipient keys, and assignment timestamps are preserved. New ability IDs are generated; shared definitions cannot keep a single ID across multiple recipient rows. Unassigned definitions are discarded. Update any application references to old ability IDs.
+
+This migration is forward-only. To return to the previous schema, restore the backup together with the previous package version. MySQL schema changes are not transactional; do not assume a failed migration rolls back its DDL. If a copy fails before replacement, the original tables remain. Inspect the temporary `<abilities>_new` table and the error before removing it and retrying.
+
+### External Record Calls
+
+A string type and numeric ID can be used with the fluent API without creating a local model:
+
+```php
+// Before:
+$user->allowTeamAbility($team, 'products.update', 'products', 42);
+$user->hasTeamAbility($team, 'products.update', 'products', 42);
+
+// Now:
+$team->member($user)->allow('products.update')->on('products', 42);
+$team->member($user)->can('products.update', 'products', 42);
+```
+
+To assign a rule to a role or group, call its `allow` or `forbid` method directly. Keep the stored external type and numeric ID unchanged. The conversion migration above is still required for the new ability schema; supporting external types requires no additional migration. See [external records](abilities.md#external-records) for team context and model-type restrictions.
+
+### Queries and Events
+
+- User, role, and group `abilities()` relations are now `MorphMany`. Use `whereMorphedTo('recipient', $model)` instead of pivot filters.
+- `$team->rules($record)` returns one row per recipient and eagerly loads `permission` and `recipient`. Replace `users`, `roles`, and `groups` with `recipient`; read `forbidden` and `expires_at` directly on the ability.
+- `AbilityAssignment` and ability pruning are removed. Remove scheduled `model:prune` jobs for the ability model. Invitation pruning is unchanged.
+- Update `AbilityUpdated` listeners to the [value payload](events.md). It no longer contains `ability` or `target` models. This allows queued listeners to handle deleted rules.
+- Keep `teams.tables.entity_ability` in published configuration until the historical and conversion migrations have run. Runtime code no longer uses that table.
+
+### Imports
+
+| Previous import                               | New import                         |
+|-----------------------------------------------|------------------------------------|
+| `Jurager\Teams\Support\Member`                | `Jurager\Teams\Member`             |
+| `Jurager\Teams\Models\Owner`                  | `Jurager\Teams\Owner`              |
+| `Jurager\Teams\Support\PendingMember`         | `Jurager\Teams\Pending\Membership` |
+| `Jurager\Teams\Support\PendingRule`           | `Jurager\Teams\Pending\Ability`    |
+| `Jurager\Teams\Support\PendingInvitation`     | `Jurager\Teams\Pending\Invitation` |
+| `Jurager\Teams\Support\Services\TeamsService` | `Jurager\Teams\Teams`              |
+| `Jurager\Teams\Support\Facades\Teams`         | `Jurager\Teams\Facades\Teams`      |
+
+If your application registers the facade alias manually, update its class and clear the configuration cache. Composer's package discovery alias is updated automatically.
+
 ## Upgrading to 4.2.1
 
 Publish and run the new migration:

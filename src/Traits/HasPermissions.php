@@ -5,14 +5,14 @@ namespace Jurager\Teams\Traits;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Jurager\Teams\Events\PermissionsUpdated;
-use Jurager\Teams\Models\AbilityAssignment;
-use Jurager\Teams\Support\Facades\Teams;
-use Jurager\Teams\Support\PendingRule;
+use Jurager\Teams\Facades\Teams;
+use Jurager\Teams\Pending;
 use LogicException;
 
 /**
@@ -39,7 +39,7 @@ trait HasPermissions
 
         static::deleted(function (Model $model) {
             $model->permissions()->detach();
-            $model->abilities()->detach();
+            $model->abilities()->delete();
         });
     }
 
@@ -54,12 +54,9 @@ trait HasPermissions
     /**
      * Get the record rules assigned to the record.
      */
-    public function abilities(): MorphToMany
+    public function abilities(): MorphMany
     {
-        return $this->morphToMany(Teams::model('ability'), 'entity', Config::get('teams.tables.entity_ability'), 'entity_id', 'ability_id')
-            ->using(AbilityAssignment::class)
-            ->withPivot('forbidden', 'expires_at')
-            ->withTimestamps();
+        return $this->morphMany(Teams::model('ability'), 'recipient');
     }
 
     /**
@@ -106,25 +103,25 @@ trait HasPermissions
     /**
      * Start a rule that allows the permission on one record.
      */
-    public function allow(string|BackedEnum $permission): PendingRule
+    public function allow(string|BackedEnum $permission): Pending\Ability
     {
-        return new PendingRule($this->ruleTeam(), $this, $permission, forbidden: false);
+        return new Pending\Ability($this->ruleTeam(), $this, $permission, forbidden: false);
     }
 
     /**
      * Start a rule that forbids the permission on one record.
      */
-    public function forbid(string|BackedEnum $permission): PendingRule
+    public function forbid(string|BackedEnum $permission): Pending\Ability
     {
-        return new PendingRule($this->ruleTeam(), $this, $permission, forbidden: true);
+        return new Pending\Ability($this->ruleTeam(), $this, $permission, forbidden: true);
     }
 
     /**
      * Start removing the rule for the permission on one record.
      */
-    public function forget(string|BackedEnum $permission): PendingRule
+    public function forget(string|BackedEnum $permission): Pending\Ability
     {
-        return new PendingRule($this->ruleTeam(), $this, $permission, forbidden: null);
+        return new Pending\Ability($this->ruleTeam(), $this, $permission, forbidden: null);
     }
 
     /**

@@ -1,19 +1,20 @@
 <?php
 
-namespace Jurager\Teams\Support;
+namespace Jurager\Teams\Pending;
 
 use BackedEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Jurager\Teams\Events\TeamMemberAdded;
 use Jurager\Teams\Events\TeamMemberAdding;
+use Jurager\Teams\Member;
 use RuntimeException;
 use Throwable;
 
 /**
  * @template TUsers of Model|iterable<Model>
  */
-class PendingMember
+class Membership
 {
     /**
      * @param  TUsers  $users
