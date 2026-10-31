@@ -7,8 +7,8 @@ use Jurager\Teams\Events\TeamMemberAdded;
 use Jurager\Teams\Events\TeamMemberAdding;
 use Jurager\Teams\Events\TeamMemberRemoved;
 use Jurager\Teams\Events\TeamMemberRemoving;
+use Jurager\Teams\Member;
 use Jurager\Teams\Models\Membership;
-use Jurager\Teams\Support\Member;
 
 it('adds and removes distinct users from iterable inputs', function (Closure $input) {
     $team = team()->load('members');

@@ -130,7 +130,7 @@ it('needs a saved record or a model class and key', function (array $record) {
     expect(fn () => $member->allow('articles.edit')->on(...$record))->toThrow(InvalidArgumentException::class);
 })->with([
     'unsaved record' => fn () => [new Article],
-    'unknown class' => [['NotAModel', 1]],
+    'non-model class' => [[stdClass::class, 1]],
     'class without key' => [[Article::class]],
 ]);
 
@@ -249,12 +249,12 @@ it('removes the permissions and rules of a deleted group', function () {
 
     expect($team->member($user)->can('articles.edit'))->toBeFalse();
 
-    foreach (['entity_permission', 'entity_ability'] as $table) {
-        $this->assertDatabaseMissing(config("teams.tables.{$table}"), [
-            'entity_type' => $group->getMorphClass(),
-            'entity_id' => $group->getKey(),
-        ]);
-    }
+    $this->assertDatabaseMissing(config('teams.tables.entity_permission'), [
+        'entity_type' => $group->getMorphClass(), 'entity_id' => $group->getKey(),
+    ]);
+    $this->assertDatabaseMissing(config('teams.tables.abilities'), [
+        'recipient_type' => $group->getMorphClass(), 'recipient_id' => $group->getKey(),
+    ]);
 });
 
 it('checks preloaded records without queries', function () {

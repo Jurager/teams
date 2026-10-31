@@ -4,8 +4,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Jurager\Teams\Events\TeamCreated;
+use Jurager\Teams\Facades\Teams;
 use Jurager\Teams\Models\Role;
-use Jurager\Teams\Support\Facades\Teams;
 use Jurager\Teams\TeamsServiceProvider;
 use Jurager\Teams\Tests\Fixtures\Article;
 use Jurager\Teams\Tests\Fixtures\CustomAbility;
@@ -79,6 +79,4 @@ it('rejects duplicate rows in the database', function (Closure $insert) {
     'group member' => fn ($team, $user) => $team->group('editors')->members()->attach($user),
     'ability' => fn ($team) => DB::table(config('teams.tables.abilities'))
         ->insert(collect($team->abilities()->first()->getAttributes())->except('id')->all()),
-    'record rule' => fn () => DB::table(config('teams.tables.entity_ability'))
-        ->insert(collect((array) DB::table(config('teams.tables.entity_ability'))->first())->except('id')->all()),
 ]);

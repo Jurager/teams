@@ -38,12 +38,10 @@ it('uses the configured tables and foreign key everywhere', function () {
         ->and($user->memberships()->first()->membership->getTable())->toBe('custom_team_user');
 
     expect($user->accessible()->first()->is($team))->toBeTrue()
-        ->and($team->rules($article)->first()->users->first()->is($user))->toBeTrue();
+        ->and($team->rules($article)->first()->recipient->is($user))->toBeTrue();
 
     $member->forget('articles.publish')->on($article);
-    $ability = $team->abilities()->firstOrFail();
-    expect($ability->prunable()->count())->toBe(1)
-        ->and($ability->prune())->toBeTrue();
+    expect($team->abilities()->count())->toBe(0);
 
     $team->remove($user);
     $group->delete();
@@ -53,9 +51,8 @@ it('uses the configured tables and foreign key everywhere', function () {
     expect(Team::count())->toBe(0);
 });
 
-it('rolls back the migrations with the configured tables', function () {
+it('uses only configured table names', function () {
     foreach ([
-        'add_expires_at_to_entity_ability_table',
         'create_invitations_table', 'create_entity_permission_table', 'create_group_user_table',
         'create_groups_table', 'create_entity_ability_table', 'create_abilities_table',
         'create_team_user_table', 'create_roles_table', 'create_permissions_table', 'create_teams_table',
@@ -96,4 +93,16 @@ it('queries permissions, batches members and expires rules with the configured s
 
     $team->remove($users);
     expect($team->members()->count())->toBe(0);
+});
+
+it('uses configured tables and the team key for external rules', function () {
+    $team = team();
+    $member = $team->member(member($team));
+    $member->allow('products.update')->on('catalog.products', 42);
+    $rule = $team->rules('catalog.products', 42)->firstOrFail();
+
+    expect($rule->getTable())->toBe('custom_abilities')
+        ->and($rule->workspace_id)->toBe($team->id)
+        ->and($rule->recipient->is($member->user))->toBeTrue()
+        ->and($member->inspect('products.update', 'catalog.products', 42)->code())->toBe('user_allowed');
 });

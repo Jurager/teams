@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Database\Factories\InvitationFactory;
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Facades\Teams;
 use RuntimeException;
 
 class Invitation extends Model

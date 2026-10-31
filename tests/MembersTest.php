@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -9,10 +10,11 @@ use Jurager\Teams\Events\TeamCreating;
 use Jurager\Teams\Events\TeamDeleted;
 use Jurager\Teams\Events\TeamUpdated;
 use Jurager\Teams\Events\TeamUpdating;
+use Jurager\Teams\Member;
 use Jurager\Teams\Models\Membership;
-use Jurager\Teams\Models\Owner;
 use Jurager\Teams\Models\Role;
 use Jurager\Teams\Models\Team;
+use Jurager\Teams\Owner;
 
 it('lets a user create and own teams', function () {
     $owner = user();
@@ -185,3 +187,49 @@ it('dispatches each team lifecycle event once', function () {
 
     Event::assertDispatched(TeamCreating::class, fn ($event) => $event->team->is($team));
 });
+
+it('keeps loaded record checks independent from live role and team permission queries after reassignment', function () {
+    $team = team();
+    $member = $team->member(member($team, ['articles.view']));
+    $article = article($team);
+    role($team, 'writer', ['articles.edit']);
+    $member->load([$article]);
+
+    expect($member->assign('writer'))->toBe($member)
+        ->and($member->role()->code)->toBe('writer')
+        ->and($member->is('writer'))->toBeTrue()
+        ->and($member->permissions())->toBe(['articles.edit'])
+        ->and($member->can('articles.edit'))->toBeTrue()
+        ->and($team->member($member->user)->can('articles.edit', $article))->toBeTrue();
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    expect($member->can('articles.view', $article))->toBeTrue()
+        ->and($member->can('articles.edit', $article))->toBeFalse()
+        ->and(DB::getQueryLog())->toBeEmpty();
+
+    $member->load([$article]);
+    expect($member->can('articles.edit', $article))->toBeTrue()
+        ->and($member->can('articles.view', $article))->toBeFalse();
+});
+
+it('respects a custom member role in permission sources and access decisions', function (bool $preload) {
+    $team = team();
+    $context = new class($team, member($team, ['articles.*'])) extends Member
+    {
+        public function role(): Model|Owner|null
+        {
+            return null;
+        }
+    };
+    $article = article($team);
+
+    if ($preload) {
+        $context->load([$article]);
+    }
+
+    expect($context->permissions())->toBe([])
+        ->and($context->can('articles.edit'))->toBeFalse()
+        ->and($context->inspect('articles.edit', $article)->code())->toBe('not_member');
+})->with([false, true]);

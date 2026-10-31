@@ -1,5 +1,25 @@
 # Changelog
 
+## 4.3.0
+
+### New
+
+- Optional invitation rate limits per team and per email, using Laravel's cache limiter with HTTP `429` and `Retry-After` on exhaustion. Disabled by default; validated attempts count independently of database rollbacks.
+- Allow external records identified by a literal type and numeric key in fluent rule writes, member permission checks, and rule queries. Existing Eloquent team checks and Gate integration are retained; no schema change is required.
+
+### Changed
+
+- Store record rules directly in `abilities`, one row per recipient, with native `MorphMany` relations, decisions and deadlines. A new forward migration converts existing assignments and removes `entity_ability`.
+- Keep the fluent API and access precedence. Load recipient rules in one query; expose batch `forRecords` and `forRecipients` scopes.
+- Move public contexts and the model registry out of `Support`; group unfinished operations in `Pending` and the facade in `Facades`. See the upgrade guide for imports.
+- Move group member changes and their events out of the `Group` model into `GroupMembers`.
+- Separate member authorization into `MemberPermissions`, team membership changes into `TeamMembers`, and Eloquent team relationships into `HasTeamRelations`, preserving the fluent API and support for independent team models.
+- Give `AbilityUpdated` an immutable value payload that remains usable after rule deletion, including queued listeners.
+
+### Removed
+
+- Shared ability definitions, `AbilityAssignment`, and pruning of unused abilities. Forgetting a rule deletes its row.
+
 ## 4.2.1
 
 ### New

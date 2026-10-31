@@ -4,7 +4,7 @@ namespace Jurager\Teams\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Config;
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Facades\Teams;
 
 class InvitationFactory extends Factory
 {

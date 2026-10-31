@@ -8,7 +8,7 @@ weight: 125
 The `Teams` facade returns the configured class of a model:
 
 ```php
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Facades\Teams;
 
 Teams::model('team'); // 'App\Models\Team'
 ```

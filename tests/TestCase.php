@@ -77,6 +77,7 @@ abstract class TestCase extends Orchestra
             'create_groups_table', 'create_group_user_table', 'create_entity_permission_table',
             'create_invitations_table',
             'add_expires_at_to_entity_ability_table',
+            'merge_ability_assignments',
         ] as $migration) {
             (require __DIR__."/../database/migrations/{$migration}.php")->up();
         }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Jurager\Teams\Support\Services;
+namespace Jurager\Teams;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
@@ -12,7 +12,7 @@ use Jurager\Teams\Models\Permission;
 use Jurager\Teams\Models\Role;
 use RuntimeException;
 
-class TeamsService
+class Teams
 {
     /**
      * The package classes that configured models must extend.

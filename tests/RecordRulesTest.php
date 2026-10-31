@@ -25,19 +25,18 @@ it('lists the permissions and recipients of a records explicit rules', function 
 
     $rules = $team->rules($article)->get();
 
-    expect($rules)->toHaveCount(1)->and(DB::getQueryLog())->toHaveCount(5);
+    expect($rules)->toHaveCount(3)->and(DB::getQueryLog())->toHaveCount(5);
     DB::flushQueryLog();
-    $rule = $rules->first();
 
-    expect($rule)->toBeInstanceOf(Ability::class)
-        ->and($rule->permission->code)->toBe('articles.edit')
-        ->and($rule->users->first()->is($user))->toBeTrue()
-        ->and((bool) $rule->users->first()->pivot->forbidden)->toBeFalse()
-        ->and($rule->roles->first()->is($role))->toBeTrue()
-        ->and((bool) $rule->roles->first()->pivot->forbidden)->toBeTrue()
-        ->and($rule->groups->first()->is($group))->toBeTrue()
-        ->and((bool) $rule->groups->first()->pivot->forbidden)->toBeFalse()
-        ->and(DB::getQueryLog())->toBeEmpty();
+    foreach ([$user, $role, $group] as $recipient) {
+        $rule = $rules->first(fn ($rule) => $rule->recipient->is($recipient));
+
+        expect($rule)->toBeInstanceOf(Ability::class)
+            ->and($rule->permission->code)->toBe('articles.edit')
+            ->and($rule->forbidden)->toBe($recipient->is($role));
+    }
+
+    expect(DB::getQueryLog())->toBeEmpty();
 });
 
 it('scopes record rules by team, record and morph type', function () {
@@ -55,7 +54,7 @@ it('scopes record rules by team, record and morph type', function () {
         ->and($team->rules(new Article)->get())->toBeEmpty();
 });
 
-it('omits unassigned definitions and supports filtering and pagination', function () {
+it('removes forgotten rules and supports filtering and pagination', function () {
     $team = team();
     $role = role($team, 'editor');
     $article = article($team);
@@ -65,7 +64,7 @@ it('omits unassigned definitions and supports filtering and pagination', functio
 
     $page = $team->rules($article)->whereRelation('permission', 'code', 'articles.view')->paginate(10);
 
-    expect($team->abilities()->count())->toBe(2)
+    expect($team->abilities()->count())->toBe(1)
         ->and($page->total())->toBe(1)
         ->and($page->first()->permission->code)->toBe('articles.view');
 });
@@ -79,9 +78,10 @@ it('resolves recipient aliases from the morph map', function () {
     $team->member($user)->role()->forbid('articles.edit')->on($article);
     $group = $team->groups()->create(['code' => 'editors']);
     $group->allow('articles.edit')->on($article);
-    $rule = $team->rules($article)->firstOrFail();
+    $rules = $team->rules($article)->get()->keyBy('recipient_type');
 
-    expect($rule->users->modelKeys())->toBe([$user->id])
-        ->and($rule->roles)->toHaveCount(1)
-        ->and($rule->groups->modelKeys())->toBe([$group->id]);
+    expect($rules->keys()->all())->toEqualCanonicalizing(['user', 'role', 'group'])
+        ->and($rules['user']->recipient->is($user))->toBeTrue()
+        ->and($rules['role']->recipient)->toBeInstanceOf(Role::class)
+        ->and($rules['group']->recipient->is($group))->toBeTrue();
 });

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Database\Factories\RoleFactory;
-use Jurager\Teams\Support\Facades\Teams;
+use Jurager\Teams\Facades\Teams;
 use Jurager\Teams\Traits\HasPermissions;
 use RuntimeException;
 
