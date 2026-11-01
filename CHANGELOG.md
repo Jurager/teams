@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.3.1
+
+### Fixed
+
+- Restore compatible development dependencies for Laravel 10 and its CI builds.
+
 ## 4.3.0
 
 ### New
