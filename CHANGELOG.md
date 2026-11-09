@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.4.0
+
+### New
+
+- Limit API tokens to a list of permissions with `Teams::scope()`. The callback returns a `Scope` for the current request, or `null` when it has no limit. Build it with `Scope::to($permissions)`, which accepts codes, enums, and wildcards, and limit it to a team or a record with `in` and `on`. Works with Sanctum, Passport, or any other provider, and no schema or configuration change is required.
+- A scope only narrows access. Every Gate check passes only when both the scope and the user's current permissions allow it, so role, group, and record rule changes apply to tokens immediately. The scope also limits your own gates and policies, and applies when the `gate` option is `false`. Checks made with the `member` methods are not limited.
+
 ## 4.3.1
 
 ### Fixed
