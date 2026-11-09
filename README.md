@@ -21,6 +21,7 @@ Additionally, users can be added to a global group to grant them access across a
 - Team groups that extend role permissions.
 - Record-level allow and forbid rules for members, roles, and groups.
 - Expiring record rules, checked at authorization time.
+- Limit API tokens to a list of permissions, with Sanctum, Passport, or any provider.
 - Query users by team-wide permission.
 - Query record rules with their permissions and recipients.
 - Global groups for cross-team access.

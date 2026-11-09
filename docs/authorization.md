@@ -43,6 +43,96 @@ A member's permissions come from their role and their groups in the team. The te
 > [!NOTE]
 > Your own gates and policies are always asked first, and the package only answers when they don't. This means a policy can always deny access. To turn the integration off, set the `gate` [configuration](configuration.md#gate) option to `false`.
 
+## Authorizing API Tokens
+
+Sometimes a token should be able to do less than the user who owns it. For example, an integration may only need to edit articles. You may limit a token to a list of permissions. The user keeps their own role, and the token can use only the permissions that both of them have. If the user loses a permission, the token loses it too.
+
+### Sanctum
+
+The abilities of a Sanctum token are plain strings, so you may store permission codes in them. For example, let the user choose the permissions of a token from the permissions of a team:
+
+```php
+$permissions = $team->permissions()
+    ->whereIn('code', $request->input('permissions', []))
+    ->pluck('code');
+
+$token = $request->user()->createToken('Article integration', $permissions->all());
+```
+
+Next, define the limit using the `scope` method of the `Teams` facade. You may call this method from the `boot` method of your `AppServiceProvider`. The callback receives the authenticated user and returns the `Scope` of the current request, or `null` when the request has no limit:
+
+```php
+use App\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Jurager\Teams\Facades\Teams;
+use Jurager\Teams\Scope;
+use Laravel\Sanctum\PersonalAccessToken;
+
+Teams::scope(function (Authenticatable $user): ?Scope {
+    $token = $user instanceof User ? $user->currentAccessToken() : null;
+
+    if (! $token instanceof PersonalAccessToken || $token->can('*')) {
+        return null;
+    }
+
+    return Scope::to($token->abilities);
+});
+```
+
+Requests without a token, such as sessions, and tokens with the `*` ability have no limit. A token without permissions can do nothing.
+
+The `to` method accepts permission codes, enums, and arrays of them. A code such as `articles.*` covers every permission under `articles`.
+
+Your routes don't change. The `can` middleware works for limited tokens, unlimited tokens, and sessions alike:
+
+```php
+Route::put('/articles/{article}', [ArticleController::class, 'update'])
+    ->middleware('auth:sanctum')
+    ->can('articles.edit', 'article');
+```
+
+> [!NOTE]
+> The limit applies to the [permission checks](#checking-permissions) that go through the Gate. Checks made with the `member` methods, such as `$team->member($user)->can('articles.edit')`, aren't limited.
+
+### Passport
+
+Passport tokens carry [scopes](https://laravel.com/docs/passport#defining-scopes). Register the codes of your permissions as scopes using the `Passport::tokensCan` method, then pass the scopes of the access token to the `to` method:
+
+```php
+use App\Models\User;
+use Laravel\Passport\AccessToken;
+
+Teams::scope(function (Authenticatable $user): ?Scope {
+    $token = $user instanceof User ? $user->currentAccessToken() : null;
+
+    return $token instanceof AccessToken && ! $token->can('*')
+        ? Scope::to($token->oauth_scopes)
+        : null;
+});
+```
+
+With Passport 12, use `$user->token()` and `$token->scopes` instead.
+
+### Other Providers
+
+With JWT or any other provider, build the `Scope` from the permissions of the verified token. Return `null` only for requests that have no limit.
+
+### Limiting to a Team or a Record
+
+By default, a token works in every team of its user. To limit it to one team, use the `in` method. It accepts a team or its key:
+
+```php
+Scope::to($permissions)->in($team);
+```
+
+To limit a token to one record, use the `on` method:
+
+```php
+Scope::to($permissions)->on($article);
+```
+
+The token then passes only the checks on that team and its records, or on that record. Store the team or the record with the token, and pass it to the scope in your callback.
+
 ## Member Checks
 
 The `member` method returns the user's role and permissions in a single team:

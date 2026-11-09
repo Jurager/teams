@@ -2,6 +2,8 @@
 
 namespace Jurager\Teams;
 
+use Closure;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
 use Jurager\Teams\Models\Ability;
@@ -27,6 +29,31 @@ class Teams
         'ability' => Ability::class,
         'group' => Group::class,
     ];
+
+    /**
+     * The callback that returns the scope of a user's request.
+     *
+     * @var (Closure(Authenticatable): ?Scope)|null
+     */
+    protected ?Closure $scope = null;
+
+    /**
+     * Register the callback that returns the scope of a user's request, or null when it has none.
+     *
+     * @param  callable(Authenticatable): ?Scope  $callback
+     */
+    public function scope(callable $callback): void
+    {
+        $this->scope = $callback(...);
+    }
+
+    /**
+     * Get the scope of the user's request, or null when it has none.
+     */
+    public function scoped(Authenticatable $user): ?Scope
+    {
+        return $this->scope === null ? null : ($this->scope)($user);
+    }
 
     /**
      * Get the configured model class.

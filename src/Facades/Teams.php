@@ -2,12 +2,16 @@
 
 namespace Jurager\Teams\Facades;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Facade;
+use Jurager\Teams\Scope;
 use Jurager\Teams\Teams as Registry;
 
 /**
  * @method static class-string<Model> model(string $model)
+ * @method static void scope(callable $callback)
+ * @method static Scope|null scoped(Authenticatable $user)
  *
  * @see Registry
  */

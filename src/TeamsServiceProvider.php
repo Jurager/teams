@@ -35,6 +35,7 @@ class TeamsServiceProvider extends ServiceProvider
 
         TeamsFacade::model('membership')::observe(MembershipObserver::class);
 
+        $this->registerScope();
         $this->registerGate();
         $this->registerRoutes();
 
@@ -60,6 +61,18 @@ class TeamsServiceProvider extends ServiceProvider
         foreach (['models', 'tables', 'foreign_keys'] as $key) {
             $config->set("teams.{$key}", array_replace($defaults[$key] ?? [], $config->get("teams.{$key}", [])));
         }
+    }
+
+    /**
+     * Deny what the scope of the user's request does not permit, before any other gate callback answers.
+     */
+    protected function registerScope(): void
+    {
+        Gate::before(function (Authenticatable $user, $ability, array $arguments) {
+            $scope = TeamsFacade::scoped($user);
+
+            return $scope !== null && ! $scope->permits($ability, $arguments[0] ?? null) ? false : null;
+        });
     }
 
     /**
