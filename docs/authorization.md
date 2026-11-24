@@ -151,6 +151,21 @@ $member->canAny(['articles.edit', 'articles.publish']);
 
 Member checks don't use the Gate, so they also work in queued jobs and console commands, where there is no authenticated user.
 
+### Granting Permissions
+
+To stop members from granting more access than they have, check `canGrant` before giving permissions to a role, a group, or another member. It returns `true` only when the member holds every permission given:
+
+```php
+$member = $team->member($request->user());
+
+$member->canGrant($request->permissions);                // codes, enums, or wildcards
+$member->canGrant($team->role('admin'));                 // every permission of the role
+$member->canGrant($team->group('editors'), $role);       // any number of roles and groups
+$member->canGrant($rule);                                 // a record rule, checked on its record
+```
+
+A record rule is checked with the member's access to that record, so a member can't lift a rule that forbids them the permission there. `null` values are skipped, so a role that wasn't found grants nothing. Granting nothing is allowed, and the owner may grant anything.
+
 ## Querying Users by Permission
 
 Use the `permission` scope to query users who have a team-wide permission:

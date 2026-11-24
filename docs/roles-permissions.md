@@ -42,6 +42,12 @@ $role->sync();
 
 Each method accepts any number of codes or an array, and returns the role, so calls may be chained.
 
+The `codes` method returns the codes of the permissions a role or a group grants:
+
+```php
+$team->role('editor')->codes(); // ['articles.view', 'articles.edit']
+```
+
 ## Finding, Updating, and Deleting Roles
 
 The `role` method finds a role by its code. If the role doesn't exist, a `ModelNotFoundException` is thrown:

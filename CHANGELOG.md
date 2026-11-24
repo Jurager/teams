@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.5.0
+
+### New
+
+- `$team->member($user)->canGrant(...)` checks that a member holds every permission they are about to give: codes, enums, wildcards, roles and groups (their permissions), and record rules, which are checked on their record. Granting nothing is allowed, and the owner may grant anything.
+- `codes()` on roles and groups returns the codes of the permissions they grant.
+
 ## 4.4.0
 
 ### New

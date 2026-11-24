@@ -5,7 +5,9 @@ namespace Jurager\Teams;
 use BackedEnum;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Arr;
+use Jurager\Teams\Models\Ability;
 
 class Member
 {
@@ -76,6 +78,40 @@ class Member
     public function canAny(array $permissions, Model|string|null $record = null, int|string|null $key = null): bool
     {
         return $this->permissions->check($permissions, $record, all: false, key: $key)->allowed();
+    }
+
+    /**
+     * Determine if the member may grant the given permissions.
+     */
+    public function canGrant(string|BackedEnum|Model|iterable|null ...$permissions): bool
+    {
+        $codes = [];
+
+        foreach (collect($permissions)->flatten() as $permission) {
+            if ($permission instanceof Ability) {
+                $type = $permission->entity_type;
+                $isModel = is_a(Relation::getMorphedModel($type) ?? $type, Model::class, true);
+                $record = $isModel ? $permission->entity : $type;
+
+                if (! $this->can($permission->permission->code, $record, $isModel ? null : $permission->entity_id)) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if ($permission instanceof Model) {
+                array_push($codes, ...$permission->codes());
+
+                continue;
+            }
+
+            $codes[] = $permission instanceof BackedEnum ? (string) $permission->value : $permission;
+        }
+
+        $codes = array_values(array_unique(array_filter($codes, 'is_string')));
+
+        return $codes === [] || $this->can($codes);
     }
 
     public function inspect(string|BackedEnum $permission, Model|string|null $record = null, int|string|null $key = null): Response

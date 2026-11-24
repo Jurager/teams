@@ -52,6 +52,16 @@ trait HasPermissions
     }
 
     /**
+     * Get the codes of the permissions granted to the record.
+     *
+     * @return list<string>
+     */
+    public function codes(): array
+    {
+        return $this->permissions()->pluck($this->permissions()->getRelated()->qualifyColumn('code'))->all();
+    }
+
+    /**
      * Get the record rules assigned to the record.
      */
     public function abilities(): MorphMany
